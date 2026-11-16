@@ -500,6 +500,10 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
 
     newproject.register(app, _new_jobs, _open_new)
 
+    from . import visuals_api
+
+    visuals_api.register(app, current, settings_dir)
+
     from . import settings_api
     from lyric2resolve.assets import fonts as _fonts_mod
 
@@ -516,6 +520,10 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         @app.get("/library")
         def library_page():
             return FileResponse(STATIC_DIR / "library.html", headers={"Cache-Control": "no-store"})
+
+        @app.get("/visuals")
+        def visuals_page():
+            return FileResponse(STATIC_DIR / "visuals.html", headers={"Cache-Control": "no-store"})
 
         @app.get("/ideas")
         def ideas_page():

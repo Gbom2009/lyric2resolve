@@ -168,3 +168,9 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Update log / `setup_windows.bat`: "cuBLAS 12 for Whisper: already available (from torch)" or "Installing cuBLAS 12…".
 - [ ] New project transcribes on the GPU (no "GPU libraries could not be loaded" warning); how long for one song with large-v3?
 
+## Feature update A — Visuals page, + Text, layout fix
+- [ ] Long song at the normal zoom: no jumping/resizing.
+- [ ] Visuals: Estimate shows a time; a Preview render finishes with a playable video; Stop + Render continues; Open folder opens Explorer.
+- [ ] + Text adds a line where Whisper missed it; it appears in the FCPXML/Resolve export and in Karaoke.
+- [ ] New project of You're Not Alone: first sentence recognised now (voice filter 0.35)? If not, does the Review card show "missed lyrics" there?
+
