@@ -1,0 +1,117 @@
+{
+ "_comment": "Curated CC0 starter pack for glowing audio-reactive scenes. IDs checked against the live APIs on 2026-11-16. Both sources publish everything under CC0; the sync re-confirms this from their license pages.",
+ "polyhaven": [
+  {
+   "id": "metal_plate",
+   "category": "sci-fi panels"
+  },
+  {
+   "id": "green_metal_rust",
+   "category": "metal"
+  },
+  {
+   "id": "concrete_floor_worn_001",
+   "category": "concrete"
+  },
+  {
+   "id": "cracked_concrete_wall",
+   "category": "cracked rock/lava-like"
+  },
+  {
+   "id": "brown_leather",
+   "category": "rubber/leather"
+  },
+  {
+   "id": "fabric_pattern_07",
+   "category": "fabric"
+  },
+  {
+   "id": "interior_tiles",
+   "category": "grids/tiles"
+  },
+  {
+   "id": "coast_sand_rocks_02",
+   "category": "rock"
+  }
+ ],
+ "polyhaven_hdris": [
+  {
+   "id": "moonless_golf",
+   "category": "dark hdri"
+  },
+  {
+   "id": "dikhololo_night",
+   "category": "dark hdri"
+  },
+  {
+   "id": "satara_night",
+   "category": "dark hdri"
+  },
+  {
+   "id": "studio_small_09",
+   "category": "neutral studio hdri"
+  }
+ ],
+ "ambientcg": [
+  {
+   "id": "Metal009",
+   "category": "brushed metal"
+  },
+  {
+   "id": "Metal032",
+   "category": "dark metal"
+  },
+  {
+   "id": "MetalPlates006",
+   "category": "sci-fi panels"
+  },
+  {
+   "id": "MetalPlates017A",
+   "category": "sci-fi panels"
+  },
+  {
+   "id": "DiamondPlate009",
+   "category": "metal"
+  },
+  {
+   "id": "Fabric004",
+   "category": "carbon fiber"
+  },
+  {
+   "id": "Lava004",
+   "category": "cracked rock/lava-like"
+  },
+  {
+   "id": "Lava001",
+   "category": "cracked rock/lava-like"
+  },
+  {
+   "id": "Rock064",
+   "category": "rock"
+  },
+  {
+   "id": "Rubber004",
+   "category": "rubber/leather"
+  },
+  {
+   "id": "Leather037",
+   "category": "rubber/leather"
+  },
+  {
+   "id": "Ice002",
+   "category": "ice"
+  },
+  {
+   "id": "Tiles141",
+   "category": "grids/tiles"
+  },
+  {
+   "id": "Concrete034",
+   "category": "concrete"
+  },
+  {
+   "id": "Foil002",
+   "category": "metal"
+  }
+ ]
+}

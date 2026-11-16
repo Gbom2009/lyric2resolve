@@ -4,7 +4,7 @@ from __future__ import annotations
 
 
 def main(argv: list[str]) -> int:
-    """lyric2resolve assets sync [--fonts] [--textures] | install-fonts | list-fonts"""
+    """lyric2resolve assets sync [--fonts] [--textures] [--resolution 1k|2k|4k] | install-fonts | list-fonts"""
     import argparse
 
     ap = argparse.ArgumentParser(prog="lyric2resolve assets")
@@ -12,6 +12,7 @@ def main(argv: list[str]) -> int:
     s = sub.add_parser("sync", help="download the curated free asset libraries (run on your PC)")
     s.add_argument("--fonts", action="store_true")
     s.add_argument("--textures", action="store_true")
+    s.add_argument("--resolution", default="1k", choices=["1k", "2k", "4k"], help="texture resolution (default 1k)")
     sub.add_parser("install-fonts", help="install downloaded + custom fonts for your Windows user")
     sub.add_parser("list-fonts")
     args = ap.parse_args(argv)
@@ -40,10 +41,7 @@ def main(argv: list[str]) -> int:
         print(f"Folder: {fonts.fonts_dir()}  (credits in CREDITS.md). Next: lyric2resolve assets install-fonts")
         rc |= 1 if rep.failed else 0
     if args.textures or not args.fonts:
-        try:
-            from . import textures  # Phase 13
-        except ImportError:
-            print("Texture sync arrives in a later update.")
-        else:
-            rc |= textures.main_sync()
+        from . import textures
+
+        rc |= textures.main_sync(args.resolution)
     return rc

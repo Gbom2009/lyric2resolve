@@ -191,7 +191,7 @@ def list_projects(projects_dir: Path) -> list[dict]:
 
 
 def create_app(session: EditorSession | None = None, projects_dir: Path | None = None,
-               fonts_root: Path | None = None, settings_dir: Path | None = None):
+               fonts_root: Path | None = None, settings_dir: Path | None = None, textures_root: Path | None = None):
     """session: project opened at start (optional). projects_dir: folder offered in the project picker."""
     from fastapi import Body, FastAPI, HTTPException
     from fastapi.responses import FileResponse, HTMLResponse
@@ -320,6 +320,25 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return pls.to_dict()
 
+    def _textures_root() -> Path:
+        from lyric2resolve.assets import textures
+
+        return Path(textures_root) if textures_root else textures.textures_dir()
+
+    @app.get("/api/textures")
+    def texture_list():
+        from lyric2resolve.assets import textures
+
+        return {"textures": textures.list_textures(_textures_root()), "folder": str(_textures_root())}
+
+    @app.get("/api/textures/file/{rel:path}")
+    def texture_file(rel: str):
+        root = _textures_root().resolve()
+        path = (root / rel).resolve()
+        if root not in path.parents or not path.is_file() or path.suffix.lower() not in (".jpg", ".jpeg", ".png"):
+            raise HTTPException(status_code=404, detail="image not found")
+        return FileResponse(path)
+
     @app.get("/api/fonts")
     def font_list():
         from lyric2resolve.assets import fonts
@@ -347,6 +366,10 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         @app.get("/")
         def index():
             return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-store"})
+
+        @app.get("/library")
+        def library_page():
+            return FileResponse(STATIC_DIR / "library.html", headers={"Cache-Control": "no-store"})
 
         @app.get("/karaoke")
         def karaoke_page():

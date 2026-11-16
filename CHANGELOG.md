@@ -3,6 +3,16 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 13 — Free texture library (CC0) + Library page
+**New**
+- `lyric2resolve assets sync --textures [--resolution 1k|2k|4k]` downloads a hand-picked starter pack of free CC0 textures and HDRIs for glowing visuals from Poly Haven and ambientCG: brushed/dark metal, sci-fi panels, carbon fiber, concrete, lava/cracked rock, rock, rubber, leather, fabric, tiles/grids, ice, foil, plus dark night and studio HDRIs. Full PBR sets (colour, normal, roughness, height, AO, metalness, emission where available).
+- Safe and polite: the CC0 license is confirmed from each site before downloading, one download at a time with pauses, every file verified (checksum/size), and an interrupted sync continues where it stopped. A `manifest.json` and `CREDITS.md` are written; textures are never stored in the app folder or git.
+- Your own textures: put them in `…\assets\textures\custom` (one folder per material, or single images; `.hdr`/`.exr` count as HDRIs).
+- New **Library** page (button in the editor): browse textures with thumbnails, filter by category, and preview all fonts with your own sample text.
+
+**What to test**
+- Run `assets sync --textures` (≈150 MB at 1k) → open Library → textures with thumbnails; run it again → it finishes quickly without downloading again.
+
 ## Phase 12 — Karaoke mode
 **New**
 - **Karaoke** button in the editor (or http://127.0.0.1:8765/karaoke): plays a saved song full-screen with big readable text. The current line lights up word by word as it is sung, the next line is shown below, and before the first line and during instrumental gaps a countdown appears.

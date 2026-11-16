@@ -25,3 +25,12 @@ def test_export_dialog_writes_files(page):
     text = page.locator("#export-result").inner_text()
     assert "E2E_song_16x9.fcpxml" in text and "E2E_song_9x16.fcpxml" in text
     assert (page.session.path.parent / "export" / "E2E_song_9x16.fcpxml").exists()
+
+
+def test_library_page_lists_fonts_and_empty_textures(page):
+    page.goto(page.url.rstrip("/").split("/karaoke")[0] + "/library")
+    page.wait_for_function("window.LIB")
+    page.evaluate("LIB.ready")
+    assert page.locator("#tex-empty").is_visible()  # no textures synced in tests
+    page.click("#tab-fonts")
+    assert page.locator(".font-row").count() >= 5  # Windows fallback fonts listed

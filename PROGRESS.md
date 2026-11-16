@@ -18,8 +18,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 10 | FCPXML export | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 11 | Resolve script + SRT/CSV/EDL | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 12 | Karaoke | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 13 | Texture sync + browser | in progress | continuous-2026-11-16 / PR #2 |
-| 14 | Blender generator | planned | |
+| 13 | Texture sync + browser | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 14 | Blender generator | in progress | continuous-2026-11-16 / PR #2 |
 | 15 | Headless render + DJ mux | planned | |
 | 16 | Prompt generator + templates | planned | |
 | 17 | Claude link | planned | |
@@ -41,10 +41,12 @@ Phase 9: done (styling.py, assets/{__init__,fonts}.py, assets/fonts/curation.jso
 Phase 10: done (export/{timecode,timeline,fcpxml,__init__}.py, editor Export dialog (static/export.js), docs/RESOLVE_IMPORT.md, verify check fcpxml_validity, tests/test_fcpxml.py).
 Phase 11: done (export/{textformats,resolve_job}.py, export/resolve_template/lyric2resolve_build_timeline.py, docs/RESOLVE_SCRIPT.md, tests/test_exports_resolve.py).
 Phase 12: done (karaoke.py, karaoke endpoints in editor/app.py, static/karaoke.{html,css,js}, tests/test_karaoke.py + e2e/test_karaoke.py, tests/conftest.py isolates the data folder for every test).
-Phase 13 (textures): next → assets/textures.py + assets/textures/curation.json, texture browser (static/textures.js), tests/test_assets_textures.py.
+Phase 13: done (assets/textures.py, assets/textures/curation.json, /library page (static/library.{html,js}), tests/test_assets_textures.py).
+Phase 14 (Blender generator): next → visuals/{bands,mapping,blender_gen}.py + scene templates + procedural textures, tests/test_visuals.py (mock bpy / bpy wheel if installable).
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- Textures: Poly Haven + ambientCG have no per-asset license field; both are site-wide CC0, so the sync requires 'CC0' on each site's license page (checked every sync) and records CC0 per asset. Poly Haven files verified by md5, ambientCG zips by size + testzip; zips extracted flat (images only). Default 1k.
 - Karaoke audio: both stems decoded to AudioBuffers and started on the same AudioContext time (sample-accurate sync); gain nodes with setTargetAtTime for click-free fades. Playlists in `<data>/settings/karaoke_playlists.json`.
 - Resolve script: the API (README 2026) has no way to set a timeline item's duration and InsertFusionTitleIntoTimeline ripple-inserts, so Text+ clips are AppendToTimeline copies of a user-made Media Pool Fusion Composition named `l2r_textplus` with exact startFrame/endFrame/recordFrame; fallback = ImportTimelineFromFile(FCPXML). Script is self-contained (stdlib), reads `<data>/exports/last_resolve_job.json`, installed to %APPDATA%\\Blackmagic Design\\DaVinci Resolve\\Support\\Fusion\\Scripts\\Utility.
 - FCPXML 1.9, one file per layout: spine = one gap covering the song from the start TC; song = connected asset-clip lane -1; titles = Basic Title lane 1; markers on the gap. NTSC rates use 1000/1001 with NDF timecode. Apple's DTD is NOT committed (Apple copyright); tests/verify download it from the CommandPost mirror and skip when offline.

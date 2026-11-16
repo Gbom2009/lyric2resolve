@@ -82,3 +82,8 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Fullscreen on a second monitor/TV (open with the Karaoke button, drag the window, press F); text readable from a distance.
 - [ ] Queue: add/reorder/remove/next/previous; survives an app restart.
 - [ ] Memory: a 5-minute song loads in a few seconds (both stems are decoded in the browser).
+
+## Phase 13 — textures
+- [ ] `assets sync --textures` completes (~27 assets at 1k); CREDITS.md + manifest.json in `%LOCALAPPDATA%\lyric2resolve\assets\textures`. (3 assets verified from the cloud on 2026-11-16.)
+- [ ] Interrupt it (Ctrl+C) halfway and run again → continues, no duplicate downloads.
+- [ ] Library page shows thumbnails; custom folder textures appear.
