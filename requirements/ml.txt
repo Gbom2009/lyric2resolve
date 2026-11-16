@@ -1,0 +1,3 @@
+# Transcription (Whisper) - needs torch from requirements/torch.txt first.
+faster-whisper>=1.0
+stable-ts>=2.17

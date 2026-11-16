@@ -25,7 +25,10 @@ Double-click **`install.bat`** in the `lyric2resolve` folder. It:
 4. creates the data folder `%LOCALAPPDATA%\lyric2resolve`,
 5. creates a **lyric2resolve** shortcut on the Desktop and in the Start menu.
 
-Phase 2 adds the full setup (torch + CUDA, ffmpeg check); the launcher will run it for you when you update.
+## 3b. Full setup (heavy dependencies)
+Double-click **`setup_windows.bat`**: installs PyTorch (CUDA build matching your NVIDIA driver), Whisper and audio libraries (~3-5 GB, takes a while). The launcher also runs this automatically when an update changes requirements.
+Install ffmpeg if it says it is missing: `winget install Gyan.FFmpeg`.
+Then check everything: `.venv\Scripts\python.exe scripts\verify_local.py` → paste `REPORT_LOCAL.md` into the Claude session.
 
 ## 4. Start
 Double-click the **lyric2resolve** shortcut. The launcher checks for updates and shows its window.

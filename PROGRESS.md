@@ -7,8 +7,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 |---|-------|--------|-------------|
 | 0 | Planning docs | merged (initial commit on main) | main |
 | 1 | Skeleton + launcher/updater | merged (user test pending) | PR #1 |
-| 2 | Setup script + verify_local + settings | in progress | continuous-2026-11-16 |
-| 3 | Audio inputs / alignment / instrumental | planned | |
+| 2 | Setup script + verify_local + settings | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 3 | Audio inputs / alignment / instrumental | in progress | continuous-2026-11-16 / PR #2 |
 | 4 | Transcription + project JSON | planned | |
 | 5 | Music analysis + gaps + sanity | planned | |
 | 6 | Editor backend API | planned | |
@@ -30,12 +30,8 @@ Statuses: planned / in progress / PR open / merged / tested-OK / needs fixes / w
 
 ## CURRENT STEP LOG
 Continuous mode, branch `continuous-2026-11-16` (one PR into main, phase-labelled commits).
-Phase 2:
-- [ ] requirements split (core/torch/ml/separation/dev) + `setup_tools.py` (GPU/CUDA detect, torch index choice, ffmpeg/Blender detect, pip commands)
-- [ ] `settings.py` (app settings JSON in data folder)
-- [ ] `scripts/setup_update.py` (--full / --update, used by updater) + `setup_windows.ps1/.bat`
-- [ ] `verify.py` + `scripts/verify_local.py` (REPORT_LOCAL.md/json)
-- [ ] tests/test_setup_settings.py, CHANGELOG, VERIFY_LOCAL, PHASES checklist
+Phase 2: done (setup_tools.py, settings.py, verify.py, scripts/setup_update.py, scripts/verify_local.py, setup_windows.ps1/.bat, tests/test_setup_settings.py).
+Phase 3 (audio): next → `src/lyric2resolve/audio/{convert,align,stems}.py` + tests/test_audio.py.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
@@ -58,6 +54,7 @@ Phase 1 user test: not done yet (user chose continuous); fold its checklist into
 
 ## Pending VERIFY_LOCAL items
 - Phase 1: install, shortcut, update flow, self-update, rollback on Windows (see VERIFY_LOCAL.md).
+- Phase 2: setup_windows.bat, verify_local report (waiting for user: paste REPORT_LOCAL.md).
 
 ## Local verification reports (paste below)
 - (none yet)

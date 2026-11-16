@@ -3,6 +3,17 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 2 — Full setup, settings and the local check script
+**New**
+- `setup_windows.bat`: installs everything the app needs into its own environment: PyTorch with the CUDA version that matches your NVIDIA driver, Whisper (faster-whisper + stable-ts), audio libraries, and optional vocal separation. Safe to run again.
+- The updater now runs this dependency step automatically when an update changes the requirements (the first update after this one downloads PyTorch, ~2-3 GB, so it takes a while).
+- `scripts/verify_local.py`: checks Python, Git, ffmpeg, GPU/CUDA, torch, Blender and the asset download sites, and writes `REPORT_LOCAL.md` for you to paste into the Claude session.
+- App settings file `%LOCALAPPDATA%\lyric2resolve\settings\app.json` (paths, Whisper model, fps, resolution, styling level, theme). A settings page comes later.
+
+**What to test**
+- Run `setup_windows.bat` once (or let the launcher update do it); it ends with "Setup complete".
+- Run `.venv\Scripts\python.exe scripts\verify_local.py` and paste `REPORT_LOCAL.md` into the session. If ffmpeg is missing: `winget install Gyan.FFmpeg`.
+
 ## Phase 1 — Launcher + auto-updater (first install)
 **New**
 - The lyric2resolve launcher: a small window you start from the Desktop/Start-menu shortcut (no console window).

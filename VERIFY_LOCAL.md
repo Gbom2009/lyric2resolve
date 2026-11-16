@@ -16,3 +16,10 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Local edit in a code file → update refused with a clear message; files untouched.
 - [ ] Private repo auth: if Git asks to sign in, Git Credential Manager handles it; no token stored in the app folder.
 - [ ] (optional) `launcher.pyw login-check on` → after Windows login, nothing visible unless an update exists.
+
+## Phase 2 — setup + verify script
+- [ ] `setup_windows.bat` completes; torch installed from the CUDA index matching the driver (shown at the start).
+- [ ] faster-whisper/ctranslate2 needs CUDA 12 + cuDNN 9 DLLs; they normally come with the CUDA torch wheels. If transcription later complains about `cudnn*.dll`, report it.
+- [ ] Optional `audio-separator[gpu]` may fail to install (warning only); report the message.
+- [ ] `scripts/verify_local.py` writes REPORT_LOCAL.md: expect ok for python/tkinter/git/ffmpeg/gpu/torch_cuda/asset_apis; blender ok or warning.
+- [ ] Updating through the launcher after this change runs the dependency step (progress shows step 4 for a long time) and then succeeds.
