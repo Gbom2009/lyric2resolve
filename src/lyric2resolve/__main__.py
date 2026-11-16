@@ -16,6 +16,8 @@ APP_COMMANDS = {
     "visuals": "lyric2resolve.visuals.blender_gen",
     "render": "lyric2resolve.render",
     "ideas": "lyric2resolve.visuals.prompts",
+    "claude": "lyric2resolve.claude_link",
+    "mcp-server": "lyric2resolve.claude_link.mcp_server",
 }
 
 

@@ -198,9 +198,11 @@ def list_projects(projects_dir: Path) -> list[dict]:
 
 
 def create_app(session: EditorSession | None = None, projects_dir: Path | None = None,
-               fonts_root: Path | None = None, settings_dir: Path | None = None, textures_root: Path | None = None):
-    """session: project opened at start (optional). projects_dir: folder offered in the project picker."""
-    from fastapi import Body, FastAPI, HTTPException
+               fonts_root: Path | None = None, settings_dir: Path | None = None, textures_root: Path | None = None,
+               assistant=None, jobs=None):
+    """session: project opened at start (optional). projects_dir: folder offered in the project picker.
+    assistant: claude_link.Assistant (optional Claude link); jobs: render.jobs.RenderJobs (background renders)."""
+    from fastapi import Body, FastAPI, HTTPException, Request
     from fastapi.responses import FileResponse, HTMLResponse
     from fastapi.staticfiles import StaticFiles
 
@@ -392,6 +394,82 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         if root not in path.parents or path.suffix.lower() not in (".ttf", ".otf") or not path.is_file():
             raise HTTPException(status_code=404, detail="font not found")
         return FileResponse(path, media_type="font/ttf" if path.suffix.lower() == ".ttf" else "font/otf")
+
+    # ------------------------------------------------------------ background render (UI + MCP server)
+    def _jobs():
+        nonlocal jobs
+        if jobs is None:
+            from lyric2resolve.render.jobs import RenderJobs
+
+            jobs = RenderJobs()
+        return jobs
+
+    @app.post("/api/render")
+    def render_start(body: dict = Body(default_factory=dict)):
+        allowed_keys = {"template", "preset", "aspects", "sections", "estimate_only"}
+        args = {k: v for k, v in body.items() if k in allowed_keys and v is not None}
+        try:
+            return _jobs().start(current().path, **args)
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.get("/api/render/progress")
+    def render_progress():
+        return _jobs().progress()
+
+    @app.post("/api/render/cancel")
+    def render_cancel():
+        return _jobs().cancel()
+
+    # ------------------------------------------------------------ Claude link (optional Assistant)
+    def _assistant():
+        nonlocal assistant
+        if assistant is None:
+            from lyric2resolve.claude_link import Assistant
+
+            assistant = Assistant(settings_dir=settings_dir)
+        return assistant
+
+    @app.get("/api/assistant/status")
+    def assistant_status():
+        return _assistant().status()
+
+    @app.get("/api/assistant/history")
+    def assistant_history():
+        return _assistant().history(current().path)
+
+    def assistant_send(request, body: dict = Body(...)):
+        s = current()
+        a = _assistant()
+        a.editor_url = str(request.base_url)  # the MCP server edits through this editor (shared undo)
+        try:
+            return a.send(s.path, str(body.get("message", "")), s.project)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=424, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    # real class (not a string) so FastAPI injects the request despite `from __future__ import annotations`
+    assistant_send.__annotations__["request"] = Request
+    app.post("/api/assistant/send")(assistant_send)
+
+    @app.get("/api/assistant/events")
+    def assistant_events(after: int = 0):
+        return _assistant().poll(after)
+
+    @app.post("/api/assistant/cancel")
+    def assistant_cancel():
+        _assistant().cancel()
+        return _assistant().poll(0)
+
+    @app.post("/api/assistant/reset")
+    def assistant_reset():
+        if _assistant().busy():
+            raise HTTPException(status_code=409, detail="wait until the Assistant has finished")
+        _assistant().reset(current().path)
+        return _assistant().history(current().path)
 
     @app.get("/api/audio/{kind}")
     def audio(kind: str):

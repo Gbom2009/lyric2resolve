@@ -253,6 +253,49 @@ def _fcpxml(ctx: Context) -> CheckResult:
                        "; ".join(errors[:3]) or "FCPXML 1.9 valid (16:9 + 9:16); now test the import in Resolve")
 
 
+@check("claude_cli")
+def _claude_cli(ctx: Context) -> CheckResult:
+    """Optional Assistant: is the Claude Code CLI installed? (Login is not checked: we never touch tokens.)"""
+    from lyric2resolve.claude_link import cli
+    from lyric2resolve.settings import load_settings
+
+    st = cli.status(load_settings()[0].claude_cli_path)
+    if not st.installed:
+        return CheckResult("claude_cli", WARN, "optional - " + st.message.splitlines()[0])
+    return CheckResult("claude_cli", OK, f"{st.version} at {st.path}; send a message in the editor's Assistant card "
+                                         "to check the login")
+
+
+@check("mcp_server")
+def _mcp_server(ctx: Context) -> CheckResult:
+    """Start the app's MCP server like Claude Code does (stdio) and list its tools."""
+    import subprocess
+    import tempfile
+
+    from lyric2resolve import project as proj
+    from lyric2resolve.claude_link import cli
+
+    with tempfile.TemporaryDirectory() as tmp:
+        words = proj.make_words([{"text": "hello", "start": 1.0, "end": 1.5}])
+        path = proj.save(proj.Project(name="verify", words=words, blocks=proj.blocks_by_line(words)),
+                         Path(tmp) / "verify" / proj.PROJECT_FILE)
+        srv = cli.mcp_config(path)["mcpServers"][cli.SERVER_NAME]
+        import os
+
+        env = {**os.environ, **srv["env"]}
+        msgs = [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
+                {"jsonrpc": "2.0", "method": "notifications/initialized"},
+                {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+                {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "get_project", "arguments": {}}}]
+        out = subprocess.run([srv["command"], *srv["args"]], input="".join(json.dumps(m) + "\n" for m in msgs),
+                             capture_output=True, text=True, encoding="utf-8", env=env, timeout=60,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        resp = [json.loads(x) for x in out.stdout.splitlines() if x.strip()]
+    if len(resp) != 3 or resp[2]["result"]["isError"]:
+        return CheckResult("mcp_server", FAIL, (out.stderr or out.stdout or "no answer").strip()[-300:])
+    return CheckResult("mcp_server", OK, f"{len(resp[1]['result']['tools'])} tools; get_project works")
+
+
 # Placeholders so the report shows what is still to come (later phases replace them).
 PENDING = {
     "blender_3_frame_render": "Phase 15",

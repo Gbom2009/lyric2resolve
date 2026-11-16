@@ -102,3 +102,14 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] The MP4 plays in **Rekordbox** and **Serato** with sound, in sync at start and end (docs/DJ_VIDEO_GUIDE.md section C).
 - [ ] NVENC is used when available (fast encode); otherwise libx264 (slower, same result).
 - [ ] Resolve Deliver settings from the DJ guide produce a file that plays on the decks.
+
+## Phase 17 — Assistant / Claude link (cloud-tested with a fake `claude` + the real CLI's event format, 2.1.325)
+- [ ] `python -m lyric2resolve claude status` finds your Claude Code (report the version and whether it is `claude.exe` or `claude.cmd`).
+- [ ] Editor Assistant card: first message gets an answer (= login OK). If not logged in: the card shows the login instructions.
+- [ ] A request that edits (e.g. merge two words) changes the lyrics live; Undo reverts it; no console window pops up.
+- [ ] Restart the launcher, ask about the previous message → the conversation continued (`claude_session.json` in the project folder).
+- [ ] Stop during an answer ends it within a few seconds (no leftover `claude`/`node` processes in Task Manager).
+- [ ] When the Pro limit is reached the card shows the limit notice (only if it happens naturally).
+- [ ] verify_local: `claude_cli` ok, `mcp_server` ok.
+- [ ] (optional) Blender MCP per docs/ASSISTANT.md.
+

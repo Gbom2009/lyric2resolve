@@ -145,3 +145,14 @@ legend { font-size: 12px; color: var(--muted); }
 [hidden] { display: none !important; }
 .btnlink { border: 1px solid var(--line); border-radius: 6px; padding: 5px 11px; color: var(--text); text-decoration: none; background: var(--panel); }
 #wave-timeline { min-height: 16px; }
+
+/* Assistant (Claude link) */
+#card-assistant textarea { width: 100%; font: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 6px; resize: vertical; }
+.asst-log { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.asst-log:empty { display: none; }
+.asst-msg { padding: 6px 9px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; }
+.asst-user { background: var(--block-active); align-self: flex-end; max-width: 90%; }
+.asst-assistant { background: var(--block-bg); }
+.asst-tool { color: var(--muted); font-family: var(--mono); font-size: 12px; padding: 0 9px; }
+.asst-note { color: var(--muted); font-size: 12.5px; padding: 0 9px; }
+.asst-error { border: 1px solid var(--flag); color: var(--flag); background: var(--panel); }

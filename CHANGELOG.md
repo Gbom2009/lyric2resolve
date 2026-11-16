@@ -3,6 +3,24 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 17 — Assistant: Claude Code inside the app (optional)
+**New**
+- **Assistant (Claude)** card at the top of the editor's side panel: type what you want ("make every chorus one word per block with a glowing style", "check the flagged words", "export both layouts") and Claude does it inside the app. Changes show up live in the lyrics and can be undone with Undo.
+- Uses the **real Claude Code CLI with your own login** (Claude Pro), no API key. The app never touches your login.
+- One conversation per project that continues after restarting the app. **New conversation** starts fresh. Each project folder gets a `CLAUDE.md` with the project's state plus a Notes part for decisions and style choices, so even a new session knows where things stand.
+- The app's own **MCP server** gives Claude tools for: project overview, blocks/words, merge/split/move, fix text/timing, gaps, sanity flags, section presets, styles and styling level, undo/redo, export, preview render + progress + cancel, textures and fonts.
+- Honest usage display: shows your Claude usage when the CLI reports it, and a clear notice when you hit the Pro limit. Clear instructions if Claude Code is not installed or not logged in.
+- Optional (off by default): register the community **Blender MCP** server so Claude can work in an open Blender. Rendering never depends on it.
+- New commands: `lyric2resolve claude status | ask <project.json> "…" | mcp-config <project.json> | reset <project.json>`.
+- verify_local: new checks `claude_cli` and `mcp_server`.
+- See `docs/ASSISTANT.md`.
+
+**What to test**
+- Editor → Assistant card shows "Claude Code 2.x". Send "Give me an overview of this project" → answer appears.
+- Ask "merge the first two words into one block" → the lyrics change; Undo reverts it.
+- Close and reopen the app, ask "what did I ask you before?" → it remembers.
+- Press Stop during a long answer → it stops.
+
 ## Phase 16 — Visual ideas, Claude Code prompts and project templates
 **New**
 - **Ideas** page (button in the editor; or `lyric2resolve ideas <project.json>`): a style brief for your song from the lyrics (themes and mood), BPM, key, energy and sections, with 2-3 visual concepts per section (neon grid, tunnel, liquid blob, particles, lava cracks, rain on glass, chrome, low-poly…) and text-animation suggestions. Each concept shows the render command for the matching scene template.

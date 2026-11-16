@@ -19,6 +19,8 @@ FPS_CHOICES = (23.976, 24.0, 25.0, 29.97, 30.0, 50.0, 60.0)
 STYLING_LEVELS = ("basic", "styled", "full")
 WHISPER_MODELS = ("tiny", "base", "small", "medium", "large-v2", "large-v3", "large-v3-turbo", "turbo")
 THEMES = ("default", "funqtion")
+# "" = CLI default. bypassPermissions is deliberately not offered.
+CLAUDE_PERMISSION_MODES = ("", "default", "acceptEdits", "plan", "dontAsk", "auto")
 
 
 @dataclass
@@ -28,6 +30,10 @@ class AppSettings:
     ffmpeg_path: str = ""
     blender_path: str = ""
     claude_cli_path: str = ""
+    # Claude link (optional Assistant; uses the user's own `claude` login)
+    claude_model: str = ""             # "" = the CLI's default
+    claude_permission_mode: str = ""   # "" = default (only the app's MCP tools are pre-allowed)
+    claude_blender_mcp: bool = False   # also register the community Blender MCP server
     # transcription
     whisper_model: str = "large-v3"
     device: str = "cuda"          # "cuda" | "cpu"
@@ -71,6 +77,8 @@ class AppSettings:
             reset("whisper_model", f"must be one of {WHISPER_MODELS}")
         if self.device not in ("cuda", "cpu"):
             reset("device", "must be 'cuda' or 'cpu'")
+        if self.claude_permission_mode not in CLAUDE_PERMISSION_MODES:
+            reset("claude_permission_mode", f"must be one of {CLAUDE_PERMISSION_MODES}")
         if self.theme not in THEMES:
             reset("theme", f"must be one of {THEMES}")
         for name in ("width", "height", "editor_port"):

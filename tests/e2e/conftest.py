@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import socket
 import threading
 import time
@@ -67,8 +68,11 @@ def browser():
     with pw.sync_playwright() as p:
         try:
             b = p.chromium.launch()
-        except Exception as exc:  # browser not installed
-            pytest.skip(f"chromium not available: {exc}")
+        except Exception as exc:  # browser not installed (or another Playwright version's browser)
+            exe = os.environ.get("L2R_CHROMIUM")  # e.g. a preinstalled chromium binary
+            if not exe:
+                pytest.skip(f"chromium not available: {exc}")
+            b = p.chromium.launch(executable_path=exe)
         yield b
         b.close()
 
