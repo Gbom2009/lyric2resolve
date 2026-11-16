@@ -3,6 +3,22 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 15 — Rendering the visuals (headless Blender) + DJ-ready MP4s
+**New**
+- `lyric2resolve render <project.json> --template <name> --render-preset <preset>`: builds the Blender scene, renders it in the background (no Blender window) and makes an MP4 with your full song inside, ready for Rekordbox/Serato.
+- Presets: **PREVIEW** (540p, 15 fps, first 25 s — check the look fast), **DRAFT** (720p), **STANDARD** (1080p Eevee, bloom, denoise), **HIGH**, **ULTRA** (4K Cycles) and **CUSTOM** (`--height`, `--engine`, `--samples`, `--fps`).
+- Before rendering it renders 3 test frames and tells you how long it will take and how much disk space the frames need; it warns when a render will take more than 3 hours and suggests time savers.
+- Progress with frames done and time left; Ctrl+C cancels and running the same command again **resumes** (finished frames are skipped).
+- Uses your NVIDIA GPU (OptiX, else CUDA) for Cycles, with a clear warning if it has to fall back to the CPU; finds Blender automatically and explains how to install it if missing.
+- Time savers: render only some sections (`--sections chorus drop`), render at 30 fps (`--fps 30`), or render 1080p and upscale in Resolve.
+- Every render folder gets a beginner-friendly `RENDER_INSTRUCTIONS.md` (settings and why, CLI and GUI steps, time estimates, preview first, resuming, importing into Resolve, troubleshooting).
+- MP4 format checked against the Rekordbox and Serato specs: H.264 High, constant frame rate, keyframe every ≤25 frames, AAC 320 kbps. Portrait/4K renders also get a `_dj.mp4` that fits Rekordbox (max 1920×1080).
+- `docs/DJ_VIDEO_GUIDE.md`: the exact Resolve Deliver settings for DJ use (16:9 and 9:16) and how to check sync on the decks.
+
+**What to test**
+- `render … --render-preset preview` on a real song → MP4 plays in Rekordbox/Serato with the song, in sync.
+- Start a STANDARD render, stop it with Ctrl+C, start again → it continues.
+
 ## Phase 14 — Audio-reactive Blender scenes
 **New**
 - `lyric2resolve visuals <project.json> --template <name>` prepares an audio-reactive Blender scene for your song, in 16:9 and 9:16, at your project's frame rate.

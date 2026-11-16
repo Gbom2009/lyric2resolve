@@ -14,6 +14,7 @@ APP_COMMANDS = {
     "assets": "lyric2resolve.assets",
     "export": "lyric2resolve.export",
     "visuals": "lyric2resolve.visuals.blender_gen",
+    "render": "lyric2resolve.render",
 }
 
 

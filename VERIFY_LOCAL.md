@@ -93,3 +93,12 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Open in Blender, play the timeline: motion and glow follow bass/mids/highs; sections change intensity.
 - [ ] Eevee viewport/render looks right (Eevee could not be tested in the cloud; Cycles was).
 - [ ] Packed textures: move the .blend to another folder → still textured.
+
+## Phase 15 — headless render (cloud-tested only with a fake Blender + real ffmpeg)
+- [ ] Blender is found automatically (or set `blender_path`); `render --render-preset preview` finishes and prints an estimate first.
+- [ ] Eevee render works headless on your GPU (Eevee could not run in the cloud).
+- [ ] `--engine CYCLES --render-preset custom`: "GPU rendering with OPTIX/CUDA" message; speed plausible.
+- [ ] Ctrl+C then the same command again resumes; the final frame count is complete.
+- [ ] The MP4 plays in **Rekordbox** and **Serato** with sound, in sync at start and end (docs/DJ_VIDEO_GUIDE.md section C).
+- [ ] NVENC is used when available (fast encode); otherwise libx264 (slower, same result).
+- [ ] Resolve Deliver settings from the DJ guide produce a file that plays on the decks.

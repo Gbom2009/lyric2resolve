@@ -20,8 +20,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 12 | Karaoke | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 13 | Texture sync + browser | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 14 | Blender generator | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 15 | Headless render + DJ mux | in progress | continuous-2026-11-16 / PR #2 |
-| 16 | Prompt generator + templates | planned | |
+| 15 | Headless render + DJ mux | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 16 | Prompt generator + templates | in progress | continuous-2026-11-16 / PR #2 |
 | 17 | Claude link | planned | |
 | 18 | Settings UI / branding / batch / update banner | planned | |
 | 19 | Full test pass + docs | planned | |
@@ -43,10 +43,12 @@ Phase 11: done (export/{textformats,resolve_job}.py, export/resolve_template/lyr
 Phase 12: done (karaoke.py, karaoke endpoints in editor/app.py, static/karaoke.{html,css,js}, tests/test_karaoke.py + e2e/test_karaoke.py, tests/conftest.py isolates the data folder for every test).
 Phase 13: done (assets/textures.py, assets/textures/curation.json, /library page (static/library.{html,js}), tests/test_assets_textures.py).
 Phase 14: done (visuals/{bands,mapping,procedural,blender_gen}.py, visuals/blender_template/l2r_scene.py (5 templates), `visuals` CLI, tests/test_visuals.py; CI job 'blender' installs bpy 5.3 and builds all templates).
-Phase 15 (render): next → render/{blender,presets,runner,mux,instructions}.py, tests/test_render.py; verify Rekordbox/Serato video specs first.
+Phase 15: done (render/{presets,blender,runner,mux,instructions,__init__}.py, `render` CLI, tests/data/fake_blender.py, tests/test_render.py, docs/DJ_VIDEO_GUIDE.md).
+Phase 16 (prompts + templates): next → visuals/{brief,prompts}.py, templates.py, static/ideas.js (+ /ideas page or editor panel), tests/test_prompts_templates.py.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- Render: scene rebuilt per preset (curves must match the render fps); Blender args order: file, -P setup, -s/-e/-a, then `--` job (Blender ignores args after `--`). Resume = use_overwrite off + only missing frame ranges requested. Estimate = 3 middle frames into `_estimate/` (deleted). DJ encode: H.264 High yuv420p CFR, GOP ≤25, AAC 320k 48k, faststart; `_dj.mp4` copy fits 1920x1080 (Rekordbox limit). NVENC tried first, falls back to libx264.
 - Blender scenes: curves keyframed as custom props on an empty `L2R_Controller` (fast keyframe_points.foreach_set; slotted-action compatible for 4.4/5.x), all reactive values are simple-expression drivers on it (no Python auto-run needed). Bloom via compositor Glare (5.x: node group + `inputs['Type']='Bloom'`). Textures packed into the .blend. Verified with the bpy 5.3 wheel (Python 3.13) incl. Cycles CPU renders.
 - Textures: Poly Haven + ambientCG have no per-asset license field; both are site-wide CC0, so the sync requires 'CC0' on each site's license page (checked every sync) and records CC0 per asset. Poly Haven files verified by md5, ambientCG zips by size + testzip; zips extracted flat (images only). Default 1k.
 - Karaoke audio: both stems decoded to AudioBuffers and started on the same AudioContext time (sample-accurate sync); gain nodes with setTargetAtTime for click-free fades. Playlists in `<data>/settings/karaoke_playlists.json`.
