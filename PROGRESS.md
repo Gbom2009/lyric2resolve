@@ -6,7 +6,7 @@ MODE: gated
 | # | Phase | Status | Branch / PR |
 |---|-------|--------|-------------|
 | 0 | Planning docs | merged (initial commit on main) | main |
-| 1 | Skeleton + launcher/updater | PR open (draft until CI green) | phase-01-launcher-updater / PR #1 |
+| 1 | Skeleton + launcher/updater | PR open — ready, waiting for user test | phase-01-launcher-updater / PR #1 |
 | 2 | Setup script + verify_local + settings | planned | |
 | 3 | Audio inputs / alignment / instrumental | planned | |
 | 4 | Transcription + project JSON | planned | |
@@ -36,8 +36,9 @@ Phase 1 (branch `phase-01-launcher-updater`, PR #1):
 - [x] Tkinter UI `updater/ui.py` + `launcher.pyw`
 - [x] install.ps1/install.bat + INSTALL.md + shortcuts
 - [x] CI (Linux 3.11/3.12 + Windows incl. `install.ps1 -NoShortcuts` smoke test), CHANGELOG, VERIFY_LOCAL.md
-- [ ] CI green → mark PR #1 ready → GATED stop, wait for user's Phase 1 test
-Next: if CI fails, read job logs (GitHub MCP `get_job_logs`) and fix on this branch.
+- [x] CI green (Linux 3.11/3.12 + Windows incl. install.ps1 smoke) → PR #1 marked ready
+- WAITING FOR USER: merge PR #1, first-time install (INSTALL.md), run Phase 1 TEST CHECKLIST (PHASES.md), reply.
+Next (after reply): pull main, record feedback here, branch `phase-02-setup-settings` from main, apply fixes first ("Fixes from testing phase 1"), then build Phase 2.
 
 ## Decisions
 - Python package in `src/lyric2resolve/` (src layout). Phase 1: launcher puts `src` on sys.path (no pip install needed); later phases may install it editable.
