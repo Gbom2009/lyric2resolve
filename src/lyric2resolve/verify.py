@@ -111,14 +111,22 @@ def _gpu(ctx: Context) -> CheckResult:
 @check("torch_cuda")
 def _torch(ctx: Context) -> CheckResult:
     info = setup_tools.probe_torch(Path(sys.executable))
-    problems = setup_tools.torch_problems(info, setup_tools.detect_gpu(ctx.probe))
+    gpu = setup_tools.detect_gpu(ctx.probe)
+    setup = "Run setup in the launcher" if gpu.apple else "setup_windows.bat"
+    problems = setup_tools.torch_problems(info, gpu)
     if problems:
-        return CheckResult("torch_cuda", FAIL, "; ".join(problems) + " - run the launcher's Update / "
-                           "setup_windows.bat (it reinstalls a matching set)")
+        return CheckResult("torch_cuda", FAIL, "; ".join(problems) + f" - run the launcher's Update / {setup} "
+                           "(it reinstalls a matching set)")
     try:
         import torch
     except ImportError:
-        return CheckResult("torch_cuda", FAIL, "torch not installed - run setup_windows.bat")
+        return CheckResult("torch_cuda", FAIL, f"torch not installed - {setup}")
+    if gpu.apple:
+        mps = getattr(torch.backends, "mps", None)
+        if not (mps and mps.is_available()):
+            return CheckResult("torch_cuda", WARN, f"torch {torch.__version__} but the Mac GPU (MPS) is not "
+                                                   "available (CPU only) - macOS 12.3+ and an M chip needed")
+        return CheckResult("torch_cuda", OK, f"torch {torch.__version__}, Metal (MPS) on {gpu.name}")
     if not torch.cuda.is_available():
         return CheckResult("torch_cuda", WARN, f"torch {torch.__version__} but CUDA not available (CPU only)")
     return CheckResult("torch_cuda", OK, f"torch {torch.__version__}, CUDA {torch.version.cuda}, "
@@ -199,6 +207,72 @@ def _separation(ctx: Context) -> CheckResult:
         return CheckResult("vocal_separation", OK, f"{backend.model}: {v.name}, {i.name}")
 
 
+@check("mac_whisper_mlx")
+def _mlx(ctx: Context) -> CheckResult:
+    """Mac: is MLX Whisper installed, and does the app pick it? (Windows/Linux: skipped.)"""
+    if sys.platform != "darwin":
+        return CheckResult("mac_whisper_mlx", SKIP, "Mac only")
+    import importlib.util
+
+    from lyric2resolve.settings import load_settings
+    from lyric2resolve.transcription import choose_backend
+
+    if importlib.util.find_spec("mlx_whisper") is None:
+        return CheckResult("mac_whisper_mlx", WARN, "mlx-whisper not installed - Whisper runs on the CPU (slower). "
+                                                    "Run setup in the launcher.")
+    s = load_settings()[0]
+    backend = choose_backend(s.device)
+    if backend != "mlx":
+        return CheckResult("mac_whisper_mlx", WARN, f"installed, but device is '{s.device}' - set Whisper device "
+                                                    "to 'mps' in Settings to use the M chip")
+    return CheckResult("mac_whisper_mlx", OK, f"MLX Whisper, model {s.whisper_model}")
+
+
+@check("video_encoder")
+def _video_encoder(ctx: Context) -> CheckResult:
+    """Which H.264 encoder renders use here (NVENC / VideoToolbox / libx264), with a 1-second test encode."""
+    import subprocess
+    import tempfile
+
+    from lyric2resolve.render import mux
+    from lyric2resolve.settings import load_settings
+
+    ff = setup_tools.find_tool("ffmpeg", load_settings()[0].ffmpeg_path)
+    if not ff:
+        return CheckResult("video_encoder", SKIP, "ffmpeg not found")
+    enc = mux.pick_encoder(str(ff))
+    if enc == "libx264":
+        return CheckResult("video_encoder", OK, "libx264 (software; no hardware H.264 encoder found)")
+    if ctx.quick:
+        return CheckResult("video_encoder", OK, f"{enc} listed (test encode skipped: --quick)")
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "t.mp4"
+        extra = (["-q:v", "65", "-allow_sw", "1"] if enc == "h264_videotoolbox" else [])
+        proc = subprocess.run([str(ff), "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i",
+                               "testsrc=size=640x360:rate=25:duration=1", "-pix_fmt", "yuv420p", "-c:v", enc,
+                               *extra, str(out)], capture_output=True, text=True, timeout=120)
+        ok = proc.returncode == 0 and out.is_file() and out.stat().st_size > 0
+    if not ok:
+        return CheckResult("video_encoder", WARN, f"{enc} is listed but failed a test encode - the app falls back "
+                                                  f"to libx264 (slower): {proc.stderr.strip()[-200:]}")
+    return CheckResult("video_encoder", OK, f"{enc} (hardware) works")
+
+
+@check("resolve_scripts_folder")
+def _resolve_scripts(ctx: Context) -> CheckResult:
+    """Where the Resolve timeline script goes (Workspace > Scripts) - and whether Resolve made that folder."""
+    from lyric2resolve.export import resolve_job
+
+    d = resolve_job.resolve_scripts_dir()
+    if (d / resolve_job.SCRIPT_NAME).is_file():
+        return CheckResult("resolve_scripts_folder", OK, f"script installed in {d}")
+    support = d.parents[2] if len(d.parents) > 2 else d
+    if support.is_dir():
+        return CheckResult("resolve_scripts_folder", OK, f"{d} (script is installed at the first Resolve export)")
+    return CheckResult("resolve_scripts_folder", WARN, f"{support} not found - is DaVinci Resolve installed and "
+                                                       "started once? (the export makes the folder anyway)")
+
+
 TINY_CLIP_WORDS = ("hello", "world", "sing", "song", "together", "tonight")
 
 
@@ -211,7 +285,10 @@ def _whisper_load(ctx: Context) -> CheckResult:
     eng = engine_from_settings()
     eng.model()
     ctx.whisper = eng  # type: ignore[attr-defined]  # reused by the next check
-    return CheckResult("whisper_model_load", OK, f"{eng.opt.model} on {eng.opt.device}/{eng.opt.compute_type}")
+    where = "MLX (M chip)" if getattr(eng.opt, "backend", "") == "mlx" else f"{eng.opt.device}/{eng.opt.compute_type}"
+    if getattr(eng, "fallback_reason", ""):
+        return CheckResult("whisper_model_load", WARN, f"{eng.opt.model}: {eng.fallback_reason}")
+    return CheckResult("whisper_model_load", OK, f"{eng.opt.model} on {where}")
 
 
 @check("whisper_tiny_clip")

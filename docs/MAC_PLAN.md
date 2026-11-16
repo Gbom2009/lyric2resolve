@@ -1,6 +1,6 @@
 # lyric2resolve for Mac (Apple Silicon M1–M4) — plan
 
-Status: phases 1-2 merged (PRs #10, #11), `mac-release` created; phase 3 (MLX Whisper) PR #12; phase 4 (rendering: VideoToolbox, Metal, 8 GB presets) in progress. The macOS CI job is cancelled by GitHub on this account (billing/minutes): the user chose to continue with the MacBook as the Mac test. Branch `mac-app`. The Windows app keeps working exactly as it is:
+Status: phases 1-2 merged (PRs #10, #11), `mac-release` created; phase 3 (MLX Whisper) merged (#12); phase 4 (rendering: VideoToolbox, Metal, 8 GB presets) PR #13; phase 5 (integration) branch `mac-integration`. The macOS CI job is cancelled by GitHub on this account (billing/minutes): the user chose to continue with the MacBook as the Mac test. Branch `mac-app`. The Windows app keeps working exactly as it is:
 one code base, with Mac-specific parts behind the same small interfaces (like the GPU/Whisper/ffmpeg ones already are).
 
 ## Goal

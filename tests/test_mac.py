@@ -246,3 +246,109 @@ def test_metal_cpu_fallback_message_on_mac(monkeypatch):
     dev, msg = blender.choose_device({"backends": {}})
     assert dev == "CPU" and "Metal" in msg and "NVIDIA" not in msg
     assert blender.choose_device({"backends": {"METAL": ["Apple M1"]}})[0] == "METAL"
+
+
+# ------------------------------------------------------------------ phase 5: Mac integration
+
+def test_install_fonts_on_mac_copies_to_library_fonts(tmp_path, monkeypatch):
+    from lyric2resolve.assets import fonts
+
+    monkeypatch.setattr(fonts.sys, "platform", "darwin")
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path / "home"))
+    root = tmp_path / "fonts"
+    (root / "custom").mkdir(parents=True)
+    (root / "custom" / "Mine-Bold.otf").write_bytes(b"OTTO-font")
+    assert fonts.user_fonts_dir() == tmp_path / "home" / "Library" / "Fonts"
+    assert fonts.install_fonts(root, notify=lambda: None) == ["Mine-Bold.otf"]  # no registry on a Mac
+    assert (tmp_path / "home" / "Library" / "Fonts" / "Mine-Bold.otf").read_bytes() == b"OTTO-font"
+    assert fonts.user_fonts_dir({"LOCALAPPDATA": "C:/L"}, "win32") == Path("C:/L") / "Microsoft" / "Windows" / "Fonts"
+
+
+def test_font_install_endpoint(tmp_path, monkeypatch):
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+
+    from lyric2resolve import project as proj
+    from lyric2resolve.assets import fonts
+    from lyric2resolve.editor.app import EditorSession, create_app
+
+    words = proj.make_words([{"text": "hi", "start": 0.5, "end": 1.0}])
+    s = EditorSession(proj.save(proj.Project(name="t", words=words, blocks=proj.blocks_by_line(words)),
+                                tmp_path / "p" / proj.PROJECT_FILE))
+    c = TestClient(create_app(s, fonts_root=tmp_path / "fonts"))
+    monkeypatch.setattr(fonts, "install_fonts", lambda root: ["A.ttf", "B.otf"])
+    r = c.post("/api/fonts/install")
+    assert r.status_code == 200 and r.json()["installed"] == 2 and "Restart DaVinci Resolve" in r.json()["message"]
+
+    def refuse(root):
+        raise RuntimeError("only supported on Windows and macOS")
+
+    monkeypatch.setattr(fonts, "install_fonts", refuse)
+    assert c.post("/api/fonts/install").status_code == 400
+
+
+def test_verify_mac_checks(tmp_path, monkeypatch):
+    import importlib.util
+
+    from lyric2resolve import setup_tools, verify
+    from lyric2resolve.export import resolve_job
+    from lyric2resolve.render import mux
+
+    ctx = verify.Context(repo=Path(__file__).resolve().parents[1], quick=True)
+
+    def one(name):
+        (res,) = verify.run_checks(ctx, only={name})
+        return res
+
+    monkeypatch.setattr(verify.sys, "platform", "linux")
+    assert one("mac_whisper_mlx").status == verify.SKIP
+    monkeypatch.setattr(verify.sys, "platform", "darwin")
+    real_find = importlib.util.find_spec
+    monkeypatch.setattr(importlib.util, "find_spec", lambda n, *a: None if n == "mlx_whisper" else real_find(n, *a))
+    assert one("mac_whisper_mlx").status == verify.WARN
+
+    monkeypatch.setattr(setup_tools, "find_tool", lambda name, configured="", **kw: Path("/opt/homebrew/bin/ffmpeg"))
+    monkeypatch.setattr(mux, "pick_encoder", lambda ff, platform=None, has=None: "h264_videotoolbox")
+    r = one("video_encoder")
+    assert r.status == verify.OK and "h264_videotoolbox" in r.detail
+    monkeypatch.setattr(mux, "pick_encoder", lambda ff, platform=None, has=None: "libx264")
+    assert "libx264" in one("video_encoder").detail
+
+    scripts = tmp_path / "Blackmagic Design" / "DaVinci Resolve" / "Fusion" / "Scripts" / "Utility"
+    monkeypatch.setattr(resolve_job, "resolve_scripts_dir", lambda env=None, platform=None: scripts)
+    assert one("resolve_scripts_folder").status == verify.WARN
+    (tmp_path / "Blackmagic Design" / "DaVinci Resolve").mkdir(parents=True)
+    assert one("resolve_scripts_folder").status == verify.OK
+
+
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="process groups are Mac/Linux")
+def test_claude_stop_ends_child_processes_too(tmp_path):
+    """Stop on a Mac must also end the MCP server that claude started (same process group)."""
+    import os
+    import time
+
+    from lyric2resolve.claude_link.cli import ClaudeRun
+
+    pidfile = tmp_path / "child.pid"
+    script = f"import subprocess,sys,time; p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(60)']); " \
+             f"open(r'{pidfile}','w').write(str(p.pid)); time.sleep(60)"
+    run = ClaudeRun([sys.executable, "-c", script], "", tmp_path).start()
+    for _ in range(100):
+        if pidfile.exists() and pidfile.read_text():
+            break
+        time.sleep(0.05)
+    child = int(pidfile.read_text())
+    run.cancel()
+    assert run.wait(10)
+    for _ in range(100):
+        try:
+            os.kill(child, 0)
+        except ProcessLookupError:
+            break
+        try:  # reap if it became our zombie (it is not our child, so usually not needed)
+            os.waitpid(child, os.WNOHANG)
+        except ChildProcessError:
+            pass
+        time.sleep(0.05)
+    else:
+        pytest.fail("the child process survived Stop")

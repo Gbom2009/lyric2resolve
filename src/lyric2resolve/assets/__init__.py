@@ -13,7 +13,7 @@ def main(argv: list[str]) -> int:
     s.add_argument("--fonts", action="store_true")
     s.add_argument("--textures", action="store_true")
     s.add_argument("--resolution", default="1k", choices=["1k", "2k", "4k"], help="texture resolution (default 1k)")
-    sub.add_parser("install-fonts", help="install downloaded + custom fonts for your Windows user")
+    sub.add_parser("install-fonts", help="install downloaded + custom fonts for your user (Windows / Mac)")
     sub.add_parser("list-fonts")
     args = ap.parse_args(argv)
     from . import fonts

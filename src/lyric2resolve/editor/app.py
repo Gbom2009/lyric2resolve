@@ -393,6 +393,17 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
 
         return {"fonts": fonts.list_fonts(_fonts_root())}
 
+    @app.post("/api/fonts/install")
+    def font_install():
+        from lyric2resolve.assets import fonts
+
+        try:
+            names = fonts.install_fonts(_fonts_root())
+        except (RuntimeError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"installed": len(names), "folder": str(fonts.user_fonts_dir()),
+                "message": f"Installed {len(names)} font files for your user. Restart DaVinci Resolve to see them."}
+
     @app.get("/api/fonts/file/{rel:path}")
     def font_file(rel: str):
         root = _fonts_root().resolve()

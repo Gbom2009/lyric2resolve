@@ -34,6 +34,7 @@ rest (several GB, takes a while). Then **Start editor**.
 - Whisper uses **large-v3-turbo** by default (fast on M chips, fits in 8 GB).
 - Visuals: start with **Preview**/**Draft** quality; long Standard renders get slow on a fanless Air.
 - Close other heavy apps while transcribing or rendering.
+- Lyric fonts in Resolve: Library page → Fonts → **Install fonts for Resolve**, then restart Resolve.
 
 ## Troubleshooting
 - Moved the `lyric2resolve` folder? Run `install.command` again (it remakes the app).
