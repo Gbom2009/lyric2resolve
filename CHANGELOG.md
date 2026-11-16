@@ -3,6 +3,16 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Fixes from testing (5) — "Library cublas64_12.dll is not found or cannot be loaded"
+**Fixed**
+- New project got through the vocal separation, then failed when Whisper started on the GPU: `cublas64_12.dll is not found`. Whisper's engine (CTranslate2) needs NVIDIA's cuBLAS 12 DLL, which it doesn't include itself.
+  - Whisper now looks in PyTorch's own folder. The CUDA 12 PyTorch builds already contain cuBLAS 12 and cuDNN 9, so nothing extra is downloaded.
+  - With the CUDA 13 PyTorch build, which only has cuBLAS 13, setup now installs the small `nvidia-cublas-cu12` package (~550 MB). This happens automatically on the next **Update now**.
+  - Safety net: if the GPU libraries still can't load, Whisper runs on the **CPU** instead of failing. That is much slower, and the log says why and how to fix it.
+
+**What to test**
+- Update now → New project with the same song → the log should NOT show "WARNING: GPU libraries could not be loaded". If it does, the project still completes (slowly); send me the warning.
+
 ## Fixes from testing (4) — vocal separation ("No module named 'audioread'")
 **Fixed**
 - New project with only a song (no acapella) failed in the vocal-separation step: `audio-separator: No module named 'audioread'`. The separation package needs `audioread` but doesn't install it itself; it used to come with librosa, and librosa 1.0 dropped it. It is now in the requirements, and the next **Update now** installs it.

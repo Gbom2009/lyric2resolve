@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -201,3 +202,89 @@ def test_real_whisper_tiny_clip():
     eng = tr.engine_from_settings()
     t = eng.transcribe(str(paths.code_dir() / "tests" / "data" / "tiny_vocal.wav"))
     assert "hello" in " ".join(w.text.lower() for w in t.words)
+
+
+# ------------------------------------------------------------------ Fixes from testing (5): cublas64_12.dll
+def test_cuda_dll_dirs_finds_torch_lib_and_nvidia_wheels(tmp_path):
+    from lyric2resolve.transcription import engine
+
+    sp = tmp_path / "site-packages"
+    (sp / "torch" / "lib").mkdir(parents=True)
+    (sp / "nvidia" / "cublas" / "bin").mkdir(parents=True)
+    (sp / "nvidia" / "cudnn" / "bin").mkdir(parents=True)
+    dirs = engine.cuda_dll_dirs([str(sp)])
+    assert dirs[0].endswith(str(Path("torch") / "lib")) and len(dirs) == 3
+    assert engine.add_cuda_dll_dirs(platform="linux") == []
+
+
+def test_add_cuda_dll_dirs_puts_them_on_path(tmp_path, monkeypatch):
+    import os
+
+    from lyric2resolve.transcription import engine
+
+    d = tmp_path / "site-packages" / "torch" / "lib"
+    d.mkdir(parents=True)
+    monkeypatch.setattr(engine, "cuda_dll_dirs", lambda site_dirs=None: [str(d)])
+    monkeypatch.setenv("PATH", "/usr/bin")
+    if not hasattr(os, "add_dll_directory"):
+        monkeypatch.setattr(os, "add_dll_directory", lambda p: None, raising=False)
+    assert engine.add_cuda_dll_dirs(platform="win32") == [str(d)]
+    assert os.environ["PATH"].startswith(str(d))
+    engine.add_cuda_dll_dirs(platform="win32")
+    assert os.environ["PATH"].count(str(d)) == 1
+
+
+def test_engine_falls_back_to_cpu_when_gpu_libraries_missing(monkeypatch):
+    """The user's error: 'Library cublas64_12.dll is not found or cannot be loaded' on first use."""
+    from lyric2resolve.transcription import engine
+
+    loads = []
+
+    class FakeModel:
+        def __init__(self, device):
+            self.device = device
+
+        def transcribe(self, *a, **k):
+            if self.device == "cuda":
+                raise RuntimeError("Library cublas64_12.dll is not found or cannot be loaded")
+            return type("R", (), {"segments": [], "language": "en"})()
+
+    eng = engine.StableTsEngine(engine.EngineOptions(device="cuda", compute_type="float16"))
+    monkeypatch.setattr(eng, "_load", lambda device, ct: loads.append((device, ct)) or FakeModel(device))
+    monkeypatch.setattr(engine, "add_cuda_dll_dirs", lambda platform=None: [])
+    t = eng.transcribe("x.wav")
+    assert loads == [("cuda", "float16"), ("cpu", "int8")]
+    assert "cublas64_12.dll" in eng.fallback_reason and "CPU" in eng.fallback_reason
+    assert t.params["device"] == "cpu"
+    eng2 = engine.StableTsEngine(engine.EngineOptions(device="cuda"))
+    monkeypatch.setattr(eng2, "_load", lambda d, c: type("M", (), {"transcribe": lambda *a, **k: (_ for _ in ()).throw(
+        RuntimeError("some other error"))})())
+    with pytest.raises(RuntimeError, match="some other error"):  # unrelated errors are not hidden
+        eng2.transcribe("x.wav")
+
+
+def test_setup_plan_ensures_cublas12_on_windows_gpu(tmp_path):
+    import subprocess
+    import sys
+
+    from lyric2resolve import setup_tools
+
+    repo = Path(__file__).resolve().parents[1]
+    gpu = setup_tools.GpuInfo(True, cuda=(13, 0))
+    win = setup_tools.plan_setup(repo, Path("py"), gpu, pins=tmp_path / "p.txt", platform="win32")
+    flat = [" ".join(c) for c in win.commands]
+    i = next(i for i, c in enumerate(flat) if "--ensure-cuda12-libs" in c)
+    assert i > next(i for i, c in enumerate(flat) if "torch.txt" in c)
+    assert not any("--ensure-cuda12-libs" in " ".join(c) for c in
+                   setup_tools.plan_setup(repo, Path("py"), gpu, platform="linux").commands)
+    assert not any("--ensure-cuda12-libs" in " ".join(c) for c in
+                   setup_tools.plan_setup(repo, Path("py"), setup_tools.GpuInfo(), platform="win32").commands)
+    sp = tmp_path / "sp"
+    assert not setup_tools.has_cublas12([str(sp)])
+    (sp / "torch" / "lib").mkdir(parents=True)
+    (sp / "torch" / "lib" / "cublas64_12.dll").write_bytes(b"x")
+    assert setup_tools.has_cublas12([str(sp)])
+    out = subprocess.run([sys.executable, str(repo / "scripts" / "setup_update.py"), "--ensure-cuda12-libs"],
+                         capture_output=True, text=True)
+    if not sys.platform.startswith("win"):
+        assert out.returncode == 0 and "skipped" in out.stdout

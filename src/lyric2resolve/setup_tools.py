@@ -231,7 +231,8 @@ class SetupPlan:
 
 def plan_setup(repo: Path, python: Path, gpu: GpuInfo, mode: str = "full",
                torch_installed: bool = False, groups: tuple[str, ...] = GROUPS_FULL,
-               torch_broken: list[str] | None = None, pins: Path | None = None) -> SetupPlan:
+               torch_broken: list[str] | None = None, pins: Path | None = None,
+               platform: str | None = None) -> SetupPlan:
     """Pip commands per requirement group.
 
     torch: installed once as a matching torch/torchaudio/torchvision set from the CUDA index; skipped when
@@ -269,6 +270,10 @@ def plan_setup(repo: Path, python: Path, gpu: GpuInfo, mode: str = "full",
                 plan.commands.append([str(python), str(repo / "scripts" / "setup_update.py"), "--write-pins",
                                       str(pins)])
                 pinned = True
+            if (platform or sys.platform).startswith("win") and tag.startswith("cu"):
+                # faster-whisper's CTranslate2 needs cublas64_12.dll; CUDA 13 torch only ships cublas64_13.dll
+                plan.commands.append([str(python), str(repo / "scripts" / "setup_update.py"), "--ensure-cuda12-libs"]
+                                     + ([str(pins)] if pins is not None else []))
         else:
             if group in OPTIONAL_GROUPS:
                 plan.optional.append(len(plan.commands))
@@ -294,3 +299,17 @@ def run_plan(plan: SetupPlan, runner: Callable[[list[str]], int], log: Callable[
             log(f"ERROR: step failed (exit {code}).")
             return False
     return True
+
+
+CUBLAS12_PACKAGE = "nvidia-cublas-cu12"
+
+
+def has_cublas12(site_dirs: list[str]) -> bool:
+    """True when cublas64_12.dll is available from torch's lib folder or an nvidia-cublas-cu12 wheel."""
+    for sp in site_dirs:
+        for cand in (Path(sp) / "torch" / "lib" / "cublas64_12.dll", Path(sp) / "nvidia" / "cublas" / "bin" /
+                     "cublas64_12.dll"):
+            if cand.is_file():
+                return True
+    return False
+

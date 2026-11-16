@@ -29,7 +29,25 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--update", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--write-pins", type=Path, help=argparse.SUPPRESS)  # internal plan step
+    ap.add_argument("--ensure-cuda12-libs", nargs="?", const="", default=None, help=argparse.SUPPRESS)
     args = ap.parse_args(argv)
+
+    if args.ensure_cuda12_libs is not None:  # internal plan step (Windows + NVIDIA)
+        import site
+
+        if not sys.platform.startswith("win"):
+            print("cuBLAS 12 step: only needed on Windows - skipped.")
+            return 0
+
+        sites = [p for p in site.getsitepackages() + sys.path if p and p.lower().endswith("site-packages")]
+        if setup_tools.has_cublas12(sites):
+            print("cuBLAS 12 for Whisper: already available (from torch).")
+            return 0
+        print("Installing cuBLAS 12 for Whisper (the CUDA 13 PyTorch build does not include it, ~500 MB)...")
+        cmd = [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", setup_tools.CUBLAS12_PACKAGE]
+        if args.ensure_cuda12_libs:
+            cmd += ["-c", args.ensure_cuda12_libs]
+        return subprocess.call(cmd, cwd=str(REPO))
 
     if args.write_pins:  # runs in a fresh process after the torch step, so it sees the new versions
         info = setup_tools.probe_torch(Path(sys.executable))
