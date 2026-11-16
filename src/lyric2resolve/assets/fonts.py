@@ -266,11 +266,14 @@ def list_fonts(root: Path | None = None) -> list[dict]:
     return out
 
 
-# ------------------------------------------------------------------ Windows install (per user)
-def user_fonts_dir(env: dict | None = None) -> Path:
+# ------------------------------------------------------------------ per-user install (Windows + Mac)
+def user_fonts_dir(env: dict | None = None, platform: str | None = None) -> Path:
+    """Fonts folder of the current user: Windows %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts, Mac ~/Library/Fonts."""
     import os
 
     env = os.environ if env is None else env
+    if (platform or sys.platform) == "darwin":
+        return Path.home() / "Library" / "Fonts"
     return Path(env.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))) / "Microsoft" / "Windows" / "Fonts"
 
 
@@ -288,7 +291,8 @@ class Registry:
 
 def install_fonts(root: Path | None = None, target: Path | None = None, registry=None,
                   notify: Callable[[], None] | None = None) -> list[str]:
-    """Copy library + custom fonts to the per-user Windows fonts folder and register them.
+    """Copy library + custom fonts to the current user's fonts folder (Windows: also registered; Mac: macOS picks
+    up ~/Library/Fonts by itself).
 
     Returns the installed file names. Resolve must be restarted to see new fonts.
     """
@@ -297,9 +301,10 @@ def install_fonts(root: Path | None = None, target: Path | None = None, registry
     root = root or fonts_dir()
     target = target or user_fonts_dir()
     if registry is None:
-        if not sys.platform.startswith("win"):
-            raise RuntimeError("Installing fonts is only supported on Windows")
-        registry = Registry()
+        if sys.platform.startswith("win"):
+            registry = Registry()
+        elif sys.platform != "darwin":
+            raise RuntimeError("Installing fonts is only supported on Windows and macOS")
     target.mkdir(parents=True, exist_ok=True)
     installed = []
     files = [root / x["path"] for f in load_manifest(root).get("families", []) for x in f.get("files", [])]
@@ -312,8 +317,9 @@ def install_fonts(root: Path | None = None, target: Path | None = None, registry
         dst = target / src.name
         if not dst.exists() or _sha(dst) != _sha(src):
             shutil.copy2(src, dst)
-        kind = "OpenType" if src.suffix.lower() == ".otf" else "TrueType"
-        registry.set(f"{src.stem} ({kind})", str(dst))
+        if registry is not None:
+            kind = "OpenType" if src.suffix.lower() == ".otf" else "TrueType"
+            registry.set(f"{src.stem} ({kind})", str(dst))
         installed.append(src.name)
     if notify:
         notify()

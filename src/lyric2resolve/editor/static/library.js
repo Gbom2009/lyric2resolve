@@ -50,5 +50,16 @@
   $("#tex-cat").onchange = renderTextures;
   $("#font-search").oninput = renderFonts;
   $("#font-sample").oninput = renderFonts;
+  $("#font-install").onclick = async () => {
+    const b = $("#font-install"), msg = $("#font-install-msg");
+    b.disabled = true;
+    msg.textContent = "Installing…";
+    try {
+      const r = await fetch("/api/fonts/install", { method: "POST" });
+      const d = await r.json();
+      msg.textContent = r.ok ? d.message : `Could not install: ${d.detail}`;
+    } catch (e) { msg.textContent = `Could not install: ${e}`; }
+    b.disabled = false;
+  };
   window.LIB = { ready: boot() };
 })();

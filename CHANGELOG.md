@@ -3,6 +3,19 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Mac (Apple Silicon) — phase 5: Mac integration
+**New**
+- **Install fonts for Resolve** button on the Library page (Fonts tab): it copies the app's fonts to your user's fonts folder, so Resolve can use them. On Windows it uses the same per-user install as before; on a Mac the fonts go to `~/Library/Fonts`. Restart Resolve afterwards.
+- `verify_local` checks for the Mac: PyTorch on the Mac GPU (MPS), MLX Whisper, the video encoder (VideoToolbox/NVENC with a 1-second test encode) and the Resolve scripts folder. The Whisper check says when Whisper had to fall back to the CPU.
+- Help texts tell Mac users how to install ffmpeg (Homebrew), Claude Code and Blender.
+
+**Fixed (Mac/Linux)**
+- **Stop** in the Assistant now also ends the helper process that Claude Code started, as it already did on Windows.
+
+**What to test**
+- Library → Fonts → **Install fonts for Resolve**, restart Resolve: the lyric fonts are in the Text+ font list (Windows and Mac).
+- Mac: run `scripts/verify_local.py` and send REPORT_LOCAL.md.
+
 ## Mac (Apple Silicon) — phase 4: rendering on the Mac
 **New (Mac)**
 - Videos are encoded with Apple's hardware encoder (**VideoToolbox**): much faster than before, same Rekordbox/Serato-ready format. If it can't be used, the app falls back to the normal encoder.

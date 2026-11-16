@@ -35,7 +35,8 @@ MCP_CONFIG_FILE = ".l2r_mcp.json"
 INSTALL_HELP = (
     "The Claude Code CLI was not found. The app works fine without it; the Assistant is optional.\n"
     "To use it: install Claude Code (https://code.claude.com/docs - Windows: run "
-    "`irm https://claude.ai/install.ps1 | iex` in PowerShell, or `npm install -g @anthropic-ai/claude-code`), "
+    "`irm https://claude.ai/install.ps1 | iex` in PowerShell; Mac: run "
+    "`curl -fsSL https://claude.ai/install.sh | bash` in Terminal; or `npm install -g @anthropic-ai/claude-code`), "
     "open a new terminal, run `claude` once and log in with your Claude account. "
     "If it is installed somewhere unusual, set its path in Settings (claude_cli_path).")
 LOGIN_HELP = (
@@ -97,6 +98,16 @@ def cli_version(exe: Path, timeout: float = 20) -> str:
     except (OSError, subprocess.SubprocessError):
         return ""
     return (out.stdout or out.stderr or "").strip().splitlines()[0] if (out.stdout or out.stderr) else ""
+
+
+def _killpg(pid: int) -> None:
+    """Mac/Linux: SIGTERM the whole process group (claude + its MCP server)."""
+    import signal
+
+    try:
+        os.killpg(os.getpgid(pid), signal.SIGTERM)
+    except (OSError, AttributeError):
+        pass
 
 
 @dataclass
@@ -265,7 +276,9 @@ class ClaudeRun:
         try:
             self.proc = subprocess.Popen(self.args, cwd=str(self.cwd), env=self.env, stdin=subprocess.PIPE,
                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                                         encoding="utf-8", errors="replace", creationflags=_popen_flags())
+                                         encoding="utf-8", errors="replace", creationflags=_popen_flags(),
+                                         # Mac/Linux: own process group, so Stop also ends the MCP server child
+                                         start_new_session=not sys.platform.startswith("win"))
         except OSError as exc:
             self._emit(Event("error", f"could not start Claude Code: {exc}\n{INSTALL_HELP}"))
             self.returncode = -1
@@ -313,6 +326,8 @@ class ClaudeRun:
                 # claude.cmd -> node -> MCP server: end the whole tree, not only cmd.exe
                 subprocess.run(["taskkill", "/F", "/T", "/PID", str(self.proc.pid)], capture_output=True,
                                creationflags=_popen_flags())
+            else:
+                _killpg(self.proc.pid)
             self.proc.terminate()
             try:
                 self.proc.wait(timeout=5)

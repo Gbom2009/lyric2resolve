@@ -200,3 +200,9 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] A Preview render finishes; the render log says "GPU rendering with METAL" for Cycles (Eevee also uses Metal).
 - [ ] The MP4 was made with VideoToolbox (fast); `ffprobe` / the DJ check shows H.264 High, yuv420p, AAC. It plays in Rekordbox/Serato on the Mac.
 - [ ] Draft render time for a ~4 min song on your Air (does it slow down after a while — fanless?).
+
+## Mac (Apple Silicon) — phase 5: integration
+- [ ] Library → Fonts → Install fonts for Resolve → message "Installed N font files"; the fonts are in ~/Library/Fonts; after restarting Resolve they are in the Text+ font list.
+- [ ] `.venv/bin/python scripts/verify_local.py` → REPORT_LOCAL.md: torch_cuda "Metal (MPS)", mac_whisper_mlx ok, video_encoder "h264_videotoolbox (hardware) works", resolve_scripts_folder ok, claude_cli found.
+- [ ] Assistant: send a message, then Stop → no leftover `python … mcp_server` process in Activity Monitor.
+- [ ] Windows: Library → Install fonts for Resolve still works (fonts in Resolve after restart).

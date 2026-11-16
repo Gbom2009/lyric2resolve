@@ -20,7 +20,7 @@ Options:
   timeline inside Resolve with real **Text+** clips and your style preset/animations.
 - Keep the Text titles and restyle them all at once: select all titles on the track, then change font/size/colour in
   the Inspector (multi-selection edits apply to every selected title).
-- Missing font? Run `lyric2resolve assets install-fonts` and restart Resolve.
+- Missing font? Library page → Fonts → **Install fonts for Resolve** (or `lyric2resolve assets install-fonts`), then restart Resolve. Mac: fonts go to `~/Library/Fonts`.
 
 ### If the song shows as "media offline"
 The FCPXML points at the original song file. If you moved it, right-click the clip in the Media Pool → *Relink
