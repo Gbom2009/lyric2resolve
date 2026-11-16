@@ -21,3 +21,6 @@ markers = [
     "local: needs the user's Windows PC (GPU, Whisper, Blender, Resolve); skipped in CI",
 ]
 addopts = "-m 'not local'"
+
+[tool.setuptools.package-data]
+lyric2resolve = ["editor/static/*", "editor/static/vendor/*", "export/resolve_template/*.py", "visuals/blender_template/*.py"]

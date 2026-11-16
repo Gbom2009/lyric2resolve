@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>lyric2resolve karaoke</title>
+  <link rel="stylesheet" href="/static/karaoke.css">
+  <link rel="stylesheet" href="/theme.css">
+</head>
+<body>
+  <main id="stage" class="stage">
+    <div id="song-title" class="song-title"></div>
+    <div id="countdown" class="countdown" hidden>
+      <div class="cd-label" id="cd-label">Instrumental</div>
+      <div class="cd-num" id="cd-num">8</div>
+      <div class="cd-bar"><div id="cd-fill"></div></div>
+    </div>
+    <div id="line-current" class="line current" aria-live="off"></div>
+    <div id="line-next" class="line next"></div>
+    <div id="empty" class="empty">Add songs to the queue (Q) and press Space.</div>
+  </main>
+
+  <div class="controls" id="controls">
+    <button id="k-prev" title="Previous song (P)">⏮</button>
+    <button id="k-play" class="primary" title="Play / pause (Space)">▶</button>
+    <button id="k-next" title="Next song (N)">⏭</button>
+    <span class="time"><span id="k-time">0:00</span> / <span id="k-dur">0:00</span></span>
+    <input id="k-seek" type="range" min="0" max="1000" value="0" aria-label="Position">
+    <label class="vol">Vocals <input id="k-vocals" type="range" min="0" max="100" value="0" aria-label="Vocal volume"> <span id="k-vocals-val">0%</span></label>
+    <label class="vol">Music <input id="k-music" type="range" min="0" max="100" value="100" aria-label="Music volume"></label>
+    <button id="k-queue" title="Queue (Q)">Queue</button>
+    <button id="k-full" title="Fullscreen (F)">⛶</button>
+    <a href="/" class="back" title="Back to the editor">Editor</a>
+  </div>
+
+  <aside id="queue" class="queue" hidden>
+    <div class="q-head">
+      <select id="q-list" aria-label="Playlist"></select>
+      <button id="q-new" title="New playlist">+ list</button>
+    </div>
+    <h3>Queue</h3>
+    <ol id="q-items" class="q-items"></ol>
+    <h3>Add songs</h3>
+    <input id="q-search" type="search" placeholder="Search projects…" aria-label="Search projects">
+    <ul id="q-projects" class="q-projects"></ul>
+    <p class="hint">Space play/pause · N/P next/previous · ↑/↓ vocals · ←/→ 5 s · F fullscreen · Q queue · Tip: open this page in a second window and drag it to the TV/projector.</p>
+  </aside>
+
+  <script src="/static/karaoke.js"></script>
+</body>
+</html>

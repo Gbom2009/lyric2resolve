@@ -1,0 +1,2 @@
+# Optional vocal separation fallback (only used when no acapella is given).
+audio-separator[gpu]>=0.30

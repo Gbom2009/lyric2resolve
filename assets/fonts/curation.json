@@ -1,0 +1,316 @@
+{
+ "_comment": "Curated Google Fonts for lyric videos. Licenses are re-verified from METADATA.pb at every sync; only OFL / APACHE2 are installed. Checked 2026-11-16.",
+ "source": "https://github.com/google/fonts",
+ "families": [
+  {
+   "family": "Bebas Neue",
+   "repo_dir": "ofl/bebasneue",
+   "category": "display",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Anton",
+   "repo_dir": "ofl/anton",
+   "category": "display",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Oswald",
+   "repo_dir": "ofl/oswald",
+   "category": "condensed",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Poppins",
+   "repo_dir": "ofl/poppins",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Archivo Black",
+   "repo_dir": "ofl/archivoblack",
+   "category": "display",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Bungee",
+   "repo_dir": "ofl/bungee",
+   "category": "display",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Righteous",
+   "repo_dir": "ofl/righteous",
+   "category": "display",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Teko",
+   "repo_dir": "ofl/teko",
+   "category": "condensed",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Barlow Condensed",
+   "repo_dir": "ofl/barlowcondensed",
+   "category": "condensed",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Rubik",
+   "repo_dir": "ofl/rubik",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Permanent Marker",
+   "repo_dir": "apache/permanentmarker",
+   "category": "handwriting",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Orbitron",
+   "repo_dir": "ofl/orbitron",
+   "category": "futuristic",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Audiowide",
+   "repo_dir": "ofl/audiowide",
+   "category": "futuristic",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Russo One",
+   "repo_dir": "ofl/russoone",
+   "category": "display",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Black Ops One",
+   "repo_dir": "ofl/blackopsone",
+   "category": "display",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Monoton",
+   "repo_dir": "ofl/monoton",
+   "category": "neon",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Pacifico",
+   "repo_dir": "ofl/pacifico",
+   "category": "script",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Lobster",
+   "repo_dir": "ofl/lobster",
+   "category": "script",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Raleway",
+   "repo_dir": "ofl/raleway",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Kanit",
+   "repo_dir": "ofl/kanit",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Exo 2",
+   "repo_dir": "ofl/exo2",
+   "category": "futuristic",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Syncopate",
+   "repo_dir": "apache/syncopate",
+   "category": "futuristic",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Montserrat",
+   "repo_dir": "ofl/montserrat",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Inter",
+   "repo_dir": "ofl/inter",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Roboto",
+   "repo_dir": "ofl/roboto",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Lato",
+   "repo_dir": "ofl/lato",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "League Spartan",
+   "repo_dir": "ofl/leaguespartan",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "DM Sans",
+   "repo_dir": "ofl/dmsans",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Space Grotesk",
+   "repo_dir": "ofl/spacegrotesk",
+   "category": "sans",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "Unbounded",
+   "repo_dir": "ofl/unbounded",
+   "category": "display",
+   "weights": [
+    400,
+    700,
+    900
+   ]
+  },
+  {
+   "family": "JetBrains Mono",
+   "repo_dir": "ofl/jetbrainsmono",
+   "category": "monospace",
+   "weights": [
+    300,
+    400,
+    700
+   ]
+  }
+ ]
+}

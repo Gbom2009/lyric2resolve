@@ -11,8 +11,10 @@ htmlcov/
 # user data / downloaded assets never go in git (they live in the data folder)
 assets/textures/*
 !assets/textures/README.md
+!assets/textures/curation.json
 assets/fonts/*
 !assets/fonts/README.md
+!assets/fonts/curation.json
 out/
 renders/
 cache/

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>lyric2resolve settings</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/theme.css">
+  <style>
+    body { display: block; }
+    .settings { padding: 12px 16px 48px; max-width: 980px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px 18px; }
+    .settings .card { margin: 12px 0; }
+    .settings .card h2 { font-size: 16px; margin: 0 0 8px; }
+    .field { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--muted); }
+    .field input[type=text], .field input[type=number], .field select { font: inherit; color: var(--text); padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+    .settings label.check { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: 8px; color: var(--text); width: auto; }
+    .settings label.check input { width: auto; margin: 0; }
+    .tool { border-top: 1px solid var(--line); padding: 8px 0; }
+    .tool:first-of-type { border-top: 0; }
+    .ok { color: var(--ok); font-weight: 600; }
+    .bad { color: var(--flag); font-weight: 600; }
+    .saved { color: var(--ok); font-size: 13px; min-height: 1.2em; }
+    .brand-logo { width: 46px; height: 46px; vertical-align: middle; background: #040404; padding: 4px; border-radius: 6px; }
+    pre.help { white-space: pre-wrap; font-size: 12.5px; margin: 4px 0 0; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">l2r</span> Settings</div>
+    <a href="/">← Editor</a>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </header>
+  <div id="update-banner" class="update-banner" hidden></div>
+  <main class="settings">
+    <p class="hint">Changes are saved immediately in <code id="data-dir"></code>. Nothing here touches your projects.</p>
+    <ul id="warnings" class="hint"></ul>
+
+    <section class="card" id="sec-theme">
+      <h2>Theme</h2>
+      <label class="check"><input type="checkbox" data-key="funqtion_branding"> <b>Team Funqtion branding</b>
+        <img class="brand-logo" id="brand-logo" alt="" hidden></label>
+      <p class="hint">For presenting the app to others: dark Team Funqtion colours, fonts and logo. Off = the default light, high-contrast theme.
+        Fonts JetBrains Mono / Archivo Black are used when they are in your font library (<code>lyric2resolve assets sync --fonts</code>).</p>
+      <p class="hint">Brand values: <span id="brand-source"></span>. To change them, copy <code>config/brand_funqtion.json</code> to <code id="brand-file"></code> and edit the copy.</p>
+      <div class="row"><button id="brand-style">Add the Team Funqtion text style to the open project</button><span class="hint" id="brand-msg"></span></div>
+    </section>
+
+    <section class="card" id="sec-tools">
+      <h2>Programs &amp; GPU</h2>
+      <p class="hint" id="gpu"></p>
+      <div id="tools"></div>
+    </section>
+
+    <section class="card" id="sec-defaults">
+      <h2>Defaults for new projects</h2>
+      <div class="grid">
+        <label class="field">Frame rate <select data-key="default_fps" data-type="number" id="fps"></select></label>
+        <label class="field">Width (16:9) <input type="number" data-key="width" data-type="int" min="320"></label>
+        <label class="field">Height (16:9) <input type="number" data-key="height" data-type="int" min="240"></label>
+        <label class="field">Start timecode <input type="text" data-key="start_timecode" pattern="\d\d:\d\d:\d\d:\d\d"></label>
+        <label class="field">Styling level in Resolve <select data-key="styling_level" id="levels"></select></label>
+        <div class="field">Layouts
+          <label class="check"><input type="checkbox" data-layout="16:9"> 16:9 (1920×1080)</label>
+          <label class="check"><input type="checkbox" data-layout="9:16"> 9:16 vertical (1080×1920)</label>
+        </div>
+        <label class="field">Whisper model <select data-key="whisper_model" id="models"></select></label>
+        <label class="field">Device <select data-key="device" id="devices"></select></label>
+        <label class="field">Language (empty = auto-detect) <input type="text" data-key="language" placeholder="e.g. en, nl"></label>
+      </div>
+    </section>
+
+    <section class="card" id="sec-claude">
+      <h2>Assistant (Claude Code link)</h2>
+      <p class="hint" id="claude-status"></p>
+      <div class="grid">
+        <label class="field">Model (empty = CLI default) <input type="text" data-key="claude_model" placeholder="e.g. sonnet"></label>
+        <label class="field">Permission mode <select data-key="claude_permission_mode" id="perm"></select></label>
+        <label class="check"><input type="checkbox" data-key="claude_blender_mcp"> Also connect the Blender MCP server (optional, see docs/ASSISTANT.md)</label>
+      </div>
+    </section>
+
+    <section class="card" id="sec-updates">
+      <h2>Updates</h2>
+      <p id="upd-state">…</p>
+      <div class="row"><button id="upd-check">Check now</button></div>
+      <div class="grid">
+        <label class="field">Branch <input type="text" data-upd="branch"></label>
+        <label class="check"><input type="checkbox" data-upd="check_at_launch"> Check when the launcher starts</label>
+        <label class="check"><input type="checkbox" data-upd="check_at_login"> Check at Windows login</label>
+      </div>
+      <p class="hint" id="upd-note">Roll back to the previous version from the launcher window ("Roll back").</p>
+    </section>
+    <p class="saved" id="saved" aria-live="polite"></p>
+  </main>
+  <script src="/static/update_banner.js"></script>
+  <script src="/static/settings.js"></script>
+</body>
+</html>

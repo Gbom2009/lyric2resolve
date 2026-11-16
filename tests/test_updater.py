@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -464,7 +465,7 @@ def test_ui_launcher_and_apply_windows(repos, settings, monkeypatch, tk_root):
     push_update(dev)
     shown = []
     monkeypatch.setattr(ui.LauncherWindow, "show_update", lambda self, s: shown.append(s))
-    win = ui.LauncherWindow(user, master=tk_root)
+    win = ui.LauncherWindow(user, master=tk_root, auto_start=False)
     assert _pump(win, lambda: bool(shown)) and shown[0].update_available
     win.root.destroy()
 
@@ -481,7 +482,7 @@ def test_ui_screens_render(repos, settings, tk_root):
 
     _, dev, user = repos
     push_update(dev)
-    win = ui.LauncherWindow(user, skip_check=True, master=tk_root)
+    win = ui.LauncherWindow(user, skip_check=True, master=tk_root, auto_start=False)
     win.show_update(core.check_for_update(Git(user), UpdaterConfig()))
     win.root.update()
     win.show_status(core.UpdateStatus(core.OFFLINE, message="Offline"))
@@ -493,3 +494,63 @@ def test_ui_screens_render(repos, settings, tk_root):
     ui.ApplyWindow.show_result(win, core.UpdateResult(ok=False, failed_step="Fetch", error="x"))
     win.root.update()
     win.root.destroy()
+
+
+# ------------------------------------------------------------------ app control (launcher -> editor server)
+def test_appctl_ports_and_commands(tmp_path):
+    import socket
+
+    from lyric2resolve.updater import appctl
+
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        s.listen()
+        busy = s.getsockname()[1]
+        assert not appctl.port_free(busy)
+        assert appctl.pick_port(busy) != busy
+        assert appctl.wait_for_port(busy, timeout=2)
+    assert not appctl.wait_for_port(busy, timeout=0.5)
+    cmd = appctl.editor_command(tmp_path, 9999)
+    assert cmd[1:4] == ["-m", "lyric2resolve", "editor"] and "--no-browser" in cmd and "9999" in cmd
+    env = appctl.app_env(tmp_path)
+    assert env["PYTHONPATH"].startswith(str(tmp_path / "src"))
+    assert "setup" in " ".join(appctl.setup_command(tmp_path))
+
+
+def test_appctl_deps_ready_reports_missing(tmp_path):
+    from lyric2resolve.updater import appctl
+
+    ok, detail = appctl.deps_ready(tmp_path, python=Path(sys.executable).with_name("python-does-not-exist"))
+    assert not ok and detail
+
+
+def test_messages_app_line():
+    assert "http://x/" in messages.app_line("running", "http://x/")
+    assert "Run setup" in messages.app_line("needs_setup", detail="No module named 'fastapi'")
+
+
+def test_launcher_starts_real_editor_server(tmp_path):
+    """Integration: the launcher's start command really serves the editor (needs fastapi installed)."""
+    pytest.importorskip("fastapi")
+    pytest.importorskip("uvicorn")
+    import json as _json
+    import urllib.request
+
+    from lyric2resolve.updater import appctl
+
+    repo = paths.code_dir()
+    ok, detail = appctl.deps_ready(repo, python=Path(sys.executable))
+    assert ok, detail
+    port = appctl.pick_port(18765)
+    proc = appctl.start_editor(repo, port, tmp_path / "editor.log")
+    try:
+        assert appctl.wait_for_port(port, timeout=60, alive=lambda: proc.poll() is None), \
+            (tmp_path / "editor.log").read_text()
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/projects", timeout=10) as r:
+            data = _json.loads(r.read())
+        assert data["current"] is None and "projects" in data
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=10) as r:
+            assert b"lyric2resolve editor" in r.read()
+    finally:
+        appctl.stop(proc)
+    assert proc.poll() is not None

@@ -1,0 +1,10 @@
+# Core app dependencies (CPU-safe; installed on every PC and in CI where needed).
+numpy>=1.26
+scipy>=1.11
+soundfile>=0.12
+librosa>=0.10.2
+pyyaml>=6.0
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9
+lxml>=5.0

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>lyric2resolve library</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/theme.css">
+  <style>
+    body { display: block; }
+    .lib { padding: 12px 16px 40px; }
+    .tabs { display: flex; gap: 6px; margin: 8px 0 12px; }
+    .tabs button.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+    .tile .img { aspect-ratio: 1; background: #2a2f3a center/cover no-repeat; display: flex; align-items: center; justify-content: center; color: #cfd6e3; font-size: 13px; }
+    .tile .meta { padding: 6px 8px; font-size: 12px; }
+    .tile .meta b { display: block; font-size: 14px; }
+    .maps { color: var(--muted); }
+    .font-row { display: flex; align-items: baseline; gap: 16px; padding: 10px 6px; border-bottom: 1px solid var(--line); }
+    .font-row .sample { font-size: 34px; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .font-row .info { width: 220px; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">l2r</span> Library</div>
+    <a href="/">← Editor</a>
+  </header>
+  <div id="update-banner" class="update-banner" hidden></div>
+  <main class="lib">
+    <div class="tabs"><button id="tab-tex" class="on">Textures</button><button id="tab-fonts">Fonts</button></div>
+    <section id="pane-tex">
+      <div class="filters">
+        <input id="tex-search" type="search" placeholder="Search textures…">
+        <select id="tex-cat"><option value="">All categories</option></select>
+        <span class="hint" id="tex-folder"></span>
+      </div>
+      <div class="grid" id="tex-grid"></div>
+      <p class="hint" id="tex-empty" hidden>No textures yet. Run <code>lyric2resolve assets sync --textures</code> on your PC, or put your own in the <code>custom</code> folder.</p>
+    </section>
+    <section id="pane-fonts" hidden>
+      <div class="filters"><input id="font-sample" value="We sing this song all night long" size="40"><input id="font-search" type="search" placeholder="Search fonts…"></div>
+      <div id="font-list"></div>
+    </section>
+  </main>
+  <script src="/static/library.js"></script>
+  <script src="/static/update_banner.js"></script>
+</body>
+</html>

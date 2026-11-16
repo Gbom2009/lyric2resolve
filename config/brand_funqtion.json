@@ -1,0 +1,33 @@
+{
+  "_comment": "Team Funqtion brand tokens, taken from github.com/Gbom2009/funqtion-site css/tokens.css (+ img/logo.svg). Edit freely; the app re-reads this file at every page load. Colors are #rrggbb.",
+  "name": "Team Funqtion",
+  "source": "https://github.com/Gbom2009/funqtion-site (css/tokens.css, commit 8bccd0f, 2026-09-28)",
+  "colors": {
+    "page": "#040404",
+    "surface": "#141414",
+    "hairline": "#363636",
+    "text": "#d9d9d9",
+    "text_strong": "#f0f0f0",
+    "text_dim": "#8d8d8d",
+    "accent": "#f68712",
+    "accent_text": "#040404"
+  },
+  "fonts": {
+    "body": "JetBrains Mono",
+    "display": "Archivo Black",
+    "body_fallback": "ui-monospace, 'Cascadia Mono', Consolas, monospace",
+    "display_fallback": "'Arial Black', system-ui, sans-serif"
+  },
+  "radius_px": 0,
+  "logo": "brand/funqtion-logo.svg",
+  "video_text_style": {
+    "font_family": "Archivo Black",
+    "font_style": "Regular",
+    "fill": "#f0f0f0",
+    "outline_color": "#040404",
+    "outline_width": 3,
+    "glow_color": "#f68712",
+    "glow_size": 6,
+    "glow_strength": 0.8
+  }
+}

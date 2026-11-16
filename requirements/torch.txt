@@ -1,0 +1,4 @@
+# Installed by scripts/setup_update.py from the PyTorch wheel index that matches your NVIDIA driver
+# (e.g. https://download.pytorch.org/whl/cu128), or the CPU index when no NVIDIA GPU is found.
+torch
+torchaudio
