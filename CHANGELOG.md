@@ -3,6 +3,12 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Mac fixes from testing (2) — update failed: "torch 2.2.2", numpy C-extensions
+**Fixed (Mac)**
+- The update's "Install changed dependencies" step ran in Intel mode (Rosetta), because the old launcher was still running that way. pip then installed Intel packages (torch 2.2.2, the last version built for Intel Macs), which clash with the Apple Silicon ones. The setup/update script and the app now always restart themselves natively first, so this can't happen again.
+
+**What to do once (Mac)**: reinstall the Python packages cleanly, see INSTALL_MAC.md → Troubleshooting → "torch 2.2.2". Your projects and settings are not touched.
+
 ## Mac fixes from testing (1) — "incompatible architecture (have 'arm64', need 'x86_64')"
 **Fixed (Mac)**
 - The launcher said "the full setup has not been run yet", even though it had. The app had been started in Intel mode (Rosetta), so it could not load the Apple Silicon libraries that setup installed. The launcher now notices this and restarts itself natively. The app (lyric2resolve.app) also tells macOS to always start natively.

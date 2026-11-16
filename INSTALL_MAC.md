@@ -37,6 +37,16 @@ rest (several GB, takes a while). Then **Start editor**.
 - Lyric fonts in Resolve: Library page → Fonts → **Install fonts for Resolve**, then restart Resolve.
 
 ## Troubleshooting
+- Update failed with "torch 2.2.2" / "Importing the numpy C-extensions failed" (Intel packages got into `.venv`):
+  quit lyric2resolve, then in Terminal:
+  ```
+  cd ~/Downloads/lyric2resolve        # or wherever your clone is
+  git fetch origin mac-release && git checkout -B mac-release origin/mac-release
+  rm -rf .venv
+  bash install.command
+  ```
+  Then open lyric2resolve → **Run setup** → **Start editor**. Only the app's packages are reinstalled; your projects and
+  settings stay.
 - "incompatible architecture (have 'arm64', need 'x86_64')": the app was started in Intel mode (Rosetta). Update, quit
   and reopen it; still there → run `install.command` again, and check Finder → Applications → lyric2resolve → Get Info:
   "Open using Rosetta" must be **off**.

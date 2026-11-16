@@ -95,3 +95,24 @@ def test_arch_mismatch_message():
     line = messages.app_line("needs_setup", detail=detail)
     assert "Rosetta" in line and "Run setup" not in line
     assert "Run setup" in messages.app_line("needs_setup", detail="No module named fastapi")
+
+
+def test_ensure_native_execs_only_under_rosetta(monkeypatch):
+    from lyric2resolve import paths
+
+    calls = []
+    monkeypatch.delenv(paths.NATIVE_ENV, raising=False)
+    monkeypatch.setattr(paths, "native_relaunch_argv", lambda argv: None)
+    paths.ensure_native(["x"], execv=lambda *a: calls.append(a))
+    assert calls == []
+    monkeypatch.setattr(paths, "native_relaunch_argv", lambda argv: ["/usr/bin/arch", "-arm64", "py", *argv])
+    paths.ensure_native(["setup_update.py", "--update"], execv=lambda *a: calls.append(a))
+    assert calls == [("/usr/bin/arch", ["/usr/bin/arch", "-arm64", "py", "setup_update.py", "--update"])]
+    assert __import__("os").environ[paths.NATIVE_ENV] == "1"  # the restarted process never restarts again
+    monkeypatch.delenv(paths.NATIVE_ENV)
+
+
+def test_setup_update_restarts_natively_first():
+    src = (__import__("pathlib").Path(__file__).resolve().parents[1] / "scripts" / "setup_update.py").read_text()
+    body = src[src.index("def main("):]
+    assert body.index("ensure_native(") < body.index("ap.parse_args") < body.index("plan_setup(")  # before any pip
