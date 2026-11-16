@@ -35,6 +35,9 @@ def info_plist(version: str = "1.0") -> dict:
         "LSMinimumSystemVersion": "12.0",
         "LSApplicationCategoryType": "public.app-category.video",
         "NSHighResolutionCapable": True,
+        # the executable is a shell script: tell macOS to run it natively on M chips, never under Rosetta
+        "LSArchitecturePriority": ["arm64", "x86_64"],
+        "LSRequiresNativeExecution": True,
         "NSMicrophoneUsageDescription": "Not used; lyric2resolve only reads your audio files.",
     }
 
@@ -50,6 +53,11 @@ cd {shlex.quote(str(repo))} || exit 1
 if [ ! -x {py} ]; then
   osascript -e 'display alert "lyric2resolve" message "The app folder moved or its .venv is missing. Run install.command in the lyric2resolve folder again."'
   exit 1
+fi
+# Apple Silicon: always start the (universal) Python as arm64 - the packages from setup are arm64
+if [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = "1" ] && [ -x /usr/bin/arch ]; then
+  export L2R_NATIVE_ARM64=1
+  exec /usr/bin/arch -arm64 {py} {launcher} "$@"
 fi
 exec {py} {launcher} "$@"
 """

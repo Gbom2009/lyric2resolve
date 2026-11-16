@@ -54,3 +54,44 @@ def test_mac_scripts_are_valid_bash_and_executable():
                               text=True).stdout.split()
         if mode:  # committed: must keep the executable bit so Finder can run it with a double-click
             assert mode[0] == "100755", name
+
+
+# ------------------------------------------------------------------ fix: app started under Rosetta (user test, M1 Air)
+
+def test_app_bundle_forces_native_arm64(tmp_path):
+    from lyric2resolve import macapp
+
+    plist = macapp.info_plist()
+    assert plist["LSArchitecturePriority"][0] == "arm64" and plist["LSRequiresNativeExecution"] is True
+    script = macapp.start_script(tmp_path / "repo")
+    assert "hw.optional.arm64" in script and "exec /usr/bin/arch -arm64" in script
+    assert script.index("arch -arm64") < script.rindex('exec ')  # native start comes before the plain fallback
+
+
+def test_launcher_relaunches_natively_under_rosetta():
+    from lyric2resolve import paths
+
+    argv = paths.native_relaunch_argv(["/r/launcher.pyw", "--x"], env={}, translated=True, executable="/r/py")
+    if not __import__("pathlib").Path("/usr/bin/arch").exists():
+        assert argv is None  # not a Mac
+        return
+    assert argv == ["/usr/bin/arch", "-arm64", "/r/py", "/r/launcher.pyw", "--x"]
+    assert paths.native_relaunch_argv(["l"], env={paths.NATIVE_ENV: "1"}, translated=True) is None  # never loops
+    assert paths.native_relaunch_argv(["l"], env={}, translated=False) is None
+
+
+def test_native_relaunch_off_mac(monkeypatch):
+    from lyric2resolve import paths
+
+    monkeypatch.setattr(paths.sys, "platform", "linux")
+    assert paths.rosetta_translated() is False
+
+
+def test_arch_mismatch_message():
+    from lyric2resolve.updater import messages
+
+    detail = ("ImportError: dlopen(.../_pydantic_core.cpython-312-darwin.so, 0x0002): ... (mach-o file, but is an "
+              "incompatible architecture (have 'arm64', need 'x86_64'))")
+    line = messages.app_line("needs_setup", detail=detail)
+    assert "Rosetta" in line and "Run setup" not in line
+    assert "Run setup" in messages.app_line("needs_setup", detail="No module named fastapi")

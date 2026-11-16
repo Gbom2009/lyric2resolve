@@ -37,6 +37,9 @@ rest (several GB, takes a while). Then **Start editor**.
 - Lyric fonts in Resolve: Library page → Fonts → **Install fonts for Resolve**, then restart Resolve.
 
 ## Troubleshooting
+- "incompatible architecture (have 'arm64', need 'x86_64')": the app was started in Intel mode (Rosetta). Update, quit
+  and reopen it; still there → run `install.command` again, and check Finder → Applications → lyric2resolve → Get Info:
+  "Open using Rosetta" must be **off**.
 - Moved the `lyric2resolve` folder? Run `install.command` again (it remakes the app).
 - Launcher error details: `~/Library/Application Support/lyric2resolve/logs/launcher.log`.
 - "Update refused: files modified locally": in Terminal `cd ~/lyric2resolve && git checkout -- .` (only code, never your data).

@@ -3,6 +3,15 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Mac fixes from testing (1) — "incompatible architecture (have 'arm64', need 'x86_64')"
+**Fixed (Mac)**
+- The launcher said "the full setup has not been run yet", even though it had. The app had been started in Intel mode (Rosetta), so it could not load the Apple Silicon libraries that setup installed. The launcher now notices this and restarts itself natively. The app (lyric2resolve.app) also tells macOS to always start natively.
+- If it still happens, the launcher explains what to do instead of asking you to run setup again.
+
+**What to test (Mac)**
+- Launcher → **Check for updates** → **Update now**, then quit lyric2resolve and open it again → **Start editor** opens the browser. You don't need to run setup again.
+- Optional, to also get the new app: double-click `install.command` again.
+
 ## Mac (Apple Silicon) — phase 6: Mac test pass + README
 **New**
 - README has a Mac chapter with what is different on a Mac (MLX, Metal, VideoToolbox, Draft preset, fonts, data folder, `mac-release`).
