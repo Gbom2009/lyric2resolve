@@ -46,3 +46,10 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Drag-select, Shift+click, arrows, Esc; Space plays from the clicked word; Shift+Space plays only the selection.
 - [ ] The playing word gets an outline and scrolls into view.
 - [ ] Windows Firewall should not prompt (server listens on 127.0.0.1 only); report if it does.
+
+## Phase 8 — editor part 2 (manual browser checklist; core flows are automated in CI)
+- [ ] Merge / Split / Words / Move / Edit / Remove / nudge on a real song feel right; undo/redo across many steps.
+- [ ] Gap regions: drag and resize with the mouse on the waveform; double-click removes (asks first).
+- [ ] Review list jumps to the right word/block; ⚠ long marks plausible for your font size.
+- [ ] Section preset Apply + "Rebuild all blocks" (asks first) work; Undo restores manual edits.
+- [ ] Keyboard shortcuts don't fire while typing in input fields.

@@ -3,6 +3,20 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 8 — The editor in your browser (part 2: editing)
+**New**
+- Toolbar + shortcuts to shape the lyric blocks: Merge (M), Split at a word (S), split into single Words (W), move a word to the previous/next block (Alt+←/→), Edit text (E), Remove a block from the timeline (Delete), nudge timing ([ ] = 20 ms, with Shift 100 ms).
+- Selection panel: change a word's text and exact start/end time, or override the whole block text as it should appear in the video (and reset it).
+- Instrumental gaps on the waveform: drag/resize them, double-click to remove, add one from the selected words (G) or at the cursor.
+- Review panel: every flagged word (sanity check) and every "probably too long for the screen" block (16:9 and 9:16) in one list; click to jump there. Long blocks get a ⚠ in the lyrics list. Nothing is changed automatically.
+- Sections & presets: rename sections, choose a preset per section (WORD / LINE / PHRASE / AUTO), rebuild one section or everything.
+- Text & timing options: case, strip punctuation, max characters, minimum clip length (+ merge shorter blocks), hold-until-next, fade, global sync offset, pre/post-roll, font size and max lines.
+
+**What to test**
+- On a real project: merge, split, move words, edit, nudge, undo/redo; check that `project.json` keeps your changes after restarting the editor.
+- Add/resize/remove gaps on the waveform; click items in the Review list.
+- Set chorus = WORD and click Apply for that section.
+
 ## Phase 7 — The editor in your browser (part 1)
 **New**
 - The launcher now starts the app: after the update check it starts the editor and opens it in your browser. The small launcher window stays open with "Open editor in browser", "Check for updates", "Roll back" and "Open data folder"; closing it stops the editor.

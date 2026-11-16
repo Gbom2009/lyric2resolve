@@ -88,6 +88,8 @@ class ProjectSettings:
     case: str = "keep"                   # keep | upper | lower | title
     strip_punctuation: bool = False
     max_chars: int = 42
+    font_size_px: int = 0                # 0 = automatic per layout (see layout.default_font_px)
+    max_lines: int = 2
 
 
 class ProjectError(ValueError):

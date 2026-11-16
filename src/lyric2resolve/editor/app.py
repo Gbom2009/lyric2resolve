@@ -92,8 +92,24 @@ class EditorSession:
                         "overridden": b.text_override is not None})
         return out
 
+    def layout_warnings(self) -> list[dict]:
+        """Safe-area / line-length warnings per block and layout (warn only, never change)."""
+        from lyric2resolve import layout
+
+        cfg = self.project.settings
+        out = []
+        for b in self.project.blocks:
+            text = presets.display_text(self.project, b)
+            for lay in cfg.layouts:
+                res = layout.check_text(text, lay, cfg.font_size_px or None, cfg.max_lines,
+                                        cfg.width if lay == "16:9" else None, cfg.height if lay == "16:9" else None)
+                if not res.ok:
+                    out.append({"block_id": b.id, "layout": lay, "lines": res.lines, "message": res.message()})
+        return out
+
     def state(self) -> dict:
         return {"project": self.project.to_dict(), "blocks": self.blocks_view(), "flags": self.flags(),
+                "layout_warnings": self.layout_warnings(),
                 "history": self.history.state(), "problems": self.project.validate()}
 
     # ------------------------------------------------------------ edits

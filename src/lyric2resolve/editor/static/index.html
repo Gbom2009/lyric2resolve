@@ -44,12 +44,20 @@
       </div>
       <div id="lyrics" class="lyrics" tabindex="0" aria-label="Lyric blocks and words"></div>
     </section>
-    <aside class="side-pane" id="side"></aside>
+    <aside class="side-pane" id="side">
+      <section class="card" id="card-selection"><h3>Selection</h3><div class="card-body"></div></section>
+      <section class="card" id="card-review"><h3>Review</h3><div class="card-body"></div></section>
+      <section class="card" id="card-gaps"><h3>Instrumental gaps</h3><div class="card-body"></div></section>
+      <section class="card" id="card-sections"><h3>Sections &amp; presets</h3><div class="card-body"></div></section>
+      <section class="card" id="card-options"><h3>Text &amp; timing options</h3><div class="card-body"></div></section>
+    </aside>
   </main>
 
   <footer class="shortcuts" id="shortcuts">
     <b>Space</b> play/pause · <b>Shift+Space</b> play selection · <b>click/drag/Shift+click</b> select words ·
-    <b>←/→</b> move · <b>Shift+←/→</b> extend · <b>Esc</b> clear · <b>Ctrl+Z / Ctrl+Y</b> undo/redo · <b>+/−</b> zoom
+    <b>←/→</b> move · <b>Shift+←/→</b> extend · <b>Esc</b> clear · <b>M</b> merge · <b>S</b> split · <b>W</b> words ·
+    <b>Alt+←/→</b> move word to block · <b>E</b> edit · <b>[ ]</b> nudge (Shift = 100 ms) · <b>G</b> gap · <b>Del</b> remove block ·
+    <b>Ctrl+Z / Ctrl+Y</b> undo/redo · <b>+/−</b> zoom
   </footer>
 
   <dialog id="project-dialog">
@@ -64,5 +72,8 @@
   <script src="/static/vendor/wavesurfer.regions.min.js"></script>
   <script src="/static/vendor/wavesurfer.timeline.min.js"></script>
   <script src="/static/app.js"></script>
+  <script src="/static/blocks.js"></script>
+  <script src="/static/gaps.js"></script>
+  <script src="/static/review.js"></script>
 </body>
 </html>
