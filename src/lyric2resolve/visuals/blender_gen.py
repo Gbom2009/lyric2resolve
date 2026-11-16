@@ -39,10 +39,19 @@ def absolute_maps(asset: dict | None, root: Path) -> dict:
 def generate(p: proj.Project, out_dir: Path, template: str = "spectrum_bars", aspects: list[str] | None = None,
              mapping_path: Path | None = None, texture: str | None = None, hdri: str | None = None,
              fps: float | None = None, curve_cfg: bands.CurveConfig | None = None, audio=None,
-             textures_root: Path | None = None, count: int | None = None, render: dict | None = None) -> Path:
-    """Write the scene folder; returns the path of scene_data.json. audio = (array, sr) or None to load."""
-    if template not in mapping.TEMPLATES:
-        raise ValueError(f"unknown template {template!r}; use one of {mapping.TEMPLATES}")
+             textures_root: Path | None = None, count: int | None = None, render: dict | None = None,
+             custom_script: Path | None = None, lyrics_3d: bool = False, time_range: tuple | None = None,
+             name: str | None = None, params: dict | None = None) -> Path:
+    """Write the scene folder; returns the path of scene_data.json. audio = (array, sr) or None to load.
+
+    template 'custom' + custom_script: a scene written by you/Claude (defines build_scene(ctx), see
+    CUSTOM_SCENE_GUIDE). lyrics_3d: the lyric blocks as glowing 3D text in the scene. time_range: (start_s, end_s)
+    of a clip (handed to the custom scene; rendering is limited to it by the caller)."""
+    if template == "custom":
+        if not custom_script or not Path(custom_script).is_file():
+            raise FileNotFoundError(f"custom scene script not found: {custom_script}")
+    elif template not in mapping.TEMPLATES:
+        raise ValueError(f"unknown template {template!r}; use one of {mapping.TEMPLATES} or 'custom'")
     # explicit YAML > mapping stored by a project template > defaults
     m = mapping.load(mapping_path) if mapping_path else mapping.validate(p.extra.get("visual_mapping") or {})
     fps = fps or p.settings.fps
@@ -66,8 +75,9 @@ def generate(p: proj.Project, out_dir: Path, template: str = "spectrum_bars", as
     lib = tx.list_textures(troot)
     tex_asset = pick_texture(lib, texture, "texture")
     hdri_asset = pick_texture(lib, hdri, "hdri") if hdri else None
+    a = p.analysis or {}
     data = {
-        "name": f"{proj_safe(p.name)}_{template}",
+        "name": f"{proj_safe(p.name)}_{proj_safe(name) if name else template}",
         "template": template,
         "fps": fps,
         "frames": curves.frames,
@@ -86,10 +96,40 @@ def generate(p: proj.Project, out_dir: Path, template: str = "spectrum_bars", as
         "view_transform": "AgX",
     }
     data.update(render or {})
+    data["beats"] = [round(float(b), 3) for b in a.get("beats") or []]
+    data["downbeats"] = [round(float(b), 3) for b in a.get("downbeats") or []]
+    data["bpm"] = a.get("bpm")
+    data["time_range"] = list(time_range) if time_range else None
+    data["lyrics"] = lyric_blocks(p) if lyrics_3d or template == "custom" else []
+    data["lyrics_3d"] = bool(lyrics_3d)
+    data["params"] = dict(params or {})
+    if template == "custom":
+        shutil.copy2(custom_script, out_dir / "custom_scene.py")
+        data["custom_script"] = "custom_scene.py"
     (out_dir / "scene_data.json").write_text(json.dumps(data, indent=1), encoding="utf-8")
     (out_dir / "mapping.yaml").write_text(mapping.to_yaml(m), encoding="utf-8")
     shutil.copy2(SCRIPT, out_dir / SCRIPT.name)
     return out_dir / "scene_data.json"
+
+
+def lyric_blocks(p: proj.Project) -> list[dict]:
+    """Blocks as shown in the export (text options applied), with word timings, minus anything inside gaps or
+    hidden by clips."""
+    from lyric2resolve.editor import presets
+
+    out = []
+    for b in p.blocks:
+        ws = p.block_words(b)
+        if not ws:
+            continue
+        s, e = ws[0].start, ws[-1].end
+        if any(g.start <= s < g.end for g in p.gaps):
+            continue
+        if any(c.hide_lyrics and c.start < e and c.end > s for c in getattr(p, "clips", []) or []):
+            continue
+        out.append({"text": presets.display_text(p, b), "start": round(s, 3), "end": round(e, 3),
+                    "words": [{"text": w.text, "start": round(w.start, 3), "end": round(w.end, 3)} for w in ws]})
+    return out
 
 
 def proj_safe(name: str) -> str:

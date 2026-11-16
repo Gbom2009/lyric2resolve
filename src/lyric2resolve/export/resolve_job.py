@@ -36,6 +36,8 @@ def job_dict(plans: list[Plan], fcpxml_paths: dict[str, str]) -> dict:
                        "font_px": c.font_px, "x": c.x, "y": c.y, "style": c.style.to_dict(),
                        "words": [[w.text, w.start_frame, w.end_frame] for w in c.words]} for c in p.clips],
             "markers": [asdict(m) for m in p.markers],
+            "media": [{"path": m.path, "name": m.name, "start": m.start_frame, "end": m.end_frame,
+                       "in": m.in_frame} for m in p.media],
         } for p in plans],
     }
 

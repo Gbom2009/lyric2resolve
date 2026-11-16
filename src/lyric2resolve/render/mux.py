@@ -35,6 +35,7 @@ class MuxSettings:
     encoder: str = "libx264"        # or h264_nvenc on NVIDIA GPUs
     fit_box: tuple[int, int] | None = None   # e.g. (1920, 1080) for the Rekordbox-safe DJ copy
     start_seconds: float = 0.0      # audio offset for a partial (section) render
+    audio: bool = True              # False: video only (timeline clips - the song is already on its own track)
 
 
 def gop(fps: float) -> int:
@@ -48,9 +49,12 @@ def mux_command(ffmpeg: str, frames_pattern: str, start_number: int, song: Path,
     g = gop(s.fps)
     cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
            "-framerate", r, "-start_number", str(start_number), "-i", frames_pattern]
-    if s.start_seconds:
-        cmd += ["-ss", f"{s.start_seconds:.3f}"]
-    cmd += ["-i", str(song), "-map", "0:v:0", "-map", "1:a:0"]
+    if s.audio:
+        if s.start_seconds:
+            cmd += ["-ss", f"{s.start_seconds:.3f}"]
+        cmd += ["-i", str(song), "-map", "0:v:0", "-map", "1:a:0"]
+    else:
+        cmd += ["-map", "0:v:0", "-an"]
     vf = []
     if s.fit_box and frame_size and (frame_size[0] > s.fit_box[0] or frame_size[1] > s.fit_box[1]):
         bw, bh = s.fit_box
@@ -62,9 +66,10 @@ def mux_command(ffmpeg: str, frames_pattern: str, start_number: int, song: Path,
     else:
         cmd += ["-c:v", "libx264", "-preset", s.preset, "-crf", str(s.crf)]
     cmd += ["-profile:v", "high", "-r", r, "-fps_mode", "cfr", "-g", str(g), "-keyint_min", str(g),
-            "-sc_threshold", "0",
-            "-c:a", "aac", "-b:a", s.audio_bitrate, "-ar", str(s.audio_rate), "-ac", "2",
-            "-movflags", "+faststart", str(out)]
+            "-sc_threshold", "0"]
+    if s.audio:
+        cmd += ["-c:a", "aac", "-b:a", s.audio_bitrate, "-ar", str(s.audio_rate), "-ac", "2"]
+    cmd += ["-movflags", "+faststart", str(out)]
     return cmd
 
 

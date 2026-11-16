@@ -53,6 +53,48 @@ class Assistant:
         return self._busy.is_set()
 
     # ---------------------------------------------------------------- one turn
+    # ---------------------------------------------------------------- attachments (context/)
+    CONTEXT_DIR = "context"
+
+    @staticmethod
+    def attachments(project_path: Path) -> list[dict]:
+        d = Path(project_path).parent / Assistant.CONTEXT_DIR
+        if not d.is_dir():
+            return []
+        return [{"name": f.name, "path": f"{Assistant.CONTEXT_DIR}/{f.name}", "size_kb": round(f.stat().st_size / 1024)}
+                for f in sorted(d.iterdir(), key=lambda f: f.name.lower()) if f.is_file()]  # stable on all OSes
+
+    @staticmethod
+    def save_attachment(project_path: Path, filename: str, src) -> dict:
+        import shutil
+
+        d = Path(project_path).parent / Assistant.CONTEXT_DIR
+        d.mkdir(parents=True, exist_ok=True)
+        name = Path(filename or "file").name.replace("..", "_") or "file"
+        dst, n = d / name, 2
+        while dst.exists():
+            dst = d / f"{Path(name).stem} ({n}){Path(name).suffix}"
+            n += 1
+        with open(dst, "wb") as f:
+            shutil.copyfileobj(src, f, 1024 * 1024)
+        return {"name": dst.name, "path": f"{Assistant.CONTEXT_DIR}/{dst.name}"}
+
+    @staticmethod
+    def remove_attachment(project_path: Path, name: str) -> None:
+        f = (Path(project_path).parent / Assistant.CONTEXT_DIR / Path(name).name)
+        if not f.is_file():
+            raise FileNotFoundError(name)
+        f.unlink()
+
+    @staticmethod
+    def prompt_with_attachments(prompt: str, names: list[str]) -> str:
+        if not names:
+            return prompt
+        imgs = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
+        lines = [f"- context/{Path(n).name}" + (" (image: look at it with the Read tool)"
+                                                 if Path(n).suffix.lower() in imgs else "") for n in names]
+        return prompt + "\n\nI attached these reference files (in this project folder):\n" + "\n".join(lines)
+
     def send(self, project_path: Path, prompt: str, project=None) -> dict:
         prompt = (prompt or "").strip()
         if not prompt:

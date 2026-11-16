@@ -25,6 +25,12 @@ class RenderReport:
     cancelled: bool = False
 
 
+def _safe(name: str) -> str:
+    import re
+
+    return re.sub(r"[^\w\-]+", "_", name).strip("_")[:60] or "scene"
+
+
 def section_ranges(p: proj.Project, labels: list[str], fps: float, frames: int) -> list[tuple[int, int, str]]:
     want = {x.lower() for x in labels}
     out = []
@@ -43,7 +49,12 @@ def render_project(project_path: Path, template: str = "spectrum_bars", preset_n
                    ffmpeg: str | None = None, runner: BlenderRunner | None = None,
                    on_progress: Callable[[str, Progress], None] = lambda a, p: None,
                    log: Callable[[str], None] = print, cancel: threading.Event | None = None,
-                   audio=None, textures_root: Path | None = None) -> RenderReport:
+                   audio=None, textures_root: Path | None = None, custom_script: Path | None = None,
+                   time_range: tuple | None = None, lyrics_3d: bool = False, name: str | None = None,
+                   params: dict | None = None, video_only: bool = False) -> RenderReport:
+    """Render a scene template (or template='custom' + custom_script) for the whole song, some sections, or a
+    time_range (start_s, end_s) = a clip. lyrics_3d adds the lyrics as 3D text. video_only: MP4 without the song
+    (for clips on the editor's timeline; the song is already on its own track)."""
     from lyric2resolve.settings import load_settings
     from lyric2resolve.setup_tools import FFMPEG_HELP, find_tool
     from lyric2resolve.visuals import blender_gen
@@ -61,11 +72,13 @@ def render_project(project_path: Path, template: str = "spectrum_bars", preset_n
         if not exe:
             raise RuntimeError(bl.INSTALL_HELP)
         runner = BlenderRunner(exe)
-    folder = project_path.parent / "visuals" / template / preset.name
+    folder = project_path.parent / "visuals" / ((name and _safe(name)) or template) / preset.name
     render_opts = {"engine": preset.engine, "samples": preset.samples, "denoise": preset.denoise,
                    "bloom": preset.bloom, "resolution_scale": preset.scale(), "view_transform": preset.view_transform}
     data_path = blender_gen.generate(p, folder, template, aspects, mapping_path, texture, hdri, fps=fps,
-                                     render=render_opts, audio=audio, textures_root=textures_root)
+                                     render=render_opts, audio=audio, textures_root=textures_root,
+                                     custom_script=custom_script, lyrics_3d=lyrics_3d, time_range=time_range,
+                                     name=name, params=params)
     import json
 
     data = json.loads(data_path.read_text(encoding="utf-8"))
@@ -86,6 +99,10 @@ def render_project(project_path: Path, template: str = "spectrum_bars", preset_n
         ranges = section_ranges(p, sections, fps, frames)
         if not ranges:
             raise RuntimeError(f"no sections named {sections} in this project")
+    if time_range:
+        a = max(1, int(round(float(time_range[0]) * fps)) + 1)
+        b = min(frames, max(a, int(round(float(time_range[1]) * fps))))
+        ranges = [(a, b, "clip")]
     dirs = {a: f"frames/{a.replace(':', 'x')}" for a in aspects}
     (folder / "RENDER_INSTRUCTIONS.md").write_text(instructions.blender_markdown(
         p.name, template, fps, frames, frames / fps, preset, aspects,
@@ -118,10 +135,10 @@ def render_project(project_path: Path, template: str = "spectrum_bars", preset_n
             if ff and song and Path(song).exists():
                 tag = f"{data['name']}_{aspect.replace(':', 'x')}" + ("" if label == "full" else f"_{label}")
                 pattern = str(out_dir / "frame_%04d.png")
-                base = mux.MuxSettings(fps=fps, start_seconds=(a - 1) / fps)
+                base = mux.MuxSettings(fps=fps, start_seconds=(a - 1) / fps, audio=not video_only)
                 encoder = "h264_nvenc" if mux.has_encoder(ff, "h264_nvenc") else "libx264"
                 for suffix, box in (("", None), ("_dj", (1920, 1080))):
-                    if suffix == "_dj" and w <= 1920 and h <= 1080:
+                    if suffix == "_dj" and (video_only or (w <= 1920 and h <= 1080)):
                         continue  # the master already fits the decks
                     out = folder / f"{tag}{suffix}.mp4"
                     settings = mux.MuxSettings(**{**base.__dict__, "encoder": encoder, "fit_box": box})

@@ -54,6 +54,7 @@
     </section>
     <aside class="side-pane" id="side">
       <section class="card" id="card-assistant"><h3>Assistant (Claude)</h3><div class="card-body"></div></section>
+      <section class="card" id="card-clips"><h3>Clips (videos on the timeline)</h3><div class="card-body"></div></section>
       <section class="card" id="card-selection"><h3>Selection</h3><div class="card-body"></div></section>
       <section class="card" id="card-style"><h3>Text style</h3><div class="card-body"></div></section>
       <section class="card" id="card-review"><h3>Review</h3><div class="card-body"></div></section>
@@ -91,6 +92,11 @@
       <div class="new-grid">
         <label class="field">Project name <input type="text" name="name" placeholder="(the song's file name)"></label>
         <label class="field">Language <input type="text" name="language" placeholder="auto (or en, nl…)"></label>
+        <label class="field">Look
+          <select name="look">
+            <option value="lyric">Lyric video (big, centred, animated)</option>
+            <option value="captions">Clean captions (bottom, plain)</option>
+          </select></label>
         <label class="field">Blocks
           <select name="granularity">
             <option value="line">one line per block</option>
@@ -127,6 +133,26 @@
     <p class="hint" id="addtext-msg"></p>
   </dialog>
 
+  <dialog id="cc-dialog">
+    <h2>✨ Make a clip with Claude</h2>
+    <p class="hint">Describe the moment. Claude writes a Blender scene for exactly this time range (it knows the BPM, bars, beats and the music's energy), the app renders it and puts it on the clips track. Not right? Ask Claude in the Assistant card to change it — it re-renders in place.</p>
+    <label class="field">Name <input id="cc-name" type="text" value="clip" placeholder="e.g. acid"></label>
+    <label class="field">What should it look like?
+      <textarea id="cc-desc" rows="5" placeholder="e.g. 3D 'ACID' text in a dark Blender scene, glowing green liquid dripping down the letters, hits on the beat"></textarea></label>
+    <div class="row">
+      <label class="field">Start <input id="cc-start" type="text"></label>
+      <label class="field">End <input id="cc-end" type="text"></label>
+      <label class="check"><input type="checkbox" id="cc-snap" checked> snap to bars</label>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="cc-hide" checked> the clip replaces the lyrics here</label>
+      <label class="field">Quality <select id="cc-preset"><option value="preview">Preview (fast)</option><option value="draft">Draft</option><option value="standard">Standard</option><option value="high">High</option></select></label>
+    </div>
+    <label class="field">Reference images / files (optional) <input id="cc-files" type="file" multiple></label>
+    <div class="row"><button class="primary" id="cc-go">Send to Claude</button><button type="button" id="cc-close">Close</button></div>
+    <p class="hint" id="cc-msg"></p>
+  </dialog>
+
   <dialog id="export-dialog">
     <h2>Export</h2>
     <p class="hint">Files are generated from your edited blocks and saved in the project's <code>export</code> folder.</p>
@@ -153,6 +179,7 @@
   <script src="/static/styles.js"></script>
   <script src="/static/export.js"></script>
   <script src="/static/assistant.js"></script>
+  <script src="/static/clips.js"></script>
   <script src="/static/newproject.js"></script>
   <script src="/static/update_banner.js"></script>
 </body>

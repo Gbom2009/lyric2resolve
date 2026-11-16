@@ -23,8 +23,14 @@ Check from a terminal: `.venv\Scripts\python -m lyric2resolve claude status`.
 - `<project folder>\CLAUDE.md` holds the project's state (rewritten before every message) plus a **Notes** part that is
   never overwritten: decisions and style choices for a fresh session. Claude Code reads it automatically.
 - `<project folder>\.l2r_mcp.json` registers the app's MCP server (`python -m lyric2resolve.claude_link.mcp_server`).
-  Only those tools are pre-allowed (`--allowedTools mcp__lyric2resolve`); anything else Claude wants to do is denied in
-  background mode, and the card tells you what was denied.
+  Pre-allowed: the app's tools (`mcp__lyric2resolve`), reading/searching files (`Read`, `Glob`, `Grep`) and **writing /
+  editing files inside the project folder only** (`Edit(./**)`, `Write(./**)`) — e.g. its notes in CLAUDE.md and custom
+  scenes in `scenes/`. Anything else (writing elsewhere, running commands) is denied in background mode, and the card
+  tells you what was denied.
+- **📎 Attach**: images, videos or documents are saved in `<project folder>\context\`; ticked files are named in your
+  next message (Claude can look at images).
+- **Custom scenes / clips**: "✨ Make a clip with Claude" in the Clips card, or just ask. Claude reads the
+  `custom_scene_guide` tool, writes `scenes/<name>/scene.py` and calls `render_clip`; the clip lands on the clips track.
 - You can also use the tools from your own terminal: `cd` into the project folder and run
   `claude --mcp-config .l2r_mcp.json` (create the file with `python -m lyric2resolve claude mcp-config <project.json>`).
   Without the editor running, the server edits `project.json` directly.

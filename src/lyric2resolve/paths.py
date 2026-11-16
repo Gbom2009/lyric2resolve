@@ -122,3 +122,30 @@ def settings_dir() -> Path:
 
 def logs_dir() -> Path:
     return data_dir() / "logs"
+
+
+def atomic_write_text(path: Path, text: str) -> Path:
+    """Write via a unique temp file + rename, so a crash never leaves half a file and two saves at the same
+    time (e.g. quick changes on the Settings page) never fight over one temp file."""
+    import uuid
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{uuid.uuid4().hex[:8]}.tmp")
+    try:
+        tmp.write_text(text, encoding="utf-8")
+        for attempt in range(5):  # Windows: the target can be briefly locked by a reader (antivirus, editor)
+            try:
+                tmp.replace(path)
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                import time
+
+                time.sleep(0.05 * (attempt + 1))
+    finally:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+    return path
+

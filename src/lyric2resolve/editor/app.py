@@ -64,6 +64,9 @@ OPS: dict[str, Callable] = {
     "nudge_words": ops.nudge_words,
     "nudge_block": ops.nudge_block,
     "add_text": ops.add_text,
+    "add_clip": ops.add_clip,
+    "update_clip": ops.update_clip,
+    "remove_clip": ops.remove_clip,
     "retime_block": ops.retime_block,
     "add_gap": ops.add_gap,
     "update_gap": ops.update_gap,
@@ -409,7 +412,7 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
 
     @app.post("/api/render")
     def render_start(body: dict = Body(default_factory=dict)):
-        allowed_keys = {"template", "preset", "aspects", "sections", "estimate_only"}
+        allowed_keys = {"template", "preset", "aspects", "sections", "estimate_only", "lyrics_3d"}
         args = {k: v for k, v in body.items() if k in allowed_keys and v is not None}
         try:
             return _jobs().start(current().path, **args)
@@ -445,8 +448,11 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         s = current()
         a = _assistant()
         a.editor_url = str(request.base_url)  # the MCP server edits through this editor (shared undo)
+        msg = str(body.get("message", ""))
+        if msg.strip():
+            msg = a.prompt_with_attachments(msg, [str(x) for x in body.get("attachments") or []])
         try:
-            return a.send(s.path, str(body.get("message", "")), s.project)
+            return a.send(s.path, msg, s.project)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=424, detail=str(exc)) from exc
         except RuntimeError as exc:
@@ -457,6 +463,35 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
     # real class (not a string) so FastAPI injects the request despite `from __future__ import annotations`
     assistant_send.__annotations__["request"] = Request
     app.post("/api/assistant/send")(assistant_send)
+
+    @app.get("/api/assistant/attachments")
+    def assistant_attachments():
+        return {"files": _assistant().attachments(current().path)}
+
+    from fastapi import File, UploadFile
+
+    def assistant_attach(files: list = File(...)):
+        out = [_assistant().save_attachment(current().path, f.filename, f.file) for f in files]
+        return {"saved": out, "files": _assistant().attachments(current().path)}
+
+    # real class (not a string) so FastAPI sees the uploads despite `from __future__ import annotations`
+    assistant_attach.__annotations__["files"] = list[UploadFile]
+    app.post("/api/assistant/attachments")(assistant_attach)
+
+    @app.delete("/api/assistant/attachments/{name}")
+    def assistant_detach(name: str):
+        try:
+            _assistant().remove_attachment(current().path, name)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="no such attachment") from exc
+        return {"files": _assistant().attachments(current().path)}
+
+    @app.get("/api/assistant/attachments/file/{name}")
+    def assistant_attachment_file(name: str):
+        f = current().path.parent / "context" / Path(name).name
+        if not f.is_file():
+            raise HTTPException(status_code=404, detail="no such attachment")
+        return FileResponse(f)
 
     @app.get("/api/assistant/events")
     def assistant_events(after: int = 0):
@@ -500,9 +535,10 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
 
     newproject.register(app, _new_jobs, _open_new)
 
-    from . import visuals_api
+    from . import clips_api, visuals_api
 
     visuals_api.register(app, current, settings_dir)
+    clips_api.register(app, current, lambda: _jobs(), settings_dir)
 
     from . import settings_api
     from lyric2resolve.assets import fonts as _fonts_mod

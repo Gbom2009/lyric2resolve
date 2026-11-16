@@ -93,9 +93,6 @@ def save_playlists(pls: Playlists, settings_dir: Path | None = None) -> Path:
         raise ValueError("at least one playlist is required")
     if pls.current not in pls.playlists:
         raise ValueError(f"current playlist {pls.current!r} does not exist")
-    path = playlists_path(settings_dir)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(pls.to_dict(), indent=1), encoding="utf-8")
-    tmp.replace(path)
-    return path
+    from lyric2resolve.paths import atomic_write_text
+
+    return atomic_write_text(playlists_path(settings_dir), json.dumps(pls.to_dict(), indent=1))

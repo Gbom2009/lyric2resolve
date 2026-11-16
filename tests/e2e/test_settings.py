@@ -12,9 +12,15 @@ def test_settings_page_branding_and_defaults(page):
     page.wait_for_function("document.querySelector('#saved').textContent.includes('Saved')")
     page.uncheck("[data-layout='9:16']")
     page.wait_for_function("document.querySelector('#saved').textContent.includes('Saved')")
+    import time
+
     from lyric2resolve.settings import load_settings
 
-    s, _ = load_settings()
+    for _ in range(100):  # each change is its own request; wait until all of them are on disk
+        s, _ = load_settings()
+        if s.funqtion_branding and s.default_fps == 29.97 and s.layouts == ["16:9"]:
+            break
+        time.sleep(0.05)
     assert s.funqtion_branding and s.default_fps == 29.97 and s.layouts == ["16:9"]
     page.goto(base)
     page.wait_for_selector(".word")

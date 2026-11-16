@@ -55,6 +55,19 @@ def default_engine(model: str | None, language: str | None):
     return engine_from_settings(model or None, language or None)
 
 
+def apply_lyric_look(project_path: Path) -> None:
+    """Lyrics as the main focus: the 'Lyric Video' style for everything + styling level FULL (animations)."""
+    from lyric2resolve import project as proj
+    from lyric2resolve import styling
+
+    p = proj.load(project_path)
+    book = styling.StyleBook.from_project(p.styles)
+    book.default = styling.LYRIC_VIDEO_STYLE
+    p.styles = book.to_project()
+    p.settings.styling_level = "full"
+    proj.save(p, project_path)
+
+
 def default_ffmpeg():
     from lyric2resolve.audio import Ffmpeg
     from lyric2resolve.settings import load_settings
@@ -90,7 +103,7 @@ class NewProjectJobs:
         return title, folder
 
     def start(self, title: str, song: Path, acapella: Path | None = None, lyrics: str | None = None,
-              language: str = "", granularity: str | None = None, model: str = "") -> dict:
+              language: str = "", granularity: str | None = None, model: str = "", look: str = "lyric") -> dict:
         from lyric2resolve import batch
         from lyric2resolve import paths
         from lyric2resolve.settings import load_settings
@@ -127,6 +140,9 @@ class NewProjectJobs:
                 for m in res.messages:
                     if m and not m.startswith("Traceback"):
                         log(m.splitlines()[0])
+                if res.ok and look == "lyric":
+                    apply_lyric_look(Path(res.project))
+                    log("Look: lyric video (big centred animated lyrics; change it in the Text style card)")
                 with self._lock:
                     self._state.update(ok=res.ok, project=res.project, error=res.error)
             except Exception as exc:  # shown in the dialog
@@ -159,7 +175,8 @@ def register(app, jobs_getter: Callable[[], NewProjectJobs], on_done_open: Calla
 
     @app.post("/api/projects/new")
     def new_project(name: str = Form(""), song: UploadFile = File(...), acapella: UploadFile | None = File(None),
-                    lyrics: str = Form(""), language: str = Form(""), granularity: str = Form("")):
+                    lyrics: str = Form(""), language: str = Form(""), granularity: str = Form(""),
+                    look: str = Form("lyric")):
         jobs = jobs_getter()
         from lyric2resolve.audio.convert import SUPPORTED
 
@@ -175,7 +192,8 @@ def register(app, jobs_getter: Callable[[], NewProjectJobs], on_done_open: Calla
         if acapella is not None and acapella.filename:
             aca_path = save_upload(acapella.file, folder / "input" / "acapella", acapella.filename)
         gran = granularity if granularity in ("word", "line", "phrase", "auto") else None
-        return jobs.start(title, song_path, aca_path, lyrics, language.strip(), gran)
+        return jobs.start(title, song_path, aca_path, lyrics, language.strip(), gran,
+                          look="captions" if look == "captions" else "lyric")
 
     @app.get("/api/projects/new/status")
     def new_project_status():

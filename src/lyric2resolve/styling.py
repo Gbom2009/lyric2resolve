@@ -98,7 +98,22 @@ BUILTIN: dict[str, TextStyle] = {
                          shadow_blur=10.0, animation_in="fade"),
     "Karaoke Big": TextStyle(font_family="Arial", font_style="Black", fill="#ffffff", outline_width=8.0,
                              position_y_16x9=0.5, position_y_9x16=0.5, animation_in="word_reveal"),
+    # lyric-video looks: the words are the main event (big, centred, glowing, animated) - not subtitles
+    "Lyric Video": TextStyle(font_family="Arial Black", font_style="Regular", size_px=124, fill="#ffffff",
+                             outline_width=0.0, shadow_opacity=0.55, shadow_blur=18.0, shadow_offset_x=0.0,
+                             shadow_offset_y=6.0, glow_color="#ff3c8e", glow_size=10.0, glow_strength=0.9,
+                             position_y_16x9=0.5, position_y_9x16=0.5, line_spacing=1.0, letter_spacing=-0.01,
+                             animation_in="pop", animation_out="fade", animation_ms=180),
+    "Lyric Video Neon": TextStyle(font_family="Arial Black", font_style="Regular", size_px=116, fill="#eafcff",
+                                  outline_width=0.0, glow_color="#00e5ff", glow_size=20.0, glow_strength=1.5,
+                                  position_y_16x9=0.5, position_y_9x16=0.5, line_spacing=1.0,
+                                  animation_in="word_reveal", animation_out="fade", animation_ms=140),
+    "Lyric Video Punch": TextStyle(font_family="Impact", font_style="Regular", size_px=150, fill="#ffe14d",
+                                   outline_color="#000000", outline_width=6.0, shadow_opacity=0.7,
+                                   shadow_blur=4.0, position_y_16x9=0.5, position_y_9x16=0.48, line_spacing=0.95,
+                                   animation_in="pop", animation_out="none", animation_ms=120),
 }
+LYRIC_VIDEO_STYLE = "Lyric Video"   # default look of projects made with "Look: Lyric video"
 DEFAULT_STYLE = "Clean"
 BASIC_STYLE = TextStyle(font_family="Arial", font_style="Bold", outline_width=0.0, animation_in="none",
                         animation_out="none")

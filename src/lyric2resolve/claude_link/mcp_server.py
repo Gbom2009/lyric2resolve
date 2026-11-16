@@ -98,6 +98,35 @@ class FileBackend:
     def render_progress(self) -> dict:
         return self.jobs.progress()
 
+    def render_clip(self, body: dict) -> dict:
+        """Same as the editor's /api/clips/render, without a running editor."""
+        from lyric2resolve.editor import clips_api, ops
+        from lyric2resolve.visuals import custom
+
+        p = self.session.project
+        start, end = float(body["start"]), float(body["end"])
+        if body.get("snap"):
+            start, end = ops.snap_to_bar(p, start), ops.snap_to_bar(p, end)
+        name = custom.safe_name(str(body.get("name") or "clip"))
+        template = str(body.get("template") or "custom")
+        script = custom.resolve_script(self.path.parent, str(body.get("script"))) if template == "custom" else None
+        layouts = list(body.get("layouts") or p.settings.layouts)
+
+        def done(progress: dict) -> None:
+            res = clips_api.clip_from_render(progress, layouts)
+            self.session.apply("add_clip", {"path": res["path"], "start": start, "end": end, "name": name,
+                                            "source": "render", "hide_lyrics": bool(body.get("hide_lyrics")),
+                                            "info": {"paths": res["paths"], "render_name": name,
+                                                     "script": str(script) if script else None}})
+
+        try:
+            return self.jobs.start(self.path, template=template, preset=str(body.get("preset") or "preview"),
+                                   aspects=layouts, custom_script=script, time_range=(start, end),
+                                   lyrics_3d=bool(body.get("lyrics_3d")), name=name, params=body.get("params") or {},
+                                   video_only=True, on_done=done)
+        except (RuntimeError, FileNotFoundError) as exc:
+            raise ToolError(str(exc)) from exc
+
     def render_cancel(self) -> dict:
         return self.jobs.cancel()
 
@@ -167,6 +196,10 @@ class HttpBackend:
 
     def render_progress(self) -> dict:
         return self._call("GET", "api/render/progress")
+
+    def render_clip(self, body: dict) -> dict:
+        self._ensure_open()
+        return self._call("POST", "api/clips/render", body)
 
     def render_cancel(self) -> dict:
         return self._call("POST", "api/render/cancel", {})
@@ -239,7 +272,8 @@ EDIT_OPS = ("merge_words", "merge_blocks", "split_block", "split_block_words", "
             "set_block_text", "set_block_style", "set_word_text", "set_word_timing", "nudge_words", "nudge_block",
             "add_gap", "update_gap", "remove_gap", "update_section", "set_section_preset", "apply_presets",
             "merge_short_blocks", "set_settings", "save_style", "delete_style", "set_default_style",
-            "set_section_style", "set_styling_level", "apply_template")
+            "set_section_style", "set_styling_level", "apply_template", "add_text", "retime_block",
+            "add_clip", "update_clip", "remove_clip")
 
 
 class Tool:
@@ -352,6 +386,21 @@ def build_tools(be) -> dict[str, Tool]:
                                "preview, draft, standard, high, ultra. estimate_only = only time/disk estimate.",
              _obj({"template": STR, "preset": STR, "aspects": STRS, "sections": STRS, "estimate_only": BOOL}),
              preview_render),
+        Tool("custom_scene_guide", "READ THIS FIRST before writing a custom Blender scene: the build_scene(ctx) "
+                                   "contract, the audio-reactive helpers and a full example (3D 'ACID' text with "
+                                   "glowing dripping liquid).", _obj({}), lambda: {"guide": _custom_guide()}),
+        Tool("render_clip", "Render a scene for a time range as a clip on the editor's clips track (video only; it "
+                            "is added automatically when done; same name = replaced). template 'custom' + script "
+                            "(path inside the project, e.g. scenes/acid/scene.py) or a built-in template. "
+                            "snap = start/end to the nearest bar. hide_lyrics = the clip replaces the lyric titles "
+                            "there. params = values for the script (data['params']). Then follow render_progress.",
+             _obj({"name": STR, "start": NUM, "end": NUM, "script": STR, "template": STR, "preset": STR,
+                   "snap": BOOL, "hide_lyrics": BOOL, "lyrics_3d": BOOL, "params": {"type": "object"},
+                   "prompt": STR}, ["name", "start", "end"]),
+             lambda **k: be.render_clip(k)),
+        Tool("list_clips", "Clips on the clips track (id, name, start, end, file, hide_lyrics) and the bar times "
+                           "(downbeats) you can snap to.",
+             _obj({}), lambda: _clips_view(be.state())),
         Tool("render_progress", "Progress of the background render (frames done/total, ETA, log, result).",
              _obj({}), lambda: be.render_progress()),
         Tool("cancel_render", "Cancel the background render (it can be resumed later).", _obj({}),
@@ -362,6 +411,20 @@ def build_tools(be) -> dict[str, Tool]:
              lambda: {"fonts": be.fonts()}),
     ]
     return {t.name: t for t in tools}
+
+
+def _custom_guide() -> str:
+    from lyric2resolve.visuals import custom
+
+    return custom.guide()
+
+
+def _clips_view(state: dict) -> dict:
+    p = state["project"]
+    a = p.get("analysis") or {}
+    return {"clips": [{k: c.get(k) for k in ("id", "name", "start", "end", "path", "hide_lyrics", "source")}
+                      for c in p.get("clips", [])],
+            "bars": [round(x, 3) for x in (a.get("downbeats") or [])][:400], "bpm": a.get("bpm")}
 
 
 # ------------------------------------------------------------------ JSON-RPC

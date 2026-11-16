@@ -86,12 +86,12 @@ def test_build_args_new_and_resume(tmp_path):
     a = cli.build_args(Path("claude"), tmp_path / "m.json", "sid-1", resume=False)
     assert a[:5] == ["claude", "-p", "--output-format", "stream-json", "--verbose"]
     assert a[a.index("--session-id") + 1] == "sid-1" and "--resume" not in a
-    assert a[a.index("--allowedTools") + 1] == "mcp__lyric2resolve"
+    assert a[a.index("--allowedTools") + 1] == "mcp__lyric2resolve,Read,Glob,Grep,Edit(./**),Write(./**)"
     assert a[a.index("--mcp-config") + 1] == str(tmp_path / "m.json")
     b = cli.build_args(Path("claude"), None, "sid-1", resume=True, model="sonnet", permission_mode="acceptEdits",
                        extra_allowed=["mcp__blender"])
     assert b[b.index("--resume") + 1] == "sid-1" and "--session-id" not in b and "--mcp-config" not in b
-    assert b[b.index("--allowedTools") + 1] == "mcp__lyric2resolve,mcp__blender"
+    assert b[b.index("--allowedTools") + 1].endswith(",Write(./**),mcp__blender")
     assert b[b.index("--model") + 1] == "sonnet" and b[b.index("--permission-mode") + 1] == "acceptEdits"
 
 
@@ -477,3 +477,45 @@ def test_verify_checks_claude_and_mcp(settings_dir, monkeypatch):
     res = {r.name: r for r in verify.run_checks(ctx, only={"claude_cli", "mcp_server"})}
     assert res["claude_cli"].status == verify.OK and "2.1.325" in res["claude_cli"].detail
     assert res["mcp_server"].status == verify.OK, res["mcp_server"].detail
+
+
+def test_attachments_saved_listed_and_named_in_the_prompt(project_path):
+    import io
+
+    a = Assistant
+    f = a.save_attachment(project_path, "mood board.png", io.BytesIO(b"png"))
+    g = a.save_attachment(project_path, "mood board.png", io.BytesIO(b"png2"))
+    assert f["path"] == "context/mood board.png" and g["name"] == "mood board (2).png"
+    assert sorted(x["name"] for x in a.attachments(project_path)) == ["mood board (2).png", "mood board.png"]
+    msg = a.prompt_with_attachments("make it like this", ["mood board.png", "notes.txt"])
+    assert "context/mood board.png (image: look at it with the Read tool)" in msg and "context/notes.txt" in msg
+    a.remove_attachment(project_path, "mood board (2).png")
+    assert len(a.attachments(project_path)) == 1
+    a.save_attachment(project_path, "../../evil.txt", io.BytesIO(b"x"))
+    assert (project_path.parent / "context" / "evil.txt").exists()  # never outside context/
+    text = notes.write_notes(project_path).read_text(encoding="utf-8")
+    assert "context/" in text and "mood board.png" in text
+
+
+def test_attachments_api(live_editor, project_path):
+    import urllib.request
+
+    url, app, asst = live_editor
+    boundary = "xyz"
+    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"files\"; filename=\"ref.jpg\"\r\n"
+            f"Content-Type: image/jpeg\r\n\r\nJPG\r\n--{boundary}--\r\n").encode()
+    req = urllib.request.Request(url + "api/assistant/attachments", data=body, method="POST",
+                                 headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        assert json.loads(r.read())["saved"][0]["name"] == "ref.jpg"
+    with urllib.request.urlopen(url + "api/assistant/attachments/file/ref.jpg", timeout=30) as r:
+        assert r.read() == b"JPG"
+    log = project_path.parent / "argv.log"
+    asst.env = env_with(FAKE_CLAUDE_LOG=str(log))
+    req = urllib.request.Request(url + "api/assistant/send", method="POST",
+                                 data=json.dumps({"message": "like this", "attachments": ["ref.jpg"]}).encode(),
+                                 headers={"Content-Type": "application/json"})
+    urllib.request.urlopen(req, timeout=30).read()
+    assert asst.wait(60)
+    texts = [e["text"] for e in asst.poll(0)["events"] if e["kind"] == "text"]
+    assert texts and "context/ref.jpg" in texts[0]  # the fake claude echoes the prompt it received

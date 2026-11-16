@@ -296,6 +296,90 @@ TEMPLATES = {"spectrum_bars": template_spectrum_bars, "pulsing_blob": template_p
 
 
 # ------------------------------------------------------------------ build
+# ------------------------------------------------------------------ custom scenes (written by you or Claude)
+def load_custom(path: Path):
+    """Import a custom scene script; it must define build_scene(ctx) -> {"camera": ((x, y, z), (rx, ry, rz))}."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("l2r_custom_scene", str(path))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    if not hasattr(mod, "build_scene"):
+        raise RuntimeError(f"{path.name} must define build_scene(ctx)")
+    return mod.build_scene
+
+
+def template_custom(ctx):
+    layout = ctx["custom_build"](ctx) or {}
+    layout.setdefault("camera", ((0.0, -12.0, 2.0), (math.radians(84), 0.0, 0.0)))
+    return layout
+
+
+# ------------------------------------------------------------------ lyrics as 3D text
+def wrap_lines(text: str, width: int) -> str:
+    lines, cur = [], ""
+    for word in text.split():
+        if cur and len(cur) + 1 + len(word) > width:
+            lines.append(cur)
+            cur = word
+        else:
+            cur = f"{cur} {word}".strip()
+    if cur:
+        lines.append(cur)
+    return "\n".join(lines)
+
+
+def add_lyrics(ctx, cam, blocks: list[dict], aspect: str, fps: float, opts: dict | None = None) -> list:
+    """Every block as an extruded, glowing text object in front of the camera: pops in at its start,
+    pulses with the bass, gone at its end. Returns the text objects."""
+    opts = opts or {}
+    width = int(opts.get("chars_per_line", 22 if aspect == "16:9" else 12))
+    size = float(opts.get("size", 0.9 if aspect == "16:9" else 0.75))
+    color = opts.get("color", "#ffffff")
+    glow = opts.get("glow_color", ctx["colors"].get("bass", "#ff7a1a"))
+    font = None
+    if opts.get("font_file") and Path(opts["font_file"]).exists():
+        try:
+            font = bpy.data.fonts.load(opts["font_file"], check_existing=True)
+        except RuntimeError:
+            font = None
+    mat = bpy.data.materials.new("L2R_lyrics")
+    mat.use_nodes = True
+    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+    bsdf.inputs["Base Color"].default_value = hex_rgba(color)
+    for name in ("Emission Color", "Emission"):
+        if name in bsdf.inputs:
+            bsdf.inputs[name].default_value = hex_rgba(glow)
+            break
+    add_driver(bsdf.inputs["Emission Strength"], "default_value", ctx["ctrl"], "bass", "1.5 + v * 4.0 * s")
+    objs = []
+    for i, b in enumerate(blocks):
+        bpy.ops.object.text_add(location=(0, 0, 0))
+        ob = bpy.context.active_object
+        ob.name = f"L2R_lyric_{i:04d}"
+        ob.data.body = wrap_lines(b["text"], width)
+        ob.data.align_x, ob.data.align_y = "CENTER", "CENTER"
+        ob.data.size = size
+        ob.data.extrude = 0.06
+        ob.data.bevel_depth = 0.012
+        if font:
+            ob.data.font = font
+        ob.data.materials.append(mat)
+        ob.parent = cam
+        ob.location = (0.0, -0.4 if aspect == "16:9" else 0.0, -8.0)   # in front of the lens
+        f0 = max(1, int(round(b["start"] * fps)) + 1)
+        f1 = max(f0 + 1, int(round(b["end"] * fps)) + 1)
+        for f, hidden in ((1, True), (f0, False), (f1 + 4, True)):
+            ob.hide_render = ob.hide_viewport = hidden
+            ob.keyframe_insert("hide_render", frame=f)
+            ob.keyframe_insert("hide_viewport", frame=f)
+        for f, sc in ((f0, 0.6), (f0 + 3, 1.08), (f0 + 6, 1.0), (f1, 1.0), (f1 + 4, 0.85)):
+            ob.scale = (sc, sc, sc)
+            ob.keyframe_insert("scale", frame=f)
+        objs.append(ob)
+    return objs
+
+
 def apply_curves(ctrl, curves: dict, sections_curve: list[float], palettes: list[dict], frames: int) -> None:
     for name in ("bass", "mids", "highs", "rms", "onset", "beat"):
         set_curve(ctrl, name, (curves.get(name) or [0.0])[:frames])
@@ -438,9 +522,21 @@ def build(data: dict, aspect: str, curves: dict, out_path: Path) -> Path:
     def rotate(ob, band):
         add_driver(ob, "rotation_euler", ctrl, band, f"frame * 0.003 + v * {amount(band, 'rotation', 0.3):.3f}", 2)
 
+    fps = float(data["fps"])
     ctx = {"ctrl": ctrl, "mats": mats, "amount": amount, "floor": floor, "rotate": rotate,
-           "colors": data["colors"], "count": data.get("count")}
-    layout = TEMPLATES[data["template"]](ctx)
+           "colors": data["colors"], "count": data.get("count"),
+           # for custom scenes:
+           "bpy": bpy, "data": data, "aspect": aspect, "fps": fps, "frames": frames,
+           "frame_of": lambda t: max(1, int(round(float(t) * fps)) + 1),
+           "time_range": data.get("time_range"), "beats": data.get("beats", []),
+           "downbeats": data.get("downbeats", []), "bpm": data.get("bpm"), "lyrics": data.get("lyrics", []),
+           "add_driver": add_driver, "emissive_material": emissive_material, "hex_rgba": hex_rgba, "mk": mk,
+           "load_image": load_image, "folder": out_path.parent}
+    if data["template"] == "custom":
+        ctx["custom_build"] = load_custom(out_path.parent / data["custom_script"])
+        layout = template_custom(ctx)
+    else:
+        layout = TEMPLATES[data["template"]](ctx)
 
     (cx, cy, cz), rot = layout["camera"]
     bpy.ops.object.camera_add(location=(cx, cy, cz), rotation=rot)
@@ -456,6 +552,8 @@ def build(data: dict, aspect: str, curves: dict, out_path: Path) -> Path:
                    (0, 2)[i])
     if layout.get("fly"):
         add_driver(cam, "location", ctrl, "rms", f"{cy:.3f} + frame * {layout['fly']:.4f}", 1)
+    if data.get("lyrics_3d") and data.get("lyrics"):
+        add_lyrics(ctx, cam, data["lyrics"], aspect, fps, data.get("lyrics_style") or {})
     bpy.ops.object.light_add(type="POINT", location=(0, -3, 4))
     light = bpy.context.active_object
     add_driver(light.data, "energy", ctrl, "rms", f"100 + v * {amount('rms', 'light_intensity', 800.0):.1f} * s")

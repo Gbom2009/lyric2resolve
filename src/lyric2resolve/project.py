@@ -68,6 +68,24 @@ class Gap:
 
 
 @dataclass
+class Clip:
+    """A video on the clips track (your own file or a rendered Blender scene), placed on the song timeline."""
+    id: str
+    start: float                # seconds on the song
+    end: float
+    path: str                   # media file (relative to the project folder when inside it)
+    name: str = ""
+    source: str = "file"        # file | render
+    hide_lyrics: bool = False   # True: no lyric titles while this clip plays (the clip replaces the text)
+    in_point: float = 0.0       # seconds into the media file
+    info: dict = field(default_factory=dict)   # render settings / prompt for re-rendering
+
+    @property
+    def duration(self) -> float:
+        return self.end - self.start
+
+
+@dataclass
 class ProjectSettings:
     fps: float = 25.0
     start_timecode: str = "01:00:00:00"
@@ -111,6 +129,7 @@ class Project:
     blocks: list[Block] = field(default_factory=list)
     sections: list[Section] = field(default_factory=list)
     gaps: list[Gap] = field(default_factory=list)
+    clips: list[Clip] = field(default_factory=list)
     settings: ProjectSettings = field(default_factory=ProjectSettings)
     styles: dict = field(default_factory=dict)     # styling.StyleBook.to_project()
     extra: dict = field(default_factory=dict)
@@ -138,7 +157,7 @@ class Project:
         return ws[0].start, ws[-1].end
 
     def next_id(self, prefix: str) -> str:
-        used = {x.id for x in [*self.words, *self.blocks, *self.sections, *self.gaps]}
+        used = {x.id for x in [*self.words, *self.blocks, *self.sections, *self.gaps, *self.clips]}
         n = len(used) + 1
         while f"{prefix}{n:04d}" in used:
             n += 1
@@ -177,6 +196,13 @@ class Project:
         for g in self.gaps:
             if g.end <= g.start:
                 problems.append(f"gap {g.id} has no length")
+        for c in self.clips:
+            if c.end <= c.start:
+                problems.append(f"clip {c.id} has no length")
+        cl = sorted(self.clips, key=lambda c: c.start)
+        for a, b in zip(cl, cl[1:]):
+            if b.start < a.end - 1e-6:
+                problems.append(f"clips {a.id} and {b.id} overlap")
         return problems
 
     # ---------------------------------------------------------------- serialisation
@@ -190,7 +216,8 @@ class Project:
     def from_dict(cls, data: dict) -> "Project":
         data = migrate(dict(data))
         p = _from(cls, {k: v for k, v in data.items()
-                        if k not in ("words", "blocks", "sections", "gaps", "settings")})
+                        if k not in ("words", "blocks", "sections", "gaps", "clips", "settings")})
+        p.clips = [_from(Clip, c) for c in data.get("clips", [])]
         p.words = [_from(Word, w) for w in data.get("words", [])]
         p.blocks = [_from(Block, b) for b in data.get("blocks", [])]
         p.sections = [_from(Section, s) for s in data.get("sections", [])]
@@ -210,10 +237,9 @@ def save(project: Project, path: Path) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     project.modified = _now()
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(project.to_dict(), indent=1, ensure_ascii=False), encoding="utf-8")
-    tmp.replace(path)
-    return path
+    from lyric2resolve.paths import atomic_write_text
+
+    return atomic_write_text(path, json.dumps(project.to_dict(), indent=1, ensure_ascii=False))
 
 
 def load(path: Path) -> Project:

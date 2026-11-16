@@ -54,7 +54,8 @@
     const aspects = $$("input[name=aspect]:checked").map((c) => c.value);
     const part = ($("input[name=part]:checked") || {}).value;
     return { template, preset: $("#preset").value, aspects: aspects.length ? aspects : ["16:9"],
-             sections: part ? [part] : null, estimate_only: estimateOnly };
+             sections: part ? [part] : null, estimate_only: estimateOnly,
+             lyrics_3d: !!(document.getElementById("lyrics3d") || {}).checked };
   }
 
   function showProgress(p) {

@@ -9,7 +9,8 @@ import pytest
 from tests.e2e.conftest import free_port, make_project
 
 
-def fake_render(project_path, template, preset_name, aspects, sections, estimate_only, on_progress, log, cancel):
+def fake_render(project_path, template, preset_name, aspects, sections, estimate_only, on_progress, log, cancel,
+                **extra):
     from lyric2resolve.render import RenderReport
     from lyric2resolve.render.runner import Progress
 
@@ -78,6 +79,7 @@ def test_visuals_page_render_flow(visuals_page):
     pg.wait_for_function("document.querySelector('#progress-text').textContent.includes('Done')", timeout=15000)
     k = calls[-1]
     assert k["preset_name"] == "draft" and k["aspects"] == ["16:9", "9:16"] and not k["estimate_only"]
+    assert k["lyrics_3d"] is True  # "Lyrics inside the scene" is on by default
     pg.wait_for_selector(".video video")
     assert "song_16x9.mp4" in pg.inner_text("#videos")
     src = pg.get_attribute(".video video", "src")
