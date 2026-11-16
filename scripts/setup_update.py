@@ -28,14 +28,33 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--full", action="store_true")
     mode.add_argument("--update", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--write-pins", type=Path, help=argparse.SUPPRESS)  # internal plan step
     args = ap.parse_args(argv)
+
+    if args.write_pins:  # runs in a fresh process after the torch step, so it sees the new versions
+        info = setup_tools.probe_torch(Path(sys.executable))
+        args.write_pins.parent.mkdir(parents=True, exist_ok=True)
+        args.write_pins.write_text(setup_tools.torch_pins(info.get("versions") or {}), encoding="utf-8")
+        print("PyTorch versions pinned for the next steps: " + ", ".join(
+            f"{k} {v}" for k, v in (info.get("versions") or {}).items()))
+        return 0
+
+    from lyric2resolve import paths
 
     gpu = setup_tools.detect_gpu()
     print(f"GPU: {gpu.describe()}")
     print(f"PyTorch wheels: {setup_tools.torch_index_url(gpu)}")
+    installed = importlib.util.find_spec("torch") is not None
+    broken: list[str] = []
+    if installed:
+        print("Checking the installed PyTorch (torch / torchaudio / torchvision)...")
+        broken = setup_tools.torch_problems(setup_tools.probe_torch(Path(sys.executable)), gpu)
+        for b in broken:
+            print(f"  problem: {b}")
     plan = setup_tools.plan_setup(REPO, Path(sys.executable), gpu,
                                   mode="update" if args.update else "full",
-                                  torch_installed=importlib.util.find_spec("torch") is not None)
+                                  torch_installed=installed, torch_broken=broken,
+                                  pins=paths.ensure_data_dir() / "cache" / "torch-pins.txt")
     if args.dry_run:
         for note in plan.notes:
             print("NOTE:", note)
@@ -44,6 +63,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     print("Installing dependencies - this can take a while (torch is ~2-3 GB)...")
     ok = setup_tools.run_plan(plan, lambda cmd: subprocess.call(cmd, cwd=str(REPO)))
+    if ok:
+        info = setup_tools.probe_torch(Path(sys.executable))
+        problems = setup_tools.torch_problems(info, gpu)
+        if problems:
+            ok = False
+            print("PyTorch is still not OK: " + "; ".join(problems))
+            print("Copy these messages into the Claude session.")
+        elif info.get("versions"):
+            print("PyTorch OK: " + ", ".join(f"{k} {v}" for k, v in info["versions"].items())
+                  + (", CUDA available" if info.get("cuda") else ", CPU only"))
 
     settings, _ = load_settings()
     ffmpeg = setup_tools.find_tool("ffmpeg", settings.ffmpeg_path)

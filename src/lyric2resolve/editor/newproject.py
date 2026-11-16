@@ -15,6 +15,9 @@ from typing import BinaryIO, Callable
 
 DEPS_HELP = ("Transcription is not installed yet. Close the editor, open the lyric2resolve launcher and click "
              "'Run setup' (installs Whisper + PyTorch), then try again.")
+BROKEN_TORCH_HELP = ("PyTorch is installed but broken ({detail}). This happens when torch and torchaudio come from "
+                     "different builds (CUDA vs CPU). Fix: close the editor, open the lyric2resolve launcher and click "
+                     "'Update now' (or run setup_windows.bat): setup now detects this and reinstalls a matching set.")
 
 
 def unique_folder(projects_dir: Path, name: str) -> tuple[str, Path]:
@@ -42,7 +45,11 @@ def default_engine(model: str | None, language: str | None):
         import faster_whisper  # noqa: F401
         import stable_whisper  # noqa: F401
     except ImportError as exc:
-        raise RuntimeError(DEPS_HELP) from exc
+        if getattr(exc, "name", "") in ("faster_whisper", "stable_whisper", "torch"):
+            raise RuntimeError(DEPS_HELP) from exc
+        raise RuntimeError(BROKEN_TORCH_HELP.format(detail=exc)) from exc
+    except OSError as exc:  # e.g. "Could not load this library: ...libtorchaudio.pyd"
+        raise RuntimeError(BROKEN_TORCH_HELP.format(detail=exc)) from exc
     from lyric2resolve.transcription import engine_from_settings
 
     return engine_from_settings(model or None, language or None)

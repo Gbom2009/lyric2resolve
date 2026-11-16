@@ -8,6 +8,7 @@ You are continuing **lyric2resolve**, a Windows app (Python, NVIDIA/CUDA) that t
 ## Current state
 - Merged on main: Phase 0 (docs), Phase 1 (launcher/updater, PR #1).
 - **PR #2** (Phases 2-19) is MERGED into main.
+- User feedback 2 (2026-11-16): "libtorchaudio.pyd could not load" in New project → torch replaced by a CPU PyPI build during setup; fixed on branch `fixes-2026-11-16b` (PR "Fixes from testing (2)"): pinned torch set + auto-repair on Update, av<19. Waiting for the user to merge + Update + retry New project.
 - User feedback 1 (2026-11-16): side-panel buttons "don't work" + no way to create a project in the UI → fixed on branch `fixes-2026-11-16` (PR "Fixes from testing (1)"): New project dialog, no-project guards/empty states. Waiting for the user to merge + Update + retest, then the FULL TEST PASS in VERIFY_LOCAL.md.
 - User facts (session 3): Claude Code CLI is installed + logged in on the PC; brand values come from the public repo Gbom2009/funqtion-site.
 

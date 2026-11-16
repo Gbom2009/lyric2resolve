@@ -3,6 +3,19 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Fixes from testing (2) — "Could not load this library: libtorchaudio.pyd"
+**Fixed**
+- New project failed while loading Whisper with `Could not load this library: …\torchaudio\lib\libtorchaudio.pyd`. Cause: setup installed the CUDA version of PyTorch, but a later step (the vocal-separation package needs `torchvision`) silently replaced it with the newest PyPI PyTorch, which is CPU-only on Windows. The CUDA torchaudio left behind could no longer load.
+  - Setup now installs **torch, torchaudio and torchvision together** from the CUDA index and **locks those versions** for all later steps, so nothing can swap them again.
+  - Setup now **checks PyTorch** and **repairs it automatically**: a broken or mixed CPU/CUDA set is uninstalled and a matching set is installed again. This runs on your next **Update now**, so your current install gets fixed without doing anything by hand. Expect a ~2-3 GB download.
+  - Newer NVIDIA drivers (CUDA 13) now get the newer CUDA 13 PyTorch builds.
+- Pinned PyAV below 19: PyAV 19 broke audio decoding in faster-whisper (the next error you would have hit).
+- A broken PyTorch now gives a clear message explaining how to repair it, in New project and in `verify_local.py`.
+
+**What to test**
+- Launcher → **Update now**: the dependency step reinstalls PyTorch (takes a while) and ends with "PyTorch OK: torch … +cu…, CUDA available".
+- Then New project with a real song → it gets past "Loading Whisper" and the project opens.
+
 ## Fixes from testing (1) — make a new project in the editor, buttons without a project
 **New**
 - **+ New project…** (in the Projects window, which opens automatically when nothing is open): choose the full song, optionally the acapella, and paste the lyrics if you have them. Set the name, language and block type, then click **Create project**. It converts the audio, checks the alignment, transcribes (or aligns your lyrics), analyses BPM/sections/gaps and builds the blocks in the background with a progress log, then opens the project. The first time it downloads the Whisper model, which takes a while. Your files are copied into the project folder (`input`).

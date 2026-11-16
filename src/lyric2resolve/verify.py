@@ -110,6 +110,11 @@ def _gpu(ctx: Context) -> CheckResult:
 
 @check("torch_cuda")
 def _torch(ctx: Context) -> CheckResult:
+    info = setup_tools.probe_torch(Path(sys.executable))
+    problems = setup_tools.torch_problems(info, setup_tools.detect_gpu(ctx.probe))
+    if problems:
+        return CheckResult("torch_cuda", FAIL, "; ".join(problems) + " - run the launcher's Update / "
+                           "setup_windows.bat (it reinstalls a matching set)")
     try:
         import torch
     except ImportError:
