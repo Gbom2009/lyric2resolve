@@ -63,6 +63,8 @@ OPS: dict[str, Callable] = {
     "set_word_timing": ops.set_word_timing,
     "nudge_words": ops.nudge_words,
     "nudge_block": ops.nudge_block,
+    "add_text": ops.add_text,
+    "retime_block": ops.retime_block,
     "add_gap": ops.add_gap,
     "update_gap": ops.update_gap,
     "remove_gap": ops.remove_gap,

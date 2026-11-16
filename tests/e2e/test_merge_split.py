@@ -121,3 +121,40 @@ def test_section_preset_and_text_options(page):
     page.wait_for_function("L2R.state.blocks.length === 6")
     page.locator("#card-options select").first.select_option("upper")
     page.wait_for_function("L2R.state.blocks[0].display === 'WE SING THIS SONG'")
+
+
+def test_add_your_own_text_dialog(page):
+    """Fixes from testing: add words Whisper missed, at a chosen time (inside the instrumental gap 7-11 s)."""
+    n = page.evaluate("L2R.words().length")
+    page.click("#lyrics")
+    page.keyboard.press("Escape")
+    page.click("#btn-add-text")
+    page.wait_for_selector("#addtext-dialog[open]")
+    page.fill("#addtext-text", "Acid")
+    page.fill("#addtext-start", "0:08.00")
+    page.fill("#addtext-end", "0:09.00")
+    page.click("#addtext-go")
+    page.wait_for_function(f"L2R.words().length === {n + 1}")
+    assert not page.evaluate("document.querySelector('#addtext-dialog').open")
+    w = page.evaluate("L2R.words().find(w => w.text === 'Acid')")
+    assert 8.0 <= w["start"] < w["end"] <= 9.0
+    assert page.evaluate("L2R.state.project.gaps.length") == 2  # gap split around the new word
+    # overlap with an existing word -> explained in the dialog, nothing added
+    page.keyboard.press("t")
+    page.wait_for_selector("#addtext-dialog[open]")
+    page.fill("#addtext-text", "clash")
+    page.fill("#addtext-start", "0:01.00")
+    page.fill("#addtext-end", "0:01.20")
+    page.click("#addtext-go")
+    page.wait_for_function("document.querySelector('#addtext-msg').textContent.includes('existing word')")
+    page.click("#addtext-close")
+    assert page.evaluate("L2R.words().length") == n + 1
+
+
+def test_block_start_end_editing(page):
+    page.locator(".word", has_text="all").first.click()
+    page.wait_for_selector("#insp-bstart")
+    page.fill("#insp-bstart", "0:03.70")
+    page.fill("#insp-bend", "0:04.60")
+    page.press("#insp-bend", "Enter")
+    page.wait_for_function("L2R.state.blocks[1].start === 3.7 && L2R.state.blocks[1].end === 4.6")

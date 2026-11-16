@@ -35,8 +35,11 @@
       `${flags.length} word(s) to check · ${warns.length} line-length warning(s). Nothing is changed automatically.`));
     const list = h("ol", { class: "review-list", id: "review-list" });
     flags.forEach((f) => list.append(h("li", { class: `flag ${f.severity}` },
-      h("button", { class: "linkish", "data-word-id": f.word_id, onclick: () => jumpToWord(f.word_id) },
-        h("b", {}, f.kind.replace(/_/g, " ")), " — ", f.message))));
+      h("button", { class: "linkish", "data-word-id": f.word_id, onclick: () => (f.start != null && L.ws && L.audioReady)
+        ? L.ws.setTime(f.start) : jumpToWord(f.word_id) },
+        h("b", {}, f.kind.replace(/_/g, " ")), " — ", f.message),
+      f.kind === "missed_lyrics" && L.showAddText
+        ? h("button", { class: "add-here", onclick: () => L.showAddText(f.start, f.end) }, "Add text here") : "")));
     warns.forEach((w) => list.append(h("li", { class: "flag layout" },
       h("button", { class: "linkish", "data-block-id": w.block_id, onclick: () => jumpToBlock(w.block_id) },
         h("b", {}, "too long"), " — ", w.message))));

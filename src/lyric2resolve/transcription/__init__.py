@@ -72,7 +72,7 @@ def engine_from_settings(model: str | None = None, language: str | None = None) 
     return StableTsEngine(EngineOptions(
         model=model or s.whisper_model, device=s.device,
         compute_type=s.compute_type if s.device == "cuda" else "int8",
-        language=language or s.language or None,
+        language=language or s.language or None, vad_threshold=float(s.vad_threshold),
         model_dir=str(paths.ensure_data_dir() / "models" / "whisper")))
 
 

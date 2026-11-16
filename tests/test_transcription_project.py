@@ -288,3 +288,23 @@ def test_setup_plan_ensures_cublas12_on_windows_gpu(tmp_path):
                          capture_output=True, text=True)
     if not sys.platform.startswith("win"):
         assert out.returncode == 0 and "skipped" in out.stdout
+
+
+def test_vad_is_gentler_for_singing_and_can_be_switched_off():
+    from lyric2resolve.settings import AppSettings
+    from lyric2resolve.transcription import engine
+
+    assert AppSettings().vad_threshold == 0.35
+    e = engine.StableTsEngine(engine.EngineOptions())
+    assert e.vad_kwargs() == {"vad_filter": True, "vad_parameters": {"threshold": 0.35, "speech_pad_ms": 500}}
+    assert engine.StableTsEngine(engine.EngineOptions(vad_threshold=0)).vad_kwargs() == {"vad_filter": False}
+    calls = {}
+
+    class M:
+        def transcribe(self, *a, **k):
+            calls.update(k)
+            return SimpleNamespace(segments=[], language="en")
+
+    e._model = M()
+    e.transcribe("x.wav")
+    assert calls["vad_parameters"]["threshold"] == 0.35 and calls["condition_on_previous_text"] is False

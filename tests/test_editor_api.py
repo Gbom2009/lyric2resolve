@@ -279,3 +279,60 @@ def test_http_api(session, tmp_path):
     session.project.audio["song_wav"] = str(wav)
     assert client.get("/api/audio/song").status_code == 200
     assert client.get("/").status_code == 200
+
+
+# ------------------------------------------------------------------ your own text (add_text / retime_block)
+def test_add_text_lines_blocks_and_words():
+    p = make_project()
+    first = p.words[0].start
+    blocks = ops.add_text(p, "missed first line\nand a second", 0.0, first - 0.1)
+    assert [p.block_text(b) for b in blocks] == ["missed first line", "and a second"]
+    assert p.words[0].text == "missed" and p.validate() == []
+    assert all(0.0 <= w.start < w.end <= first for w in p.words[:5])
+    assert [w.start for w in p.words] == sorted(w.start for w in p.words)  # still in time order
+    n = len(p.blocks)
+    last = p.words[-1].end
+    ops.add_text(p, "one two three", last + 1, last + 2, mode="words")
+    assert len(p.blocks) == n + 3
+    ops.add_text(p, "all in one", last + 3, last + 4, mode="block")
+    assert p.block_text(p.blocks[-1]) == "all in one" and p.validate() == []
+
+
+def test_add_text_refuses_overlaps_and_makes_room_in_gaps():
+    p = make_project()
+    w = p.words[2]
+    with pytest.raises(ops.OpError, match="existing word"):
+        ops.add_text(p, "x", w.start - 0.05, w.end)
+    with pytest.raises(ops.OpError, match="end time"):
+        ops.add_text(p, "x", 5.0, 5.0)
+    with pytest.raises(ops.OpError, match="type some text"):
+        ops.add_text(p, "  \n ", 0.0, 0.5)
+    last = p.words[-1].end
+    p.gaps = [proj.Gap("g0100", last + 1, last + 6, "auto")]
+    ops.add_text(p, "acid", last + 3, last + 4)
+    assert [(round(g.start, 2), round(g.end, 2)) for g in p.gaps] == [(round(last + 1, 2), round(last + 3, 2)),
+                                                                     (round(last + 4, 2), round(last + 6, 2))]
+    from lyric2resolve.export.timeline import build_plan, check_plan
+
+    assert check_plan(build_plan(p, "16:9")) == []  # the new text is exportable (not inside a gap)
+
+
+def test_retime_block_stretches_words_and_respects_neighbours():
+    p = make_project()
+    b = p.blocks[1]
+    ws = p.block_words(b)
+    s0, e0 = ws[0].start, ws[-1].end
+    ops.retime_block(p, b.id, s0 + 0.1, e0 - 0.1)
+    ws = p.block_words(b)
+    assert ws[0].start == round(s0 + 0.1, 3) and ws[-1].end == round(e0 - 0.1, 3)
+    assert all(a.end <= c.start + 1e-6 for a, c in zip(ws, ws[1:]))
+    with pytest.raises(ops.OpError, match="overlap"):
+        ops.retime_block(p, b.id, p.blocks[0].word_ids and p.block_words(p.blocks[0])[0].start, e0)
+
+
+def test_add_text_via_session_is_undoable(session):
+    n = len(session.project.words)
+    session.apply("add_text", {"text": "hello", "start": 0.0, "end": 0.5})
+    assert len(session.project.words) == n + 1
+    session.undo()
+    assert len(session.project.words) == n

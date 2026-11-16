@@ -67,6 +67,8 @@
         <label class="field">Whisper model <select data-key="whisper_model" id="models"></select></label>
         <label class="field">Device <select data-key="device" id="devices"></select></label>
         <label class="field">Language (empty = auto-detect) <input type="text" data-key="language" placeholder="e.g. en, nl"></label>
+        <label class="field" title="Lower = keeps softer singing (fewer missed lines, a bit more risk of nonsense words in quiet parts). 0 = filter off.">Voice filter sensitivity (0–1, default 0.35)
+          <input type="number" data-key="vad_threshold" data-type="number" min="0" max="0.9" step="0.05"></label>
       </div>
     </section>
 
