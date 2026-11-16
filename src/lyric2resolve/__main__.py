@@ -10,6 +10,7 @@ APP_COMMANDS = {
     "audio-check": "lyric2resolve.audio",
     "transcribe": "lyric2resolve.transcription",
     "analyze": "lyric2resolve.analysis",
+    "editor": "lyric2resolve.editor.app",
 }
 
 

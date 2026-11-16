@@ -11,8 +11,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 3 | Audio inputs / alignment / instrumental | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 4 | Transcription + project JSON | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 5 | Music analysis + gaps + sanity | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 6 | Editor backend API | in progress | continuous-2026-11-16 / PR #2 |
-| 7 | Editor frontend 1 | planned | |
+| 6 | Editor backend API | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 7 | Editor frontend 1 | in progress | continuous-2026-11-16 / PR #2 |
 | 8 | Editor frontend 2 | planned | |
 | 9 | Styling + fonts | planned | |
 | 10 | FCPXML export | planned | |
@@ -34,10 +34,13 @@ Phase 2: done (setup_tools.py, settings.py, verify.py, scripts/setup_update.py, 
 Phase 3: done (audio/{convert,wavio,align,stems,__init__}.py, `audio-check` CLI, verify checks audio_offset + vocal_separation, tests/test_audio.py).
 Phase 4: done (project.py, transcription/{engine,__init__}.py, `transcribe` CLI, verify whisper checks, tests/data/tiny_vocal.wav).
 Phase 5: done (analysis/{music,gaps,sanity,__init__}.py, `analyze` CLI, tests/test_analysis.py).
-Phase 6 (editor backend): next → `editor/{ops,history,presets,app}.py`, tests/test_editor_api.py.
+Phase 6: done (editor/{ops,presets,history,app}.py, `editor` CLI, tests/test_editor_api.py).
+Phase 7 (frontend 1): next → `editor/static/{index.html,app.js,style.css}` + vendored wavesurfer, launcher opens editor, Playwright test.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- Editor ops are pure functions on Project, called via a whitelist (`editor.app.OPS`) from `POST /api/op/{name}`; undo/redo = full project snapshots (simple, projects are small); failed ops restore the snapshot; every successful op saves immediately.
+- PHRASE preset restarts at lyric line breaks; presets never cross gaps/sections; max_chars splits at the biggest pause near the middle.
 - Music analysis: librosa only (no madmom: unmaintained, hard on Win/Py3.12). Beat tracking at hop 256 (hop 512 cannot represent 120 BPM), trim=False, grid extended at constant tempo over quiet parts; BPM from least-squares fit. Downbeats = beat phase with most low-band energy. Sections = checkerboard novelty on beat-synced chroma+MFCC+RMS SSM, labelled by energy.
 - Gaps = word-less stretches ≥ `settings.min_gap_s` (4 s) unless the acapella is mostly active there; manual gaps survive re-analysis.
 - Whisper backend: stable-ts 2.19 `load_faster_whisper` (faster-whisper 1.2). Transcribe uses faster-whisper's own `vad_filter` (no torch-hub download), `condition_on_previous_text=False`; align uses `model.align(..., original_split=True)` + language detection via `detect_language`. Verified against package source, not yet on the PC.

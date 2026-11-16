@@ -3,6 +3,16 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 6 — Editor engine (backend)
+**New**
+- The engine behind the browser editor: merge selected words into one lyric block, split a block at any word (word timings stay exactly as they were), move a word to the neighbouring block, edit text, nudge timing, remove blocks, add/resize/remove instrumental gaps, unlimited undo/redo. Every edit is saved to `project.json` right away.
+- Presets to build blocks as a starting point: WORD (one word per block), LINE (your lyric lines), PHRASE (N words, restarting at each line), AUTO (new block after a pause longer than X s); per section (e.g. verse = LINE, chorus = WORD) or from a `sections.yaml` file. Blocks never run through a gap or past "max characters".
+- Text options for the export: UPPERCASE / lowercase / Title Case, strip punctuation, merge blocks shorter than N frames.
+- Command: `lyric2resolve editor --project <project.json>` starts it; until the next phase the page only links to the API docs.
+
+**What to test**
+- `lyric2resolve editor --project <project.json>` → the browser opens a placeholder page; `/docs` lists the API. (The real editor screen comes in the next phase.)
+
 ## Phase 5 — Music analysis, instrumental gaps, sanity check
 **New**
 - Analyses the song: BPM, beat grid and bar starts (downbeats), key, an energy curve and section boundaries (labelled intro / verse / chorus / outro as a first guess you can rename later). Beats and sections become markers in the exports.
