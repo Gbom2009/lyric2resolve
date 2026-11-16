@@ -3,6 +3,18 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 9 — Text styles and the font library
+**New**
+- Styling level (how much the app sets up in Resolve): BASIC (plain text, default font/colour), STYLED (your style preset), FULL (styled + simple animations: fade, pop, slide up, word reveal).
+- Style presets with a live 16:9 and 9:16 preview in the editor: font, weight, size, fill colour, outline, shadow, glow, alignment, height on screen per layout, animation. Built-in looks (Clean, Bold Yellow, Neon, Minimal, Karaoke Big) + your own ("Save as…").
+- One style per section (e.g. all choruses Neon) and per block; a default style for the rest.
+- Font library: `lyric2resolve assets sync --fonts` downloads 30 hand-picked free Google Fonts for lyric videos (Montserrat, Bebas Neue, Anton, Orbitron, Monoton, …). Each family's license is checked first: only SIL Open Font License or Apache 2.0 fonts are downloaded. A `CREDITS.md` with authors and licenses is written next to them.
+- `lyric2resolve assets install-fonts` installs them (plus your own fonts in `…\assets\fonts\custom`) for your Windows user so Resolve can use them (restart Resolve afterwards). The editor's font picker shows library, custom and standard Windows fonts.
+
+**What to test**
+- Run `assets sync --fonts`, then `assets install-fonts`, restart Resolve → the fonts appear in Resolve's font list.
+- In the editor: change the styling level, edit a style, Save as…, give the chorus its own style; watch the preview.
+
 ## Phase 8 — The editor in your browser (part 2: editing)
 **New**
 - Toolbar + shortcuts to shape the lyric blocks: Merge (M), Split at a word (S), split into single Words (W), move a word to the previous/next block (Alt+←/→), Edit text (E), Remove a block from the timeline (Delete), nudge timing ([ ] = 20 ms, with Shift 100 ms).

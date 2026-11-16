@@ -14,8 +14,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 6 | Editor backend API | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 7 | Editor frontend 1 | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 8 | Editor frontend 2 | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 9 | Styling + fonts | in progress | continuous-2026-11-16 / PR #2 |
-| 10 | FCPXML export | planned | |
+| 9 | Styling + fonts | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 10 | FCPXML export | in progress | continuous-2026-11-16 / PR #2 |
 | 11 | Resolve script + SRT/CSV/EDL | planned | |
 | 12 | Karaoke | planned | |
 | 13 | Texture sync + browser | planned | |
@@ -37,10 +37,13 @@ Phase 5: done (analysis/{music,gaps,sanity,__init__}.py, `analyze` CLI, tests/te
 Phase 6: done (editor/{ops,presets,history,app}.py, `editor` CLI, tests/test_editor_api.py).
 Phase 7: done (static/{index.html,style.css,app.js}, vendored wavesurfer 7.12.12, project picker API, launcher starts editor via updater/appctl.py, tests/e2e/*).
 Phase 8: done (static/{blocks,gaps,review}.js, layout.py (shared text layout/safe area), layout warnings in state, tests/e2e/test_merge_split.py).
-Phase 9 (styling + fonts): next → styling.py, assets/fonts.py, static/styles.js, tests/test_styling_fonts.py.
+Phase 9: done (styling.py, assets/{__init__,fonts}.py, assets/fonts/curation.json, static/styles.js, tests/test_styling_fonts.py + e2e/test_styles.py).
+Phase 10 (FCPXML): next → export/{timecode,timeline,fcpxml}.py, tests/test_fcpxml.py.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- Styles live in `project.styles` (StyleBook: user presets + default + by_section label→name); built-ins are code. Resolution: block > section own > section by id > by label > default. BASIC ignores presets; STYLED drops animations; FULL keeps them.
+- Fonts: license from google/fonts METADATA.pb (OFL/APACHE2 only; UFL rejected); static TTFs via the Google Fonts CSS2 API with an old User-Agent (variable fonts are unreliable in Resolve). Per-user install: copy to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts + HKCU Fonts registry value. No fonts are committed to the repo.
 - Text width is estimated from character counts (0.55 em mixed / 0.68 em uppercase) in `lyric2resolve/layout.py`; used for warnings now and for wrapping/positions in exports. Font size 0 = auto (7.5% of height in 16:9, 4.4% in 9:16).
 - Frontend: vanilla JS, global `window.L2R` with hooks (render/selection/keydown/ready) so later files plug in; wavesurfer 7.12.12 UMD vendored in static/vendor. E2E tests: Python Playwright (CI installs chromium; locally the preinstalled one).
 - Launcher = app control window: runs the editor as a child process (no console, log in data/logs/editor.log), picks a free port from settings.editor_port, opens the browser, stops it on close/update/rollback.

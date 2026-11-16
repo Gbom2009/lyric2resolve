@@ -53,3 +53,8 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Review list jumps to the right word/block; ⚠ long marks plausible for your font size.
 - [ ] Section preset Apply + "Rebuild all blocks" (asks first) work; Undo restores manual edits.
 - [ ] Keyboard shortcuts don't fire while typing in input fields.
+
+## Phase 9 — styles + fonts
+- [ ] `assets sync --fonts` downloads ~30 families (≈60-80 TTF files) into `%LOCALAPPDATA%\lyric2resolve\assets\fonts`; CREDITS.md lists them. (Verified in the cloud for 3 families on 2026-11-16.)
+- [ ] `assets install-fonts` → files in `%LOCALAPPDATA%\Microsoft\Windows\Fonts` and visible in Windows Settings > Fonts; after restarting Resolve they appear in Text+ / Fusion font list (check one static font, e.g. "Montserrat Bold").
+- [ ] Editor: the library fonts render in the style preview (font picker suggestions).

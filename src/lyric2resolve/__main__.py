@@ -11,6 +11,7 @@ APP_COMMANDS = {
     "transcribe": "lyric2resolve.transcription",
     "analyze": "lyric2resolve.analysis",
     "editor": "lyric2resolve.editor.app",
+    "assets": "lyric2resolve.assets",
 }
 
 

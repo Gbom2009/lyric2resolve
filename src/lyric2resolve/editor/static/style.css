@@ -125,3 +125,16 @@ table.sections input, table.sections select { font-size: 13px; padding: 2px 4px;
 .lyrics:focus-visible { outline-offset: -3px; }
 .review-list button.linkish { width: auto; display: inline; }
 .lyrics:focus-visible { outline: 2px solid var(--line); }
+
+/* ---- styles card / live preview ---- */
+.previews { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
+.style-preview { position: relative; overflow: hidden; border-radius: 6px; flex: none;
+  background: linear-gradient(135deg, #1d2633 0%, #3a2440 55%, #0e3a46 100%); }
+.style-preview.p169 { width: 190px; aspect-ratio: 16 / 9; }
+.style-preview.p916 { width: 62px; aspect-ratio: 9 / 16; }
+.style-preview .pv-text { position: absolute; left: 5%; right: 5%; transform: translateY(-50%); white-space: normal; word-break: break-word; }
+.style-preview .pv-tag { position: absolute; left: 4px; bottom: 2px; font-size: 10px; color: #fff; opacity: .7; font-family: var(--mono); }
+.card h4 { font-size: 13px; margin: 12px 0 4px; }
+.inline-field { flex-direction: row; align-items: center; justify-content: space-between; text-transform: capitalize; }
+.inline-field select { width: auto; max-width: 60%; }
+input[type=color] { padding: 0 2px; height: 30px; }

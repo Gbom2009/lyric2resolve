@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from lyric2resolve import project as proj
+from lyric2resolve import styling
 from lyric2resolve.analysis import sanity
 
 from . import ops, presets
@@ -64,6 +65,11 @@ OPS: dict[str, Callable] = {
     "apply_presets": _apply_presets,
     "merge_short_blocks": presets.merge_short_blocks,
     "set_settings": _set_settings,
+    "save_style": styling.op_save_style,
+    "delete_style": styling.op_delete_style,
+    "set_default_style": styling.op_set_default_style,
+    "set_section_style": styling.op_set_section_style,
+    "set_styling_level": styling.op_set_styling_level,
 }
 
 
@@ -107,8 +113,14 @@ class EditorSession:
                     out.append({"block_id": b.id, "layout": lay, "lines": res.lines, "message": res.message()})
         return out
 
+    def styles_view(self) -> dict:
+        book = styling.StyleBook.from_project(self.project.styles)
+        return {"presets": {k: v.to_dict() for k, v in book.all().items()}, "builtin": list(styling.BUILTIN),
+                "default": book.default, "by_section": book.by_section, "levels": list(styling.LEVELS),
+                "animations": list(styling.ANIMATIONS)}
+
     def state(self) -> dict:
-        return {"project": self.project.to_dict(), "blocks": self.blocks_view(), "flags": self.flags(),
+        return {"styles": self.styles_view(),"project": self.project.to_dict(), "blocks": self.blocks_view(), "flags": self.flags(),
                 "layout_warnings": self.layout_warnings(),
                 "history": self.history.state(), "problems": self.project.validate()}
 
@@ -130,7 +142,7 @@ class EditorSession:
                 problems = self.project.validate()
                 if problems:
                     raise ops.OpError("; ".join(problems))
-            except (ops.OpError, ValueError, TypeError, proj.ProjectError) as exc:
+            except (ops.OpError, ValueError, TypeError, proj.ProjectError, styling.StyleError) as exc:
                 # restore the snapshot: a failed op never leaves a half-edited project
                 restored = self.history.undo(self.project)
                 self.history.redo_stack.clear()
@@ -178,7 +190,8 @@ def list_projects(projects_dir: Path) -> list[dict]:
     return out
 
 
-def create_app(session: EditorSession | None = None, projects_dir: Path | None = None):
+def create_app(session: EditorSession | None = None, projects_dir: Path | None = None,
+               fonts_root: Path | None = None):
     """session: project opened at start (optional). projects_dir: folder offered in the project picker."""
     from fastapi import Body, FastAPI, HTTPException
     from fastapi.responses import FileResponse, HTMLResponse
@@ -233,6 +246,25 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
     @app.post("/api/redo")
     def redo():
         return current().redo()
+
+    def _fonts_root() -> Path:
+        from lyric2resolve.assets import fonts
+
+        return Path(fonts_root) if fonts_root else fonts.fonts_dir()
+
+    @app.get("/api/fonts")
+    def font_list():
+        from lyric2resolve.assets import fonts
+
+        return {"fonts": fonts.list_fonts(_fonts_root())}
+
+    @app.get("/api/fonts/file/{rel:path}")
+    def font_file(rel: str):
+        root = _fonts_root().resolve()
+        path = (root / rel).resolve()
+        if root not in path.parents or path.suffix.lower() not in (".ttf", ".otf") or not path.is_file():
+            raise HTTPException(status_code=404, detail="font not found")
+        return FileResponse(path, media_type="font/ttf" if path.suffix.lower() == ".ttf" else "font/otf")
 
     @app.get("/api/audio/{kind}")
     def audio(kind: str):

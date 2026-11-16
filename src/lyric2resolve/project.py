@@ -112,6 +112,7 @@ class Project:
     sections: list[Section] = field(default_factory=list)
     gaps: list[Gap] = field(default_factory=list)
     settings: ProjectSettings = field(default_factory=ProjectSettings)
+    styles: dict = field(default_factory=dict)     # styling.StyleBook.to_project()
     extra: dict = field(default_factory=dict)
 
     # ---------------------------------------------------------------- lookups

@@ -13,6 +13,7 @@ assets/textures/*
 !assets/textures/README.md
 assets/fonts/*
 !assets/fonts/README.md
+!assets/fonts/curation.json
 out/
 renders/
 cache/
