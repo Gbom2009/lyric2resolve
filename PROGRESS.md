@@ -16,8 +16,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 8 | Editor frontend 2 | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 9 | Styling + fonts | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 10 | FCPXML export | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 11 | Resolve script + SRT/CSV/EDL | in progress | continuous-2026-11-16 / PR #2 |
-| 12 | Karaoke | planned | |
+| 11 | Resolve script + SRT/CSV/EDL | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 12 | Karaoke | in progress | continuous-2026-11-16 / PR #2 |
 | 13 | Texture sync + browser | planned | |
 | 14 | Blender generator | planned | |
 | 15 | Headless render + DJ mux | planned | |
@@ -39,10 +39,12 @@ Phase 7: done (static/{index.html,style.css,app.js}, vendored wavesurfer 7.12.12
 Phase 8: done (static/{blocks,gaps,review}.js, layout.py (shared text layout/safe area), layout warnings in state, tests/e2e/test_merge_split.py).
 Phase 9: done (styling.py, assets/{__init__,fonts}.py, assets/fonts/curation.json, static/styles.js, tests/test_styling_fonts.py + e2e/test_styles.py).
 Phase 10: done (export/{timecode,timeline,fcpxml,__init__}.py, editor Export dialog (static/export.js), docs/RESOLVE_IMPORT.md, verify check fcpxml_validity, tests/test_fcpxml.py).
-Phase 11 (Resolve script + SRT/CSV/EDL): next → export/{resolve_script,srt,csv_export,edl}.py, tests/test_exports_resolve.py.
+Phase 11: done (export/{textformats,resolve_job}.py, export/resolve_template/lyric2resolve_build_timeline.py, docs/RESOLVE_SCRIPT.md, tests/test_exports_resolve.py).
+Phase 12 (karaoke): next → karaoke.py (timing data + playlist API), static/karaoke.{html,js,css}, tests/test_karaoke.py + e2e.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- Resolve script: the API (README 2026) has no way to set a timeline item's duration and InsertFusionTitleIntoTimeline ripple-inserts, so Text+ clips are AppendToTimeline copies of a user-made Media Pool Fusion Composition named `l2r_textplus` with exact startFrame/endFrame/recordFrame; fallback = ImportTimelineFromFile(FCPXML). Script is self-contained (stdlib), reads `<data>/exports/last_resolve_job.json`, installed to %APPDATA%\\Blackmagic Design\\DaVinci Resolve\\Support\\Fusion\\Scripts\\Utility.
 - FCPXML 1.9, one file per layout: spine = one gap covering the song from the start TC; song = connected asset-clip lane -1; titles = Basic Title lane 1; markers on the gap. NTSC rates use 1000/1001 with NDF timecode. Apple's DTD is NOT committed (Apple copyright); tests/verify download it from the CommandPost mirror and skip when offline.
 - All exporters share `export/timeline.build_plan` (frame-snapped clips) and `check_plan` (no overlaps, nothing in gaps); export refuses to write if check_plan fails.
 - Styles live in `project.styles` (StyleBook: user presets + default + by_section label→name); built-ins are code. Resolution: block > section own > section by id > by label > default. BASIC ignores presets; STYLED drops animations; FULL keeps them.

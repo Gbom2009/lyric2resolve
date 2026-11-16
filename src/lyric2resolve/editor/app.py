@@ -243,7 +243,7 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
     def export_formats():
         from lyric2resolve import export as ex
 
-        return {"formats": sorted(ex.FORMATS), "layouts": ["16:9", "9:16"]}
+        return {"formats": ex.ALL_FORMATS, "layouts": ["16:9", "9:16"]}
 
     @app.post("/api/export")
     def do_export(body: dict = Body(default_factory=dict)):
@@ -252,8 +252,9 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         s = current()
         out = s.path.parent / "export"
         try:
-            res = ex.export(s.project, out, body.get("formats") or ["fcpxml"], body.get("layouts") or None,
-                            body.get("beats") or "downbeats")
+            formats = body.get("formats") or ["fcpxml"]
+            res = ex.export(s.project, out, formats, body.get("layouts") or None, body.get("beats") or "downbeats",
+                            install_resolve_script="resolve" in formats)
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         res["folder"] = str(out)

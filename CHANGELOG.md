@@ -3,6 +3,16 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 11 — Resolve script with real Text+, plus SRT / CSV / EDL
+**New**
+- Export option **Resolve script**: a script you run inside Resolve (Workspace → Scripts → Utility → lyric2resolve_build_timeline). It builds the 16:9 and 9:16 timelines in your open project with the song on the audio track and a real **Fusion Text+** clip per lyric line at the exact frames, styled according to your styling level (BASIC / STYLED with outline, shadow, glow / FULL with fade, pop, slide-up or word-by-word reveal), plus section and bar markers. The export copies the script into Resolve's scripts folder for you.
+- One-time setup in Resolve: a Media Pool item called `l2r_textplus` (see `docs/RESOLVE_SCRIPT.md`). Without it the script imports the FCPXML instead.
+- Export option **SRT / CSV / EDL**: subtitles per line and per word (SRT), a CSV with start/end/text, and an EDL with markers (sections, bars, lyric lines) for Resolve's "Import Timeline Markers from EDL".
+
+**What to test**
+- Create the `l2r_textplus` template once, export with "Resolve script", run the script in Resolve → check timing, Text+ size/position, and the styling level effects. Report what looks off (with your Resolve version).
+- Open the SRT in a video player next to the song; import the EDL markers.
+
 ## Phase 10 — Export to DaVinci Resolve (FCPXML), 16:9 and 9:16
 **New**
 - **Export…** button in the editor (and `lyric2resolve export <project.json>`): writes an FCPXML timeline for Resolve for 16:9 (1920×1080) and/or vertical 9:16 (1080×1920), made from your edited blocks.

@@ -3,7 +3,11 @@
   "use strict";
   const L = window.L2R;
   const $ = (s, r = document) => r.querySelector(s);
-  const LABELS = { fcpxml: "FCPXML for DaVinci Resolve (File > Import > Timeline)" };
+  const LABELS = {
+    fcpxml: "FCPXML for DaVinci Resolve (File > Import > Timeline)",
+    resolve: "Resolve script with real Text+ clips + styling (Workspace > Scripts)",
+    srt_csv_edl: "SRT (lines + words), CSV and EDL markers",
+  };
 
   $("#btn-export").onclick = async () => {
     const box = $("#export-formats");
@@ -22,6 +26,7 @@
     try {
       const res = await L.api("POST", "/api/export", { layouts: pick("layout"), formats: pick("format"), beats: $("#export-beats").value });
       out.textContent = `Saved in ${res.folder}:\n` + res.files.map((f) => "  " + f.split(/[\\/]/).pop()).join("\n") +
+        (res.resolve_script ? `\n\nResolve script installed. In Resolve: Workspace > Scripts > Utility > lyric2resolve_build_timeline` : "") +
         (res.warnings.length ? "\n\nNotes:\n" + res.warnings.map((w) => "  " + w).join("\n") : "");
       L.setStatus(`Exported ${res.files.length} file(s)`);
     } catch (e) {

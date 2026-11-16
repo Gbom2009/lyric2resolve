@@ -65,3 +65,13 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Same for `_9x16.fcpxml` (1080×1920 timeline).
 - [ ] Test one NTSC rate (29.97 or 23.976): the last title is still in sync at the end of the song.
 - [ ] Note your Resolve version + whether titles arrive as "Text" or "Text+" (expected: Text) and which style attributes survived.
+
+## Phase 11 — Resolve script (needs Resolve; unit-tested only against a mocked API)
+- [ ] Export with "Resolve script" → script appears under Workspace → Scripts → Utility.
+- [ ] Without `l2r_textplus`: script imports both FCPXMLs and says so in the Console.
+- [ ] With `l2r_textplus` (New Fusion Composition, renamed): timelines "… 16x9 (l2r)" / "… 9x16 (l2r)" with the right resolution and start TC 01:00:00:00.
+- [ ] Song on A1 for the whole length (check the AppendToTimeline `endFrame` is not one frame short/long).
+- [ ] Text+ clips start/end on the right frames (spot-check 5), none inside gaps.
+- [ ] Unverified Text+ mappings to check: `Size = font_px / width`, `Center` (x/y), `HorizontalJustificationNew`, outline `Thickness2`, shadow `Offset3/Softness3`, SoftGlow `Gain/XGlowSize`, FULL keyframes on `Alpha1` / `Size` / `Center` / Write-On `End`.
+- [ ] Does each Text+ clip get its OWN composition (editing one does not change the others)?
+- [ ] SRT plays in sync in VLC with the song; EDL markers import via Timeline → Import → Timeline Markers from EDL.
