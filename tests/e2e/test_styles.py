@@ -34,3 +34,18 @@ def test_library_page_lists_fonts_and_empty_textures(page):
     assert page.locator("#tex-empty").is_visible()  # no textures synced in tests
     page.click("#tab-fonts")
     assert page.locator(".font-row").count() >= 5  # Windows fallback fonts listed
+
+
+def test_ideas_page(page):
+    page.goto(page.url.rstrip("/") + "/ideas")
+    page.wait_for_function("window.IDEAS")
+    page.evaluate("IDEAS.ready")
+    assert "E2E song" in page.locator("#title").inner_text()
+    assert "blender -b" in page.input_value("#prompt")
+    page.click("#t-three")
+    assert "three.js" in page.input_value("#prompt")
+    page.fill("#tpl-name", "My look")
+    page.click("#tpl-save")
+    page.wait_for_function("document.querySelector('#tpl-msg').textContent.includes('Saved')")
+    page.click("#tpl-apply")
+    page.wait_for_function("document.querySelector('#tpl-msg').textContent.includes('Applied')")

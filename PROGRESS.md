@@ -21,8 +21,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 13 | Texture sync + browser | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 14 | Blender generator | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 15 | Headless render + DJ mux | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 16 | Prompt generator + templates | in progress | continuous-2026-11-16 / PR #2 |
-| 17 | Claude link | planned | |
+| 16 | Prompt generator + templates | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 17 | Claude link | in progress | continuous-2026-11-16 / PR #2 |
 | 18 | Settings UI / branding / batch / update banner | planned | |
 | 19 | Full test pass + docs | planned | |
 
@@ -44,7 +44,8 @@ Phase 12: done (karaoke.py, karaoke endpoints in editor/app.py, static/karaoke.{
 Phase 13: done (assets/textures.py, assets/textures/curation.json, /library page (static/library.{html,js}), tests/test_assets_textures.py).
 Phase 14: done (visuals/{bands,mapping,procedural,blender_gen}.py, visuals/blender_template/l2r_scene.py (5 templates), `visuals` CLI, tests/test_visuals.py; CI job 'blender' installs bpy 5.3 and builds all templates).
 Phase 15: done (render/{presets,blender,runner,mux,instructions,__init__}.py, `render` CLI, tests/data/fake_blender.py, tests/test_render.py, docs/DJ_VIDEO_GUIDE.md).
-Phase 16 (prompts + templates): next → visuals/{brief,prompts}.py, templates.py, static/ideas.js (+ /ideas page or editor panel), tests/test_prompts_templates.py.
+Phase 16: done (visuals/{brief,prompts}.py, templates.py, /ideas page (static/ideas.{html,js}), `ideas` CLI, apply_template op, tests/test_prompts_templates.py).
+Phase 17 (Claude link): next → verify claude CLI flags from docs, claude_link/{cli,mcp_server,notes}.py, static/assistant.js, tests/test_claude_link.py (fake claude).
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions

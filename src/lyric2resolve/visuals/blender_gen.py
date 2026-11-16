@@ -43,7 +43,8 @@ def generate(p: proj.Project, out_dir: Path, template: str = "spectrum_bars", as
     """Write the scene folder; returns the path of scene_data.json. audio = (array, sr) or None to load."""
     if template not in mapping.TEMPLATES:
         raise ValueError(f"unknown template {template!r}; use one of {mapping.TEMPLATES}")
-    m = mapping.load(mapping_path)
+    # explicit YAML > mapping stored by a project template > defaults
+    m = mapping.load(mapping_path) if mapping_path else mapping.validate(p.extra.get("visual_mapping") or {})
     fps = fps or p.settings.fps
     cfg = curve_cfg or bands.CurveConfig(fps=fps)
     cfg.fps = fps

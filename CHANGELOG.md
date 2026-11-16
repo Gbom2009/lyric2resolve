@@ -3,6 +3,16 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 16 — Visual ideas, Claude Code prompts and project templates
+**New**
+- **Ideas** page (button in the editor; or `lyric2resolve ideas <project.json>`): a style brief for your song from the lyrics (themes and mood), BPM, key, energy and sections, with 2-3 visual concepts per section (neon grid, tunnel, liquid blob, particles, lava cracks, rain on glass, chrome, low-poly…) and text-animation suggestions. Each concept shows the render command for the matching scene template.
+- Ready-to-paste **Claude Code prompts** for a Blender (bpy) project and for a three.js/WebGL scene, with BPM, section timings, mood, palette, duration, fps/resolution/aspect, your available CC0 textures and all render/DJ-delivery requirements. Works without any AI; the Claude link (next phase) can do more.
+- **Project templates**: save a song's look (text styles, per-section styling, band→visual mapping, render preset, layout and text settings, styling level) and apply it to another song with one click (undoable).
+
+**What to test**
+- Open Ideas on a real song: do the moods/concepts make sense? Copy the Blender prompt into Claude Code.
+- Save a template on one song, open another song, apply it → styles/settings change, lyrics stay.
+
 ## Phase 15 — Rendering the visuals (headless Blender) + DJ-ready MP4s
 **New**
 - `lyric2resolve render <project.json> --template <name> --render-preset <preset>`: builds the Blender scene, renders it in the background (no Blender window) and makes an MP4 with your full song inside, ready for Rekordbox/Serato.

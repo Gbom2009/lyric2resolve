@@ -43,6 +43,12 @@ def _set_section_preset(p: proj.Project, section_id: str, preset: str | None) ->
     ops.update_section(p, section_id, preset=preset.lower() if preset else None)
 
 
+def _apply_template(p: proj.Project, name: str) -> None:
+    from lyric2resolve import templates
+
+    templates.op_apply_template(p, name)
+
+
 # op name -> function(project, **args). Only these can be called from the browser.
 OPS: dict[str, Callable] = {
     "merge_words": ops.merge_words,
@@ -70,6 +76,7 @@ OPS: dict[str, Callable] = {
     "set_default_style": styling.op_set_default_style,
     "set_section_style": styling.op_set_section_style,
     "set_styling_level": styling.op_set_styling_level,
+    "apply_template": lambda p, name: _apply_template(p, name),
 }
 
 
@@ -142,7 +149,7 @@ class EditorSession:
                 problems = self.project.validate()
                 if problems:
                     raise ops.OpError("; ".join(problems))
-            except (ops.OpError, ValueError, TypeError, proj.ProjectError, styling.StyleError) as exc:
+            except (ops.OpError, ValueError, TypeError, proj.ProjectError, styling.StyleError, OSError) as exc:
                 # restore the snapshot: a failed op never leaves a half-edited project
                 restored = self.history.undo(self.project)
                 self.history.redo_stack.clear()
@@ -339,6 +346,39 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
             raise HTTPException(status_code=404, detail="image not found")
         return FileResponse(path)
 
+    # ------------------------------------------------------------ visual ideas + templates
+    @app.get("/api/ideas")
+    def ideas():
+        from lyric2resolve.assets import textures
+        from lyric2resolve.visuals import brief as br
+        from lyric2resolve.visuals import prompts
+
+        s = current()
+        b = br.build_brief(s.project)
+        tex = textures.list_textures(_textures_root())
+        lay = list(s.project.settings.layouts)
+        fps = s.project.settings.fps
+        return {"brief": b.to_dict(), "markdown": prompts.brief_markdown(b),
+                "blender_prompt": prompts.blender_prompt(b, fps, lay, tex, textures_root=str(_textures_root())),
+                "threejs_prompt": prompts.threejs_prompt(b, fps, lay, tex)}
+
+    @app.get("/api/templates")
+    def template_list():
+        from lyric2resolve import templates
+
+        return {"templates": templates.list_templates(), "current": (holder["session"].project.extra.get("template")
+                                                                     if holder["session"] else None)}
+
+    @app.post("/api/templates/save")
+    def template_save(body: dict = Body(...)):
+        from lyric2resolve import templates
+
+        try:
+            path = templates.save(current().project, str(body.get("name", "")))
+        except templates.TemplateError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"saved": str(path), "templates": templates.list_templates()}
+
     @app.get("/api/fonts")
     def font_list():
         from lyric2resolve.assets import fonts
@@ -370,6 +410,10 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         @app.get("/library")
         def library_page():
             return FileResponse(STATIC_DIR / "library.html", headers={"Cache-Control": "no-store"})
+
+        @app.get("/ideas")
+        def ideas_page():
+            return FileResponse(STATIC_DIR / "ideas.html", headers={"Cache-Control": "no-store"})
 
         @app.get("/karaoke")
         def karaoke_page():

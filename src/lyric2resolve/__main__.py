@@ -15,6 +15,7 @@ APP_COMMANDS = {
     "export": "lyric2resolve.export",
     "visuals": "lyric2resolve.visuals.blender_gen",
     "render": "lyric2resolve.render",
+    "ideas": "lyric2resolve.visuals.prompts",
 }
 
 
