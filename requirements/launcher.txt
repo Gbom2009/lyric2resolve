@@ -1,0 +1,2 @@
+# The launcher and updater use only the Python standard library (Tkinter, subprocess, git CLI).
+# This file exists so the updater can detect requirement changes; heavier groups arrive in Phase 2.
