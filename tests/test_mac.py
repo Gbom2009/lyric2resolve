@@ -56,7 +56,7 @@ def test_fix_mac_path_adds_tool_folders(tmp_path):
     (home / ".local" / "bin").mkdir(parents=True)
     env = {"PATH": "/usr/bin:/bin", "HOME": str(home)}
     added = paths.fix_mac_path(env, platform="darwin")
-    assert str(home / ".local" / "bin") in added and env["PATH"].startswith(added[0])
+    assert Path(home / ".local" / "bin") in [Path(a) for a in added] and env["PATH"].startswith(added[0])
     assert paths.fix_mac_path(env, platform="darwin") == []  # idempotent
     assert paths.fix_mac_path({"PATH": "/usr/bin"}, platform="win32") == []
 
