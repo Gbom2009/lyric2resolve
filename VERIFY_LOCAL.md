@@ -75,3 +75,10 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Unverified Text+ mappings to check: `Size = font_px / width`, `Center` (x/y), `HorizontalJustificationNew`, outline `Thickness2`, shadow `Offset3/Softness3`, SoftGlow `Gain/XGlowSize`, FULL keyframes on `Alpha1` / `Size` / `Center` / Write-On `End`.
 - [ ] Does each Text+ clip get its OWN composition (editing one does not change the others)?
 - [ ] SRT plays in sync in VLC with the song; EDL markers import via Timeline → Import → Timeline Markers from EDL.
+
+## Phase 12 — karaoke (manual)
+- [ ] Word highlight follows the singing on a real song (check one fast and one slow part); countdown before the first line and in gaps.
+- [ ] Vocal slider fades without clicks; music slider works; no drift between instrumental and vocals over a whole song.
+- [ ] Fullscreen on a second monitor/TV (open with the Karaoke button, drag the window, press F); text readable from a distance.
+- [ ] Queue: add/reorder/remove/next/previous; survives an app restart.
+- [ ] Memory: a 5-minute song loads in a few seconds (both stems are decoded in the browser).

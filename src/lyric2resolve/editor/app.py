@@ -191,7 +191,7 @@ def list_projects(projects_dir: Path) -> list[dict]:
 
 
 def create_app(session: EditorSession | None = None, projects_dir: Path | None = None,
-               fonts_root: Path | None = None):
+               fonts_root: Path | None = None, settings_dir: Path | None = None):
     """session: project opened at start (optional). projects_dir: folder offered in the project picker."""
     from fastapi import Body, FastAPI, HTTPException
     from fastapi.responses import FileResponse, HTMLResponse
@@ -273,6 +273,53 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
 
         return Path(fonts_root) if fonts_root else fonts.fonts_dir()
 
+    # ------------------------------------------------------------ karaoke (read-only, offline)
+    def _karaoke_project(path: str) -> proj.Project:
+        p = Path(path).resolve()
+        inside = projects_dir is not None and Path(projects_dir).resolve() in p.parents
+        if not (inside or p in allowed) or p.name != proj.PROJECT_FILE:
+            raise HTTPException(status_code=403, detail="only projects from the projects folder can be played")
+        cur = holder["session"]
+        if cur is not None and cur.path.resolve() == p:
+            return cur.project  # the open project, including unsaved-to-disk state
+        try:
+            return proj.load(p)
+        except proj.ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/karaoke/data")
+    def karaoke_data(path: str):
+        from lyric2resolve import karaoke
+
+        return karaoke.karaoke_data(_karaoke_project(path))
+
+    @app.get("/api/karaoke/audio/{kind}")
+    def karaoke_audio(kind: str, path: str):
+        p = _karaoke_project(path)
+        key = {"song": "song_wav", "vocals": "vocals_wav", "instrumental": "instrumental_wav"}.get(kind)
+        f = Path(p.audio.get(key, "")) if key and p.audio.get(key) else None
+        if f is None or not f.is_file():
+            raise HTTPException(status_code=404, detail=f"no {kind} audio")
+        return FileResponse(f, media_type="audio/wav")
+
+    @app.get("/api/karaoke/playlists")
+    def get_playlists():
+        from lyric2resolve import karaoke
+
+        return karaoke.load_playlists(settings_dir).to_dict()
+
+    @app.put("/api/karaoke/playlists")
+    def put_playlists(body: dict = Body(...)):
+        from lyric2resolve import karaoke
+
+        try:
+            pls = karaoke.Playlists({str(k): [str(x) for x in v] for k, v in (body.get("playlists") or {}).items()},
+                                    str(body.get("current", "")))
+            karaoke.save_playlists(pls, settings_dir)
+        except (ValueError, AttributeError, TypeError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return pls.to_dict()
+
     @app.get("/api/fonts")
     def font_list():
         from lyric2resolve.assets import fonts
@@ -300,6 +347,10 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         @app.get("/")
         def index():
             return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-store"})
+
+        @app.get("/karaoke")
+        def karaoke_page():
+            return FileResponse(STATIC_DIR / "karaoke.html", headers={"Cache-Control": "no-store"})
     else:  # pragma: no cover - only before the frontend existed
         @app.get("/")
         def index_placeholder():

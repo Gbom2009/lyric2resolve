@@ -3,6 +3,18 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 12 — Karaoke mode
+**New**
+- **Karaoke** button in the editor (or http://127.0.0.1:8765/karaoke): plays a saved song full-screen with big readable text. The current line lights up word by word as it is sung, the next line is shown below, and before the first line and during instrumental gaps a countdown appears.
+- Audio: plays the instrumental by default; the **Vocals** slider fades the original vocals (the acapella) in and out smoothly. Both are mixed in the browser and stay perfectly in sync. Songs without an instrumental play the full song.
+- Karaoke night: saved playlists/queues — add songs with the quick search, reorder (↑/↓), remove, next/previous. Saved automatically.
+- Keys: Space play/pause, N/P next/previous song, ↑/↓ vocal volume, ←/→ skip 5 s, F fullscreen, Q queue. Opens in its own window, so you can drag it to a second screen/TV.
+- Works fully offline from your saved projects.
+
+**What to test**
+- Click Karaoke on a project, press Space, move the vocal slider, go fullscreen on a second screen.
+- Build a queue of 3 songs, reorder, use N/P; restart the app → the queue is still there.
+
 ## Phase 11 — Resolve script with real Text+, plus SRT / CSV / EDL
 **New**
 - Export option **Resolve script**: a script you run inside Resolve (Workspace → Scripts → Utility → lyric2resolve_build_timeline). It builds the 16:9 and 9:16 timelines in your open project with the song on the audio track and a real **Fusion Text+** clip per lyric line at the exact frames, styled according to your styling level (BASIC / STYLED with outline, shadow, glow / FULL with fade, pop, slide-up or word-by-word reveal), plus section and bar markers. The export copies the script into Resolve's scripts folder for you.

@@ -19,6 +19,10 @@
     $("#export-result").textContent = "";
     $("#export-dialog").showModal();
   };
+  $("#btn-karaoke").onclick = async () => {
+    const { current } = await L.api("GET", "/api/projects");
+    window.open(current ? `/karaoke?path=${encodeURIComponent(current)}` : "/karaoke", "l2r-karaoke");
+  };
   $("#export-go").onclick = async () => {
     const pick = (n) => [...document.querySelectorAll(`#export-dialog input[name=${n}]:checked`)].map((i) => i.value);
     const out = $("#export-result");
