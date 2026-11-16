@@ -137,6 +137,9 @@ def run_song(job: BatchJob, out_root: Path, *, settings, engine, ffmpeg, cache_d
         if fps:
             ps.fps = float(fps)
         p = transcription.run(Path(prepared.vocals_wav), engine, job.title, lyrics, prepared.to_dict(), ps)
+        if getattr(engine, "fallback_reason", ""):
+            res.messages.append("WARNING: " + engine.fallback_reason)
+            log(f"[{job.title}] WARNING: {engine.fallback_reason}")
         if analyze:
             from lyric2resolve.analysis import analyze_project
             from lyric2resolve.audio import wavio

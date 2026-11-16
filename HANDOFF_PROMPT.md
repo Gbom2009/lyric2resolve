@@ -8,6 +8,7 @@ You are continuing **lyric2resolve**, a Windows app (Python, NVIDIA/CUDA) that t
 ## Current state
 - Merged on main: Phase 0 (docs), Phase 1 (launcher/updater, PR #1).
 - **PR #2** (Phases 2-19) is MERGED into main.
+- User feedback 5 (2026-11-16): transcription failed "cublas64_12.dll not found" → fixed on branch `fixes-2026-11-16e` (PR "Fixes from testing (5)"): CUDA DLL search path, cuBLAS 12 install when missing, CPU fallback. Waiting for merge + Update + retry.
 - User feedback 4 (2026-11-16): song-only New project: audio-separator missing `audioread` → fixed on branch `fixes-2026-11-16d` (PR "Fixes from testing (4)"). Store Python confirmed (data now in C:\Users\<user>\lyric2resolve-data). Waiting for merge + Update + retry.
 - User feedback 3 (2026-11-16): New project: ffmpeg "No such file or directory" for an uploaded file Python could see → Microsoft Store Python AppData redirection; fixed on branch `fixes-2026-11-16c` (PR "Fixes from testing (3)"): data dir outside AppData for Store Python + migration. Waiting for the user to merge + Update + restart launcher + retry.
 - User feedback 2 (2026-11-16): "libtorchaudio.pyd could not load" in New project → torch replaced by a CPU PyPI build during setup; fixed on branch `fixes-2026-11-16b` (PR "Fixes from testing (2)"): pinned torch set + auto-repair on Update, av<19. Waiting for the user to merge + Update + retry New project.

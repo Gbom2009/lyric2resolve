@@ -164,3 +164,7 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 ## Fixes from testing (4) — vocal separation
 - [ ] New project with only a song: separation works on the GPU (time per song?); the editor's audio switch "Acapella" plays the separated vocals.
 
+## Fixes from testing (5) — cuBLAS 12 for Whisper on the GPU
+- [ ] Update log / `setup_windows.bat`: "cuBLAS 12 for Whisper: already available (from torch)" or "Installing cuBLAS 12…".
+- [ ] New project transcribes on the GPU (no "GPU libraries could not be loaded" warning); how long for one song with large-v3?
+
