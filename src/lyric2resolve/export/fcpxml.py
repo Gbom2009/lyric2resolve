@@ -32,12 +32,21 @@ def _rgba(hex_color: str, alpha: float = 1.0) -> str:
 
 
 def file_url(path: str) -> str:
-    p = Path(path)
-    if p.is_absolute() or (len(path) > 2 and path[1] == ":"):
-        if len(path) > 2 and path[1] == ":":  # Windows path even when written on Linux
-            return "file:///" + urllib.parse.quote(path.replace("\\", "/"), safe="/:")
-        return p.as_uri()
+    """file:// URL for Windows (C:\\...) and POSIX (/...) absolute paths on any OS; relative stays relative."""
+    if len(path) > 2 and path[1] == ":":
+        return "file:///" + urllib.parse.quote(path.replace("\\", "/"), safe="/:")
+    if path.startswith("/"):
+        return "file://" + urllib.parse.quote(path, safe="/")
+    if path.startswith("\\\\"):  # UNC \\server\share
+        return "file:" + urllib.parse.quote(path.replace("\\", "/"), safe="/")
     return urllib.parse.quote(path.replace("\\", "/"))
+
+
+def _stem(path: str) -> str:
+    """File name without extension for Windows or POSIX paths, on any OS."""
+    from pathlib import PureWindowsPath
+
+    return PureWindowsPath(path).stem if "\\" in path else Path(path).stem
 
 
 def build(plan: Plan, audio_rate: int = 44100) -> ET.Element:
@@ -47,7 +56,7 @@ def build(plan: Plan, audio_rate: int = 44100) -> ET.Element:
     res = ET.SubElement(root, "resources")
     ET.SubElement(res, "format", id="r1", frameDuration=r.frame_duration, width=str(plan.width),
                   height=str(plan.height), colorSpace="1-1-1 (Rec. 709)")
-    asset = ET.SubElement(res, "asset", id="r2", name=Path(plan.song_path).stem, start="0s",
+    asset = ET.SubElement(res, "asset", id="r2", name=_stem(plan.song_path), start="0s",
                           duration=fcp_time(plan.duration_frames, r), hasAudio="1", audioSources="1",
                           audioChannels="2", audioRate=str(audio_rate))
     ET.SubElement(asset, "media-rep", kind="original-media", src=file_url(plan.song_path))
@@ -61,7 +70,7 @@ def build(plan: Plan, audio_rate: int = 44100) -> ET.Element:
     spine = ET.SubElement(seq, "spine")
     gap = ET.SubElement(spine, "gap", name="Lyrics", offset=fcp_time(t0, r), start=fcp_time(t0, r),
                         duration=fcp_time(plan.duration_frames, r))
-    ET.SubElement(gap, "asset-clip", ref="r2", lane="-1", name=Path(plan.song_path).stem, offset=fcp_time(t0, r),
+    ET.SubElement(gap, "asset-clip", ref="r2", lane="-1", name=_stem(plan.song_path), offset=fcp_time(t0, r),
                   start="0s", duration=fcp_time(plan.duration_frames, r), audioRole="dialogue")
     for i, c in enumerate(plan.clips, start=1):
         s = c.style
