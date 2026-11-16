@@ -193,10 +193,42 @@ def _separation(ctx: Context) -> CheckResult:
         return CheckResult("vocal_separation", OK, f"{backend.model}: {v.name}, {i.name}")
 
 
+TINY_CLIP_WORDS = ("hello", "world", "sing", "song", "together", "tonight")
+
+
+@check("whisper_model_load")
+def _whisper_load(ctx: Context) -> CheckResult:
+    if ctx.quick:
+        return CheckResult("whisper_model_load", SKIP, "--quick")
+    from lyric2resolve.transcription import engine_from_settings
+
+    eng = engine_from_settings()
+    eng.model()
+    ctx.whisper = eng  # type: ignore[attr-defined]  # reused by the next check
+    return CheckResult("whisper_model_load", OK, f"{eng.opt.model} on {eng.opt.device}/{eng.opt.compute_type}")
+
+
+@check("whisper_tiny_clip")
+def _whisper_clip(ctx: Context) -> CheckResult:
+    if ctx.quick:
+        return CheckResult("whisper_tiny_clip", SKIP, "--quick")
+    eng = getattr(ctx, "whisper", None)
+    if eng is None:
+        return CheckResult("whisper_tiny_clip", SKIP, "model did not load")
+    clip = ctx.repo / "tests" / "data" / "tiny_vocal.wav"
+    tr = eng.transcribe(str(clip))
+    text = " ".join(w.text for w in tr.words).lower()
+    hits = [w for w in TINY_CLIP_WORDS if w in text]
+    ordered = all(a.start <= b.start for a, b in zip(tr.words, tr.words[1:]))
+    status = OK if len(hits) >= 4 and ordered else WARN
+    al = eng.align(str(clip), "Hello world.\nWe sing this song together tonight.")
+    return CheckResult("whisper_tiny_clip", status,
+                       f"heard: '{text}' ({len(hits)}/{len(TINY_CLIP_WORDS)} key words, lang {tr.language}); "
+                       f"forced alignment: {len(al.words)} words")
+
+
 # Placeholders so the report shows what is still to come (later phases replace them).
 PENDING = {
-    "whisper_model_load": "Phase 4",
-    "whisper_tiny_clip": "Phase 4",
     "blender_3_frame_render": "Phase 15",
     "fcpxml_validity": "Phase 10",
 }

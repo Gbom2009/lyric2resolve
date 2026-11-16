@@ -161,7 +161,7 @@ def test_settings_corrupt_file(tmp_path):
 
 # ------------------------------------------------------------------ verify_local
 def test_verify_report_with_fakes(tmp_path):
-    ctx = verify.Context(repo=REPO, offline=True,
+    ctx = verify.Context(repo=REPO, offline=True, quick=True,
                          probe=lambda cmd: SMI_QUERY if "--query-gpu" in " ".join(cmd) else
                          (SMI_HEADER if cmd[0] == "nvidia-smi" else "git version 2.45"))
     verify.register_pending()
@@ -169,7 +169,8 @@ def test_verify_report_with_fakes(tmp_path):
     by = {r.name: r for r in results}
     assert by["gpu"].status == verify.OK and "cu128" in by["gpu"].detail
     assert by["asset_apis"].status == verify.SKIP
-    assert by["whisper_model_load"].status == verify.SKIP
+    assert by["whisper_model_load"].status == verify.SKIP  # --quick
+    assert by["fcpxml_validity"].status == verify.SKIP  # not implemented yet
     md, js = verify.write_report(results, ctx, tmp_path)
     text = md.read_text(encoding="utf-8")
     assert "| gpu |" in text and "Summary" in text

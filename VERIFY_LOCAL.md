@@ -28,3 +28,9 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] `audio-check` on a real song + acapella: offset ≈ 0 ms, confidence shown, instrumental wav sounds like the song without vocals.
 - [ ] Shift the acapella in an editor by ~100 ms → `audio-check` reports ≈100 ms "later"; `--compensate` fixes it.
 - [ ] Without acapella: separation works on GPU (verify_local `vocal_separation` ok). Confirm the default model name `model_bs_roformer_ep_317_sdr_12.9755.ckpt` exists in your audio-separator version (`audio-separator --list_models`).
+
+## Phase 4 — transcription
+- [ ] verify_local: `whisper_model_load` ok (large-v3 on cuda/float16; first run downloads ~3 GB into the data folder `models\whisper`).
+- [ ] verify_local: `whisper_tiny_clip` hears ≥4 of the key words and forced alignment returns ~9 words.
+- [ ] `transcribe` on a real song: word timings look right when played (spot-check 3 words); `--lyrics` keeps line breaks.
+- [ ] `pytest -m local` runs the real-Whisper test.

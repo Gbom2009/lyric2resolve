@@ -3,6 +3,19 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 4 — Whisper transcription and the project file
+**New**
+- Transcribes the acapella with Whisper (large-v3 by default, on your NVIDIA GPU) with a timestamp for every word. Voice-activity detection is on; the language is detected automatically or you can set it.
+- Got the lyrics? Give a text file and the app aligns YOUR lyrics to the acapella instead (forced alignment). Your line breaks become the first lyric blocks; `[Chorus]`-style tags are ignored.
+- Everything is stored in an editable project file (`project.json`): words, blocks, sections, instrumental gaps and settings. The editor (later phase) autosaves into it.
+- Command: `lyric2resolve transcribe --song song.mp3 --acapella vocals.wav [--lyrics lyrics.txt] [--language nl]`.
+- `verify_local.py` now loads Whisper on your GPU and transcribes a 4-second test clip.
+
+**What to test**
+- Run the transcribe command on a real song → it prints the number of words/blocks and where `project.json` is saved (in `%LOCALAPPDATA%\lyric2resolve\projects\<song>`). Open it and check a few word times.
+- Same with `--lyrics` → blocks match your lines.
+- Run `scripts\verify_local.py` → `whisper_model_load` and `whisper_tiny_clip` ok.
+
 ## Phase 3 — Audio inputs, A/B sync check, instrumental
 **New**
 - Your song (Track A) and acapella (Track B) are converted to 44.1 kHz wav with ffmpeg (mp3, wav, flac, m4a, ...). Converted files are cached, so the same song is only converted once.

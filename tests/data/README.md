@@ -1,0 +1,1 @@
+tiny_vocal.wav: 4 s synthetic speech ('Hello world. We sing this song together tonight.') generated with espeak-ng for this project; free to redistribute. Used by scripts/verify_local.py to smoke-test Whisper.

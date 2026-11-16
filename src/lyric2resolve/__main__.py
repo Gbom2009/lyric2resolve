@@ -8,6 +8,7 @@ import sys
 # command -> module with main(argv) (imported lazily so the launcher stays light)
 APP_COMMANDS = {
     "audio-check": "lyric2resolve.audio",
+    "transcribe": "lyric2resolve.transcription",
 }
 
 

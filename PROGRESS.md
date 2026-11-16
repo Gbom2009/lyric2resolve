@@ -9,8 +9,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 1 | Skeleton + launcher/updater | merged (user test pending) | PR #1 |
 | 2 | Setup script + verify_local + settings | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 3 | Audio inputs / alignment / instrumental | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 4 | Transcription + project JSON | in progress | continuous-2026-11-16 / PR #2 |
-| 5 | Music analysis + gaps + sanity | planned | |
+| 4 | Transcription + project JSON | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 5 | Music analysis + gaps + sanity | in progress | continuous-2026-11-16 / PR #2 |
 | 6 | Editor backend API | planned | |
 | 7 | Editor frontend 1 | planned | |
 | 8 | Editor frontend 2 | planned | |
@@ -32,10 +32,13 @@ Statuses: planned / in progress / PR open / merged / tested-OK / needs fixes / w
 Continuous mode, branch `continuous-2026-11-16` (one PR into main, phase-labelled commits).
 Phase 2: done (setup_tools.py, settings.py, verify.py, scripts/setup_update.py, scripts/verify_local.py, setup_windows.ps1/.bat, tests/test_setup_settings.py).
 Phase 3: done (audio/{convert,wavio,align,stems,__init__}.py, `audio-check` CLI, verify checks audio_offset + vocal_separation, tests/test_audio.py).
-Phase 4 (transcription + project JSON): next → `project.py`, `transcription/{engine,align}.py`, tests/test_transcription_project.py.
+Phase 4: done (project.py, transcription/{engine,__init__}.py, `transcribe` CLI, verify whisper checks, tests/data/tiny_vocal.wav).
+Phase 5 (analysis): next → `analysis/{music,gaps,sanity}.py`, tests/test_analysis.py.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- Whisper backend: stable-ts 2.19 `load_faster_whisper` (faster-whisper 1.2). Transcribe uses faster-whisper's own `vad_filter` (no torch-hub download), `condition_on_previous_text=False`; align uses `model.align(..., original_split=True)` + language detection via `detect_language`. Verified against package source, not yet on the PC.
+- Words get stable ids `w00001...`; blocks reference word ids; `Word.line` = lyric line / Whisper segment.
 - Offset convention: `offset_ms > 0` = acapella starts later than the song's vocals. Cross-correlation at 11025 Hz on the first 120 s, ±10 s max lag, parabolic refinement.
 - Instrumental = song − g·acapella (least-squares gain per channel); cached by content hash. CLI: `python -m lyric2resolve <app-command>` routes app commands via `__main__.APP_COMMANDS`, everything else to the updater CLI.
 - Python package in `src/lyric2resolve/` (src layout). Phase 1: launcher puts `src` on sys.path (no pip install needed); later phases may install it editable.
