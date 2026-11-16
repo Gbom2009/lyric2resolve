@@ -6,7 +6,9 @@ two blocks, blocks are sorted. Words may be in no block (they are then hidden).
 
 from __future__ import annotations
 
-from lyric2resolve.project import Block, Gap, Project, Word
+from pathlib import Path
+
+from lyric2resolve.project import Block, Clip, Gap, Project, Word
 
 
 class OpError(ValueError):
@@ -325,6 +327,76 @@ def retime_block(p: Project, block_id: str, start: float | None = None, end: flo
         n = len(ws)
         for i, w in enumerate(ws):
             w.start, w.end = round(s + (e - s) * i / n, 3), round(s + (e - s) * (i + 1) / n, 3)
+
+
+# ------------------------------------------------------------------ clips track (videos on the timeline)
+def bar_times(p: Project) -> list[float]:
+    a = p.analysis or {}
+    return sorted(float(x) for x in (a.get("downbeats") or a.get("beats") or []))
+
+
+def snap_to_bar(p: Project, t: float) -> float:
+    bars = bar_times(p)
+    return round(min(bars, key=lambda b: abs(b - t)), 3) if bars else round(t, 3)
+
+
+def _clip(p: Project, clip_id: str) -> Clip:
+    for c in p.clips:
+        if c.id == clip_id:
+            return c
+    raise OpError(f"unknown clip {clip_id}")
+
+
+def _check_clip_room(p: Project, c: Clip) -> None:
+    for o in p.clips:
+        if o is not c and o.start < c.end - 1e-6 and o.end > c.start + 1e-6:
+            raise OpError(f"clips cannot overlap: '{o.name or o.id}' is at {o.start:.2f}-{o.end:.2f} s")
+
+
+def add_clip(p: Project, path: str, start: float, end: float, name: str = "", source: str = "file",
+             hide_lyrics: bool = False, snap: bool = False, in_point: float = 0.0, info: dict | None = None) -> Clip:
+    """Put a video on the clips track at [start, end] seconds (snap = to the nearest bar starts)."""
+    start, end = max(0.0, float(start)), float(end)
+    if snap:
+        start, end = snap_to_bar(p, start), snap_to_bar(p, end)
+    if end <= start:
+        raise OpError("the clip needs an end after its start (with snapping: at least one bar long)")
+    if not str(path).strip():
+        raise OpError("no media file")
+    c = Clip(p.next_id("c"), round(start, 3), round(end, 3), str(path), name or Path(str(path)).stem, source,
+             bool(hide_lyrics), max(0.0, float(in_point)), dict(info or {}))
+    _check_clip_room(p, c)
+    p.clips.append(c)
+    p.clips.sort(key=lambda x: x.start)
+    return c
+
+
+def update_clip(p: Project, clip_id: str, start: float | None = None, end: float | None = None,
+                hide_lyrics: bool | None = None, name: str | None = None, snap: bool = False) -> None:
+    c = _clip(p, clip_id)
+    old = (c.start, c.end, c.hide_lyrics, c.name)
+    s = c.start if start is None else max(0.0, float(start))
+    e = c.end if end is None else float(end)
+    if snap:
+        s, e = snap_to_bar(p, s), snap_to_bar(p, e)
+    if e <= s:
+        raise OpError("the clip needs an end after its start")
+    c.start, c.end = round(s, 3), round(e, 3)
+    if hide_lyrics is not None:
+        c.hide_lyrics = bool(hide_lyrics)
+    if name is not None:
+        c.name = str(name)
+    try:
+        _check_clip_room(p, c)
+    except OpError:
+        c.start, c.end, c.hide_lyrics, c.name = old
+        raise
+    p.clips.sort(key=lambda x: x.start)
+
+
+def remove_clip(p: Project, clip_id: str) -> None:
+    c = _clip(p, clip_id)
+    p.clips.remove(c)
 
 
 # ------------------------------------------------------------------ gaps

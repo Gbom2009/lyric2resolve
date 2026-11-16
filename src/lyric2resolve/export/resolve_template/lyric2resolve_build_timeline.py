@@ -242,10 +242,37 @@ def build_timeline(resolve, job: dict, tl_job: dict, media_pool, project, song, 
                                           "trackIndex": 1, "recordFrame": t0}])
     if not audio:
         log("WARNING: the song could not be placed on the timeline")
+    # clips track (rendered scenes / your own videos) on V1, the lyrics above it on V2
+    title_track = 1
+    media = tl_job.get("media") or []
+    if media:
+        try:
+            tl.AddTrack("video")
+            title_track = 2
+        except Exception:  # noqa: BLE001
+            log("WARNING: could not add a second video track; clips and lyrics share track 1")
+        report["media"] = 0
+        pool_items = {}
+        for m in media:
+            if m["path"] not in pool_items:
+                got = media_pool.ImportMedia([m["path"]])
+                pool_items[m["path"]] = got[0] if got else None
+            item = pool_items[m["path"]]
+            if item is None:
+                log(f"WARNING: clip file not found / not importable: {m['path']}")
+                continue
+            placed = media_pool.AppendToTimeline([{"mediaPoolItem": item, "startFrame": m.get("in", 0),
+                                                   "endFrame": m.get("in", 0) + m["end"] - m["start"] - 1,
+                                                   "mediaType": 1, "trackIndex": 1,
+                                                   "recordFrame": t0 + m["start"]}])
+            if placed:
+                report["media"] += 1
+            else:
+                log(f"WARNING: clip {m['name']} could not be placed")
     for i, clip in enumerate(tl_job["clips"], start=1):
         items = media_pool.AppendToTimeline([{"mediaPoolItem": template, "startFrame": 0,
                                               "endFrame": clip["end"] - clip["start"] - 1, "mediaType": 1,
-                                              "trackIndex": 1, "recordFrame": t0 + clip["start"]}])
+                                              "trackIndex": title_track, "recordFrame": t0 + clip["start"]}])
         if not items:
             log(f"WARNING: title {i} could not be placed ({clip['text'][:40]})")
             continue

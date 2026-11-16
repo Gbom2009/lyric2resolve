@@ -25,13 +25,16 @@ class RenderJobs:
 
     def start(self, project_path: Path, template: str = "spectrum_bars", preset: str = "preview",
               aspects: list[str] | None = None, sections: list[str] | None = None,
-              estimate_only: bool = False) -> dict:
+              estimate_only: bool = False, on_done: Callable[[dict], None] | None = None, **extra) -> dict:
+        """extra: custom_script, time_range, lyrics_3d, name, params, video_only (see render_project).
+        on_done(progress) runs after a successful render (e.g. to put the clip on the timeline)."""
         if self.running():
             raise RuntimeError("a render is already running - wait for it or cancel it first")
         self._cancel = threading.Event()
         with self._lock:
             self._state = {"running": True, "started": time.time(), "template": template, "preset": preset,
                            "aspects": aspects, "sections": sections, "estimate_only": estimate_only,
+                           "name": extra.get("name"), "time_range": extra.get("time_range"),
                            "aspect": None, "done": 0, "total": 0, "fraction": 0.0, "eta_s": None,
                            "log": [], "report": None, "error": ""}
 
@@ -46,11 +49,18 @@ class RenderJobs:
 
         def work() -> None:
             try:
+                kw = {k: v for k, v in extra.items() if v is not None}
                 rep = self._render(Path(project_path), template=template, preset_name=preset, aspects=aspects,
                                    sections=sections, estimate_only=estimate_only, on_progress=on_progress,
-                                   log=log, cancel=self._cancel)
+                                   log=log, cancel=self._cancel, **kw)
                 with self._lock:
                     self._state["report"] = asdict(rep) if hasattr(rep, "__dataclass_fields__") else rep
+                report = self._state["report"] or {}
+                if on_done and not estimate_only and report.get("ok") and report.get("videos"):
+                    try:
+                        on_done(self.progress())
+                    except Exception as exc:  # the render itself worked; say why the follow-up failed
+                        log(f"rendered, but could not add it to the timeline: {exc}")
             except Exception as exc:  # shown to the user / Claude, never crashes the server
                 with self._lock:
                     self._state["error"] = str(exc) or traceback.format_exc(limit=2)

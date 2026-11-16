@@ -4,7 +4,8 @@ Structure (one file per layout, one timeline each):
     resources: format (fps + 1920x1080 or 1080x1920), asset (Track A = full song), effect (Basic Title)
     library/event/project/sequence/spine/gap  (covers the whole song, starts at the start timecode)
         asset-clip  lane -1  -> the full song on an audio track
-        title       lane  1  -> one Basic Title per lyric block (none inside instrumental gaps)
+        asset-clip  lane  1  -> the clips track (rendered scenes / your own videos), only when there are clips
+        title       lane  1 (2 with clips) -> one Basic Title per lyric block (none inside instrumental gaps)
         marker               -> sections and bars
 Version 1.9 is chosen because every current Resolve (18.x-20.x) imports it; validate with the DTD.
 """
@@ -61,6 +62,16 @@ def build(plan: Plan, audio_rate: int = 44100) -> ET.Element:
                           audioChannels="2", audioRate=str(audio_rate))
     ET.SubElement(asset, "media-rep", kind="original-media", src=file_url(plan.song_path))
     ET.SubElement(res, "effect", id="r3", name="Basic Title", uid=BASIC_TITLE_UID)
+    media_ids: dict[str, str] = {}
+    for m in plan.media:
+        if m.path in media_ids:
+            continue
+        mid = f"m{len(media_ids) + 1}"
+        media_ids[m.path] = mid
+        longest = max(x.in_frame + x.duration for x in plan.media if x.path == m.path)
+        ma = ET.SubElement(res, "asset", id=mid, name=_stem(m.path), start="0s", duration=fcp_time(longest, r),
+                           hasVideo="1", format="r1")
+        ET.SubElement(ma, "media-rep", kind="original-media", src=file_url(m.path))
 
     lib = ET.SubElement(root, "library")
     event = ET.SubElement(lib, "event", name="lyric2resolve")
@@ -72,9 +83,14 @@ def build(plan: Plan, audio_rate: int = 44100) -> ET.Element:
                         duration=fcp_time(plan.duration_frames, r))
     ET.SubElement(gap, "asset-clip", ref="r2", lane="-1", name=_stem(plan.song_path), offset=fcp_time(t0, r),
                   start="0s", duration=fcp_time(plan.duration_frames, r), audioRole="dialogue")
+    for m in plan.media:
+        ET.SubElement(gap, "asset-clip", ref=media_ids[m.path], lane="1", name=m.name[:60],
+                      offset=fcp_time(t0 + m.start_frame, r), start=fcp_time(m.in_frame, r),
+                      duration=fcp_time(m.duration, r))
+    title_lane = "2" if plan.media else "1"   # lyrics above the clips
     for i, c in enumerate(plan.clips, start=1):
         s = c.style
-        title = ET.SubElement(gap, "title", ref="r3", lane="1", name=c.text[:60] or f"Lyric {i}",
+        title = ET.SubElement(gap, "title", ref="r3", lane=title_lane, name=c.text[:60] or f"Lyric {i}",
                               offset=fcp_time(t0 + c.start_frame, r), start=fcp_time(t0 + c.start_frame, r),
                               duration=fcp_time(c.duration, r))
         ET.SubElement(title, "param", name="Position", key=POSITION_KEY, value=f"{c.x:g} {c.y:g}")

@@ -64,6 +64,9 @@ OPS: dict[str, Callable] = {
     "nudge_words": ops.nudge_words,
     "nudge_block": ops.nudge_block,
     "add_text": ops.add_text,
+    "add_clip": ops.add_clip,
+    "update_clip": ops.update_clip,
+    "remove_clip": ops.remove_clip,
     "retime_block": ops.retime_block,
     "add_gap": ops.add_gap,
     "update_gap": ops.update_gap,
@@ -409,7 +412,7 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
 
     @app.post("/api/render")
     def render_start(body: dict = Body(default_factory=dict)):
-        allowed_keys = {"template", "preset", "aspects", "sections", "estimate_only"}
+        allowed_keys = {"template", "preset", "aspects", "sections", "estimate_only", "lyrics_3d"}
         args = {k: v for k, v in body.items() if k in allowed_keys and v is not None}
         try:
             return _jobs().start(current().path, **args)
@@ -532,9 +535,10 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
 
     newproject.register(app, _new_jobs, _open_new)
 
-    from . import visuals_api
+    from . import clips_api, visuals_api
 
     visuals_api.register(app, current, settings_dir)
+    clips_api.register(app, current, lambda: _jobs(), settings_dir)
 
     from . import settings_api
     from lyric2resolve.assets import fonts as _fonts_mod

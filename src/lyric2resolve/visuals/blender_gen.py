@@ -41,7 +41,7 @@ def generate(p: proj.Project, out_dir: Path, template: str = "spectrum_bars", as
              fps: float | None = None, curve_cfg: bands.CurveConfig | None = None, audio=None,
              textures_root: Path | None = None, count: int | None = None, render: dict | None = None,
              custom_script: Path | None = None, lyrics_3d: bool = False, time_range: tuple | None = None,
-             name: str | None = None) -> Path:
+             name: str | None = None, params: dict | None = None) -> Path:
     """Write the scene folder; returns the path of scene_data.json. audio = (array, sr) or None to load.
 
     template 'custom' + custom_script: a scene written by you/Claude (defines build_scene(ctx), see
@@ -102,6 +102,7 @@ def generate(p: proj.Project, out_dir: Path, template: str = "spectrum_bars", as
     data["time_range"] = list(time_range) if time_range else None
     data["lyrics"] = lyric_blocks(p) if lyrics_3d or template == "custom" else []
     data["lyrics_3d"] = bool(lyrics_3d)
+    data["params"] = dict(params or {})
     if template == "custom":
         shutil.copy2(custom_script, out_dir / "custom_scene.py")
         data["custom_script"] = "custom_scene.py"

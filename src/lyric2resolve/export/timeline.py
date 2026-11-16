@@ -57,6 +57,21 @@ class Marker:
 
 
 @dataclass
+class MediaClip:
+    clip_id: str
+    name: str
+    path: str                  # absolute media path
+    start_frame: int           # on the song timeline (like Clip)
+    end_frame: int             # exclusive
+    in_frame: int = 0          # offset into the media
+    hide_lyrics: bool = False
+
+    @property
+    def duration(self) -> int:
+        return self.end_frame - self.start_frame
+
+
+@dataclass
 class Plan:
     layout: str
     width: int
@@ -71,6 +86,7 @@ class Plan:
     warnings: list[str] = field(default_factory=list)
     project_name: str = ""
     styling_level: str = "basic"
+    media: list[MediaClip] = field(default_factory=list)   # the clips track (video lane under the titles)
 
 
 def _gap_frames(project: Project, rate: Rate) -> list[tuple[int, int]]:
@@ -112,6 +128,34 @@ def song_duration(project: Project) -> float:
     return (max(ends) + 2.0) if ends else 10.0
 
 
+def media_path(project_dir: Path | None, path: str) -> str:
+    p = Path(path)
+    if not p.is_absolute() and project_dir is not None:
+        p = Path(project_dir) / p
+    return str(p.resolve()) if p.exists() else str(p)
+
+
+def media_plan(project: Project, rate: Rate, dur_f: int, project_dir: Path | None = None,
+               layout: str = "16:9") -> tuple[list[MediaClip], list[tuple[int, int]]]:
+    """Clips track -> frame-snapped media clips (never inside gaps, never overlapping) + ranges without titles."""
+    gaps = _gap_frames(project, rate)
+    out: list[MediaClip] = []
+    hidden: list[tuple[int, int]] = []
+    for c in sorted(getattr(project, "clips", []) or [], key=lambda c: c.start):
+        s_f, e_f = rate.frames(c.start), min(dur_f, rate.frames(c.end))
+        s_f, e_f = _cut_by_gaps(s_f, e_f, gaps)
+        if out and s_f < out[-1].end_frame:
+            s_f = out[-1].end_frame
+        if e_f <= s_f:
+            continue
+        path = (c.info.get("paths") or {}).get(layout) or c.path   # rendered clips: one video per layout
+        out.append(MediaClip(c.id, c.name or Path(c.path).stem, media_path(project_dir, path), s_f, e_f,
+                             rate.frames(c.in_point), c.hide_lyrics))
+        if c.hide_lyrics:
+            hidden.append((s_f, e_f))
+    return out, hidden
+
+
 def build_plan(project: Project, layout: str = "16:9", beat_markers: str = "downbeats",
                level: str | None = None) -> Plan:
     cfg = project.settings
@@ -138,9 +182,12 @@ def build_plan(project: Project, layout: str = "16:9", beat_markers: str = "down
             end = e + off + max(cfg.post_roll_ms, cfg.fade_after_ms, 1000.0) / 1000.0
         raw.append((max(0, rate.frames(start)), min(dur_f, rate.frames(end))))
 
+    media, hidden = media_plan(project, rate, dur_f, layout=layout)
+    # titles avoid instrumental gaps AND clips that replace the lyrics ("hide lyrics")
+    no_text = sorted(gaps + hidden)
     clips: list[Clip] = []
     for i, (b, (s_f, e_f)) in enumerate(zip(blocks, raw)):
-        s_f, e_f = _cut_by_gaps(s_f, e_f, gaps)
+        s_f, e_f = _cut_by_gaps(s_f, e_f, no_text)
         if e_f <= s_f:  # entirely inside a gap (or empty): never revive it after the gap
             warnings.append(f"block {b.id} dropped: it lies inside an instrumental gap or has no duration")
             continue
@@ -151,7 +198,7 @@ def build_plan(project: Project, layout: str = "16:9", beat_markers: str = "down
                 clips.pop()
         next_start = raw[i + 1][0] if i + 1 < len(raw) else dur_f
         if e_f - s_f < cfg.min_clip_frames:              # extend forward if there is room
-            limit = min(next_start, dur_f, *(a for a, _ in gaps if a >= s_f), s_f + cfg.min_clip_frames)
+            limit = min(next_start, dur_f, *(a for a, _ in no_text if a >= s_f), s_f + cfg.min_clip_frames)
             e_f = max(e_f, limit)
         if e_f <= s_f:
             warnings.append(f"block {b.id} dropped: it lies inside an instrumental gap or has no duration")
@@ -179,7 +226,7 @@ def build_plan(project: Project, layout: str = "16:9", beat_markers: str = "down
                                   "downbeat" if beats_key == "downbeats" else "beat"))
     markers = sorted({(m.frame, m.kind): m for m in markers if 0 <= m.frame < dur_f}.values(), key=lambda m: m.frame)
     return Plan(layout, fr.width, fr.height, rate, tc_to_frames(cfg.start_timecode, rate), dur_f,
-                song_path(project), clips, markers, gaps, warnings, project.name, level)
+                song_path(project), clips, markers, gaps, warnings, project.name, level, media)
 
 
 def check_plan(plan: Plan) -> list[str]:
@@ -196,5 +243,18 @@ def check_plan(plan: Plan) -> list[str]:
                 problems.append(f"{c.block_id}: inside instrumental gap {a}-{b}")
         if c.end_frame > plan.duration_frames:
             problems.append(f"{c.block_id}: ends after the song")
+        for m in plan.media:
+            if m.hide_lyrics and c.start_frame < m.end_frame and c.end_frame > m.start_frame:
+                problems.append(f"{c.block_id}: shown during clip {m.clip_id}, which hides the lyrics")
         prev = c
+    prev_m = None
+    for m in plan.media:
+        if m.duration <= 0:
+            problems.append(f"clip {m.clip_id}: empty")
+        if prev_m and m.start_frame < prev_m.end_frame:
+            problems.append(f"clip {m.clip_id}: overlaps clip {prev_m.clip_id}")
+        for a, b in plan.gaps:
+            if m.start_frame < b and m.end_frame > a:
+                problems.append(f"clip {m.clip_id}: inside instrumental gap {a}-{b}")
+        prev_m = m
     return problems

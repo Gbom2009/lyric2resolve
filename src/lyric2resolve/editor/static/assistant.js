@@ -143,6 +143,8 @@
     polling = false;
     refreshProject();
   }
+  // other panels (e.g. "Make a clip with Claude") send a message themselves, then let this card follow it
+  L2R.assistantPoll = () => { bubble("note", "Request sent from the Clips card…"); setBusy(true); poll(); };
 
   async function send() {
     const input = $("#asst-input");
