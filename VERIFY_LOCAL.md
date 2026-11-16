@@ -1,4 +1,4 @@
-# VERIFY_LOCAL.md — things only your Windows PC can verify
+# VERIFY_LOCAL.md — things only your Windows PC (or Mac) can verify
 
 The cloud sessions run on Linux without GPU/Windows/Resolve/Blender. Everything below must be checked on your PC.
 From Phase 2 on, `scripts/verify_local.py` automates most of it and writes REPORT_LOCAL.md — paste that into the session.
@@ -27,6 +27,27 @@ and paste REPORT_LOCAL.md + your notes into a Claude session.
 9. **Batch** (Phase 18): 2-3 songs in a folder → `lyric2resolve batch <folder>`.
 10. **Update banner + roll back** (Phase 1, 18): after the next merge use the banner's *Update now*; then *Roll back*
     in the launcher and update again.
+
+## MAC FULL TEST PASS (MacBook, Apple Silicon — about 1-2 hours, in this order)
+Same idea as above, on the Mac. The Mac sections at the bottom hold the details. Paste REPORT_LOCAL.md + notes into a
+Claude session.
+
+1. **Install** (INSTALL_MAC.md): Python 3.12, `brew install ffmpeg`, git clone, double-click `install.command` →
+   lyric2resolve.app in Applications/Dock. First start: right-click → Open. **Run setup** (several GB) → **Start editor**.
+2. **Self-test**: `cd ~/lyric2resolve && .venv/bin/python scripts/verify_local.py` → REPORT_LOCAL.md. Expected ✅:
+   python, tkinter, git, ffmpeg, gpu ("Apple M1 … Metal / MPS, 8 GB"), torch_cuda ("Metal (MPS)"), mac_whisper_mlx,
+   video_encoder ("h264_videotoolbox (hardware) works"), whisper_model_load ("on MLX (M chip)"), whisper_tiny_clip,
+   fcpxml_validity, mcp_server; blender + blender_3_frame_render if Blender is installed; claude_cli if installed;
+   resolve_scripts_folder if Resolve is installed.
+3. **One real song** in the editor (New project, song + acapella): note the time; Activity Monitor → Memory pressure.
+   Then edit a few words, add text, Export (FCPXML + Resolve script).
+4. **Resolve on the Mac**: Library → Fonts → *Install fonts for Resolve*, restart Resolve; import the FCPXML / run
+   the script (Workspace → Scripts → lyric2resolve_build_timeline).
+5. **Visuals**: Visuals page (Draft is pre-selected) → Preview, then Draft of the whole song: time? does the Air slow
+   down? The MP4 plays in Rekordbox/Serato on the Mac.
+6. **Assistant** (if Claude Code is installed): ask for a change; Stop works; a ✨ clip renders.
+7. **Update + roll back**: after the next Mac merge use *Update now* (channel mac-release), then *Roll back* and update
+   again.
 
 ## Phase 1 — install + launcher + updater
 CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows runner; still check by hand:
