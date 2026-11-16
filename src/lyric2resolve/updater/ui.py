@@ -43,10 +43,11 @@ def open_folder(path: Path) -> None:
 
 
 class _Base:
-    def __init__(self, title: str):
+    def __init__(self, title: str, master=None):
         tk, ttk, self.scrolledtext, self.messagebox = _tk()
         self.tk, self.ttk = tk, ttk
-        self.root = tk.Tk()
+        # master: optional existing Tk root (tests share one interpreter; Windows Tk dislikes many)
+        self.root = tk.Toplevel(master) if master is not None else tk.Tk()
         self.root.title(title)
         self.root.configure(bg=BG)
         self.root.minsize(520, 200)
@@ -107,8 +108,8 @@ class _Base:
 
 
 class LauncherWindow(_Base):
-    def __init__(self, repo: Path, skip_check: bool = False, login_check: bool = False):
-        super().__init__("lyric2resolve")
+    def __init__(self, repo: Path, skip_check: bool = False, login_check: bool = False, master=None):
+        super().__init__("lyric2resolve", master)
         self.repo, self.git, self.cfg = repo, Git(repo), load_config()
         self.login_check = login_check
         self.version = core.version_label(self.git)
@@ -174,8 +175,8 @@ class LauncherWindow(_Base):
 class ApplyWindow(_Base):
     """Runs in the temporary updater copy (separate process)."""
 
-    def __init__(self, repo: Path):
-        super().__init__("lyric2resolve - updating")
+    def __init__(self, repo: Path, master=None):
+        super().__init__("lyric2resolve - updating", master)
         self.repo, self.git, self.cfg = repo, Git(repo), load_config()
         f = self.clear()
         self.label(f, "Updating lyric2resolve", title=True)

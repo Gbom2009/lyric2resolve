@@ -428,7 +428,9 @@ def test_cli_version_and_check(repos, capsys):
 
 
 # ------------------------------------------------------------------ UI smoke (needs Tk + a display; xvfb in CI)
-def _tk_or_skip():
+@pytest.fixture(scope="module")
+def tk_root():
+    """One shared Tk interpreter for all UI tests (creating many in one process is flaky on Windows)."""
     import os
     import sys
 
@@ -436,9 +438,12 @@ def _tk_or_skip():
     if not sys.platform.startswith("win") and not os.environ.get("DISPLAY"):
         pytest.skip("no display")
     try:
-        tk.Tk().destroy()
+        root = tk.Tk()
     except tk.TclError as exc:
         pytest.skip(f"Tk not usable: {exc}")
+    root.withdraw()
+    yield root
+    root.destroy()
 
 
 def _pump(win, cond, timeout=20.0):
@@ -451,8 +456,7 @@ def _pump(win, cond, timeout=20.0):
     return cond()
 
 
-def test_ui_launcher_and_apply_windows(repos, settings, monkeypatch):
-    _tk_or_skip()
+def test_ui_launcher_and_apply_windows(repos, settings, monkeypatch, tk_root):
     from lyric2resolve.updater import ui
 
     _, dev, user = repos
@@ -460,25 +464,24 @@ def test_ui_launcher_and_apply_windows(repos, settings, monkeypatch):
     push_update(dev)
     shown = []
     monkeypatch.setattr(ui.LauncherWindow, "show_update", lambda self, s: shown.append(s))
-    win = ui.LauncherWindow(user)
+    win = ui.LauncherWindow(user, master=tk_root)
     assert _pump(win, lambda: bool(shown)) and shown[0].update_available
     win.root.destroy()
 
     results = []
     monkeypatch.setattr(ui.ApplyWindow, "show_result", lambda self, r: results.append(r))
-    app = ui.ApplyWindow(user)
+    app = ui.ApplyWindow(user, master=tk_root)
     assert _pump(app, lambda: bool(results))
     assert results[0].ok, results[0].error
     app.root.destroy()
 
 
-def test_ui_screens_render(repos, settings):
-    _tk_or_skip()
+def test_ui_screens_render(repos, settings, tk_root):
     from lyric2resolve.updater import ui
 
     _, dev, user = repos
     push_update(dev)
-    win = ui.LauncherWindow(user, skip_check=True)
+    win = ui.LauncherWindow(user, skip_check=True, master=tk_root)
     win.show_update(core.check_for_update(Git(user), UpdaterConfig()))
     win.root.update()
     win.show_status(core.UpdateStatus(core.OFFLINE, message="Offline"))
