@@ -34,3 +34,7 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] verify_local: `whisper_tiny_clip` hears ≥4 of the key words and forced alignment returns ~9 words.
 - [ ] `transcribe` on a real song: word timings look right when played (spot-check 3 words); `--lyrics` keeps line breaks.
 - [ ] `pytest -m local` runs the real-Whisper test.
+
+## Phase 5 — analysis
+- [ ] `analyze` on 2-3 real songs: BPM correct (or exactly half/double), downbeats on the "1", sections plausible, key plausible.
+- [ ] Gaps: intro/break/outro detected; flagged words make sense (report false alarms).

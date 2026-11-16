@@ -3,6 +3,16 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 5 — Music analysis, instrumental gaps, sanity check
+**New**
+- Analyses the song: BPM, beat grid and bar starts (downbeats), key, an energy curve and section boundaries (labelled intro / verse / chorus / outro as a first guess you can rename later). Beats and sections become markers in the exports.
+- Instrumental gaps: long stretches without vocals (intro, breaks, outro) are detected automatically; gaps you add yourself are kept when re-analysing. Nothing will be placed on the timeline inside a gap.
+- Sanity check: flags (never changes) words Whisper probably got wrong: zero/very short durations, overlaps, low confidence, words far away from any singing, suspicious repeats ("la la la la" loops) and typical Whisper phantom phrases ("thanks for watching").
+- Command: `lyric2resolve analyze <project.json>`.
+
+**What to test**
+- Run `analyze` on the project from Phase 4 → check the BPM against what you know, see if the sections roughly match the song, and look at the flagged words.
+
 ## Phase 4 — Whisper transcription and the project file
 **New**
 - Transcribes the acapella with Whisper (large-v3 by default, on your NVIDIA GPU) with a timestamp for every word. Voice-activity detection is on; the language is detected automatically or you can set it.
