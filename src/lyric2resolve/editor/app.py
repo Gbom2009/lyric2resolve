@@ -199,7 +199,7 @@ def list_projects(projects_dir: Path) -> list[dict]:
 
 def create_app(session: EditorSession | None = None, projects_dir: Path | None = None,
                fonts_root: Path | None = None, settings_dir: Path | None = None, textures_root: Path | None = None,
-               assistant=None, jobs=None, update_checker=None):
+               assistant=None, jobs=None, update_checker=None, new_projects=None):
     """session: project opened at start (optional). projects_dir: folder offered in the project picker.
     assistant: claude_link.Assistant (optional Claude link); jobs: render.jobs.RenderJobs (background renders);
     update_checker: editor.settings_api.UpdateChecker (in-browser update banner)."""
@@ -478,6 +478,25 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         if path is None:
             raise HTTPException(status_code=404, detail=f"no {kind} audio in this project")
         return FileResponse(path, media_type="audio/wav")
+
+    # ------------------------------------------------------------ new project from the browser
+    from . import newproject
+
+    def _new_jobs():
+        nonlocal new_projects
+        if new_projects is None:
+            if projects_dir is None:
+                raise HTTPException(status_code=409, detail="no projects folder configured")
+            new_projects = newproject.NewProjectJobs(projects_dir, settings_dir=settings_dir)
+        return new_projects
+
+    def _open_new(path: Path) -> dict:
+        path = path.resolve()
+        holder["session"] = EditorSession(path)
+        allowed.add(path)
+        return holder["session"].state()
+
+    newproject.register(app, _new_jobs, _open_new)
 
     from . import settings_api
     from lyric2resolve.assets import fonts as _fonts_mod

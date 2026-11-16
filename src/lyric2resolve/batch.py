@@ -113,7 +113,7 @@ def project_settings(s) -> proj.ProjectSettings:
 def run_song(job: BatchJob, out_root: Path, *, settings, engine, ffmpeg, cache_dir: Path,
              formats: list[str] | None = None, granularity: str | None = None, fps: float | None = None,
              analyze: bool = True, compensate: bool = False, install_resolve_script: bool = False,
-             log: Callable[[str], None] = print) -> JobResult:
+             do_export: bool = True, log: Callable[[str], None] = print) -> JobResult:
     """One song through the whole pipeline. Never raises: errors come back in the result."""
     from lyric2resolve import export as ex
     from lyric2resolve import transcription
@@ -153,6 +153,11 @@ def run_song(job: BatchJob, out_root: Path, *, settings, engine, ffmpeg, cache_d
         folder = Path(out_root) / ex.safe_name(job.title)
         path = proj.save(p, folder / proj.PROJECT_FILE)
         res.project = str(path)
+        if not do_export:
+            res.ok = True
+            res.seconds = round(time.perf_counter() - t0, 1)
+            log(f"[{job.title}] done ({res.seconds} s)")
+            return res
         log(f"[{job.title}] exporting {', '.join(formats or ['fcpxml'])}…")
         out = ex.export(p, folder / "export", formats or ["fcpxml"],
                         install_resolve_script=install_resolve_script and "resolve" in (formats or []))

@@ -48,11 +48,12 @@ Phase 16: done (visuals/{brief,prompts}.py, templates.py, /ideas page (static/id
 Phase 17: done (claude_link/{__init__,cli,notes,mcp_server}.py, render/jobs.py, editor endpoints /api/assistant/* + /api/render*, static/assistant.js (side-panel card), docs/ASSISTANT.md, verify checks claude_cli + mcp_server, tests/test_claude_link.py + tests/data/fake_claude.py + tests/e2e/test_assistant.py).
 Phase 18: done (branding.py + config/brand_funqtion.json + static/brand/funqtion-logo.svg, editor/settings_api.py (/api/settings, /api/settings/updater, /api/update/*, /theme.css, /api/brand, /settings), static/{settings.html,settings.js,update_banner.js}, appctl update-request hand-off + launcher watcher, batch.py (`batch` CLI, run_song = single-song pipeline), tests/test_settings_batch.py + e2e/test_settings.py).
 Phase 19: done (cli.py end-to-end `lyric2resolve --song ...` via batch.run_song, README.md, VERIFY_LOCAL FULL TEST PASS section, verify check blender_3_frame_render (real render path, 3 preview frames; fake-Blender test), tests/test_end_to_end.py).
-ALL PHASES BUILT. PR #2 = phases 2-19, ready for the user to merge + run the FULL TEST PASS (VERIFY_LOCAL.md). Next session: record the user's REPORT_LOCAL.md + feedback here, fix on a new branch from main ("Fixes from testing").
+ALL PHASES BUILT; PR #2 merged. Fixes from testing (1) on branch `fixes-2026-11-16` (editor/newproject.py, static/newproject.js, app.js guards/no-project state, tests/test_new_project.py + e2e/test_new_project.py). Next session: record the user's REPORT_LOCAL.md + feedback here, fix on a new branch from main ("Fixes from testing").
 Session 3 (2026-11-16): user confirmed: continue on PR #2, Claude CLI installed on PC, try funqtion-site for branding, test everything later.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- New project from the browser: files are uploaded (multipart) into `<projects>/<name>/input/` and `batch.run_song(..., do_export=False)` runs in a background thread (one job at a time); the browser polls `/api/projects/new/status` and calls `/api/projects/new/open` when done. Upload instead of typed paths because a browser cannot give local file paths.
 - Branding: tokens from the public funqtion-site repo (css/tokens.css, commit 8bccd0f) in `config/brand_funqtion.json`; user edits go in `<data>/settings/brand_funqtion.json` (editing the repo copy would make the code folder dirty and block updates). Served as `/theme.css` (CSS variable overrides) on every page; brand fonts only from the local font library (offline, no Google requests). Toggle = `funqtion_branding` (or theme "funqtion").
 - Browser update banner: the editor runs `core.check_for_update` in a background thread (cached 30 min); "Update now" writes `<data>/settings/update_request.json` and the launcher (polling every 2 s while the editor runs) does the normal self-copying update. Only when the editor was started by the launcher (env L2R_LAUNCHER=1). Tests set L2R_NO_UPDATE_CHECK=1 so no git fetch runs.
 - Batch: folder pairing by name tokens (acapella/vocals/vox/voice, "_" counts as separator) or queue.yaml; never stops on one failure; report rewritten after every song. `batch.run_song` is the single-song pipeline reused by the Phase 19 CLI.
@@ -97,7 +98,7 @@ Phase 1 user test: not done yet (user chose continuous); fold its checklist into
 - Google Fonts CSS2 static-TTF trick and Poly Haven/ambientCG endpoints are verified only from the cloud; asset sync must be run on the PC.
 
 ## User test feedback per phase
-- (none yet)
+- 2026-11-16 (after merging PR #2): "the buttons to the right don't work and I can't make a new project in the interface". Reproduced: with no project open (fresh install), the side cards are empty and the buttons silently do nothing; the only way to create a project was the CLI. Fixed on branch fixes-2026-11-16: New project dialog (upload → pipeline in background → opens), no-project empty states + guards, status-line fix. Audit: with a project open, all 21 side-panel buttons + every select clicked in Chromium, no JS errors / failed requests.
 
 ## Pending VERIFY_LOCAL items
 - Phase 1: install, shortcut, update flow, self-update, rollback on Windows (see VERIFY_LOCAL.md).

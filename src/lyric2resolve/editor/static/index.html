@@ -70,11 +70,40 @@
   </footer>
 
   <dialog id="project-dialog">
-    <h2>Open a project</h2>
+    <h2>Projects</h2>
+    <div class="row"><button class="primary" id="btn-new-project">+ New project…</button></div>
     <p class="hint" id="project-dir"></p>
     <ul id="project-list" class="project-list"></ul>
-    <p class="hint">New projects: <code>lyric2resolve transcribe --song … --acapella …</code></p>
     <form method="dialog"><button>Close</button></form>
+  </dialog>
+
+  <dialog id="new-dialog">
+    <h2>New project</h2>
+    <form id="new-form">
+      <label class="field">Full song <b>(required)</b> — this goes on the Resolve timeline
+        <input type="file" name="song" required accept=".wav,.mp3,.flac,.m4a,.aac,.ogg,.aiff,.aif,audio/*"></label>
+      <label class="field">Acapella (vocals only) — recommended: Whisper listens only to this
+        <input type="file" name="acapella" accept=".wav,.mp3,.flac,.m4a,.aac,.ogg,.aiff,.aif,audio/*"></label>
+      <p class="hint">No acapella? Leave it empty: the vocals are separated from the song automatically (slower).</p>
+      <label class="field">Lyrics (optional) — paste them for much better timing; your line breaks are kept
+        <textarea name="lyrics" rows="6" placeholder="[Verse]&#10;first line of the song&#10;second line…"></textarea></label>
+      <div class="new-grid">
+        <label class="field">Project name <input type="text" name="name" placeholder="(the song's file name)"></label>
+        <label class="field">Language <input type="text" name="language" placeholder="auto (or en, nl…)"></label>
+        <label class="field">Blocks
+          <select name="granularity">
+            <option value="line">one line per block</option>
+            <option value="word">one word per block</option>
+            <option value="phrase">phrases (N words)</option>
+            <option value="auto">split on pauses</option>
+          </select></label>
+      </div>
+      <div class="row">
+        <button class="primary" type="submit" id="new-go">Create project</button>
+        <button type="button" id="new-close">Close</button>
+      </div>
+    </form>
+    <pre id="new-log" class="export-result" hidden></pre>
   </dialog>
 
   <dialog id="export-dialog">
@@ -102,6 +131,7 @@
   <script src="/static/styles.js"></script>
   <script src="/static/export.js"></script>
   <script src="/static/assistant.js"></script>
+  <script src="/static/newproject.js"></script>
   <script src="/static/update_banner.js"></script>
 </body>
 </html>

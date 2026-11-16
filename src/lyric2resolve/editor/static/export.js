@@ -10,6 +10,7 @@
   };
 
   $("#btn-export").onclick = async () => {
+    if (!L.requireProject()) return;
     const box = $("#export-formats");
     if (!box.childElementCount) {
       const { formats } = await L.api("GET", "/api/export/formats");

@@ -3,6 +3,19 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Fixes from testing (1) — make a new project in the editor, buttons without a project
+**New**
+- **+ New project…** (in the Projects window, which opens automatically when nothing is open): choose the full song, optionally the acapella, and paste the lyrics if you have them. Set the name, language and block type, then click **Create project**. It converts the audio, checks the alignment, transcribes (or aligns your lyrics), analyses BPM/sections/gaps and builds the blocks in the background with a progress log, then opens the project. The first time it downloads the Whisper model, which takes a while. Your files are copied into the project folder (`input`).
+
+**Fixed**
+- With no project open, the right-hand panel was empty and the buttons did nothing. Now the panel says "No project open — click Projects…", and Play / Play selection / Undo / Redo / Export tell you what to do and open the Projects window.
+- After opening a project the status line kept saying "Open a project to start".
+- If Whisper isn't installed yet, New project says to run **Run setup** in the launcher instead of failing silently.
+
+**What to test**
+- Open the editor → Projects window → **+ New project…** → pick a song (+ acapella) → Create project → after the progress log, the lyrics appear and the right-hand panel works.
+- Without a project: click Play or Export → you get a message and the Projects window.
+
 ## Phase 19 — One-command pipeline, README, full test pass
 **New**
 - **One command for a whole song**: `lyric2resolve --song full.wav --acapella vocals.wav [--lyrics lyrics.txt] [--sections sections.yaml] --granularity line --fps 25 --model large-v3 [--render-preset standard] --out ./out`. It converts, checks A/B alignment, transcribes (or aligns your lyrics), analyses BPM/sections/gaps, builds the blocks, exports FCPXML (16:9 + 9:16), the Resolve script and SRT/CSV/EDL, installs the Resolve script, and optionally renders visuals. `--open-editor` opens the result.
