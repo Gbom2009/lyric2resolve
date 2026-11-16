@@ -113,6 +113,8 @@ def setup_command(repo: Path) -> list[str]:
     """Run the full setup in a visible console window (it prints progress)."""
     if sys.platform.startswith("win"):
         return ["cmd", "/c", str(repo / "setup_windows.bat")]
+    if sys.platform == "darwin":  # visible progress in a Terminal window
+        return ["open", "-a", "Terminal", str(repo / "setup_mac.command")]
     return [str(venv_python(repo)), str(repo / "scripts" / "setup_update.py"), "--full"]
 
 

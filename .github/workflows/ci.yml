@@ -46,6 +46,12 @@ jobs:
       - run: pip install -r requirements/dev.txt -r requirements/core.txt playwright
       - run: python -m playwright install chromium
       - run: python -m pytest -q
+      - name: Install smoke test (install.command -> lyric2resolve.app)
+        run: |
+          bash install.command --yes --no-dock --dest "$RUNNER_TEMP/Apps"
+          plutil -lint "$RUNNER_TEMP/Apps/lyric2resolve.app/Contents/Info.plist"
+          test -x "$RUNNER_TEMP/Apps/lyric2resolve.app/Contents/MacOS/lyric2resolve"
+          .venv/bin/python3 launcher.pyw version
   blender:
     # real Blender scene generation with the bpy module (Linux only; renders are verified on the PC)
     runs-on: ubuntu-latest

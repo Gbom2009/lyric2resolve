@@ -3,6 +3,16 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Mac (Apple Silicon) — phases 1 + 2: foundation, installer and app
+**New (Mac only; nothing changes on Windows)**
+- lyric2resolve runs on Macs with an M chip. The app recognises the chip (GPU = "Apple M… (Metal)"), uses PyTorch with the Mac's GPU, finds Homebrew's ffmpeg, Blender in Applications and Claude Code, and picks Mac-friendly defaults (Whisper large-v3-turbo).
+- **install.command**: double-click it in Finder to make **lyric2resolve.app** in Applications (with an icon), optionally in the Dock. Then the usual **Run setup** / **Start editor** / **Update now**. See INSTALL_MAC.md.
+- Macs update from their own release channel `mac-release`, which only gets changes after the Mac tests passed.
+- The test robot now also runs every test on an Apple Silicon Mac.
+
+**What to test (on the Mac)**
+- INSTALL_MAC.md from start to finish: lyric2resolve.app opens the launcher, Run setup finishes, Start editor opens the browser.
+
 ## Clips, custom 3D scenes with Claude, lyrics as the star (feature update B)
 **New**
 - **Clips track**: videos on the song's timeline. They are shown as purple regions on the waveform (drag or resize to move them) and in the new **Clips** card, with a preview, start/end and "Go to"/"Snap to bars".
