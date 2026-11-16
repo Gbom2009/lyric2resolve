@@ -3,3 +3,5 @@ faster-whisper>=1.0
 stable-ts>=2.17
 # PyAV 19 removed av.open(metadata_errors=...), which faster-whisper 1.2.1 uses to decode audio (checked 2026-11-16).
 av>=11,<19
+# GPU: faster-whisper's CTranslate2 needs cublas64_12.dll (+ cuDNN 9). CUDA 12 torch builds ship both in torch/lib;
+# with a CUDA 13 torch, setup_update.py --ensure-cuda12-libs installs nvidia-cublas-cu12 (Windows only).
