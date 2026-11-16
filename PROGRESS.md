@@ -1,13 +1,13 @@
 # PROGRESS.md — lyric2resolve
 
-MODE: gated
+MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR)
 
 ## Phase status
 | # | Phase | Status | Branch / PR |
 |---|-------|--------|-------------|
 | 0 | Planning docs | merged (initial commit on main) | main |
-| 1 | Skeleton + launcher/updater | PR open — ready, waiting for user test | phase-01-launcher-updater / PR #1 |
-| 2 | Setup script + verify_local + settings | planned | |
+| 1 | Skeleton + launcher/updater | merged (user test pending) | PR #1 |
+| 2 | Setup script + verify_local + settings | in progress | continuous-2026-11-16 |
 | 3 | Audio inputs / alignment / instrumental | planned | |
 | 4 | Transcription + project JSON | planned | |
 | 5 | Music analysis + gaps + sanity | planned | |
@@ -29,16 +29,14 @@ MODE: gated
 Statuses: planned / in progress / PR open / merged / tested-OK / needs fixes / waiting for user
 
 ## CURRENT STEP LOG
-Phase 1 (branch `phase-01-launcher-updater`, PR #1):
-- [x] package skeleton + paths.py (data folder)
-- [x] updater logic: `updater/{gitops,changelog,config,core,messages,selfcopy,cli}.py`
-- [x] tests/test_updater.py (temp bare repo as fake remote; UI smoke tests run under xvfb / Windows runner)
-- [x] Tkinter UI `updater/ui.py` + `launcher.pyw`
-- [x] install.ps1/install.bat + INSTALL.md + shortcuts
-- [x] CI (Linux 3.11/3.12 + Windows incl. `install.ps1 -NoShortcuts` smoke test), CHANGELOG, VERIFY_LOCAL.md
-- [x] CI green (Linux 3.11/3.12 + Windows incl. install.ps1 smoke) → PR #1 marked ready
-- WAITING FOR USER: merge PR #1, first-time install (INSTALL.md), run Phase 1 TEST CHECKLIST (PHASES.md), reply.
-Next (after reply): pull main, record feedback here, branch `phase-02-setup-settings` from main, apply fixes first ("Fixes from testing phase 1"), then build Phase 2.
+Continuous mode, branch `continuous-2026-11-16` (one PR into main, phase-labelled commits).
+Phase 2:
+- [ ] requirements split (core/torch/ml/separation/dev) + `setup_tools.py` (GPU/CUDA detect, torch index choice, ffmpeg/Blender detect, pip commands)
+- [ ] `settings.py` (app settings JSON in data folder)
+- [ ] `scripts/setup_update.py` (--full / --update, used by updater) + `setup_windows.ps1/.bat`
+- [ ] `verify.py` + `scripts/verify_local.py` (REPORT_LOCAL.md/json)
+- [ ] tests/test_setup_settings.py, CHANGELOG, VERIFY_LOCAL, PHASES checklist
+Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
 - Python package in `src/lyric2resolve/` (src layout). Phase 1: launcher puts `src` on sys.path (no pip install needed); later phases may install it editable.
