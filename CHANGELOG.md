@@ -3,6 +3,14 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Mac (Apple Silicon) — phase 6: Mac test pass + README
+**New**
+- README has a Mac chapter with what is different on a Mac (MLX, Metal, VideoToolbox, Draft preset, fonts, data folder, `mac-release`).
+- VERIFY_LOCAL.md starts with a **MAC FULL TEST PASS**: the order to test everything on your MacBook in about 1-2 hours.
+
+**What to test (Mac)**
+- Follow the MAC FULL TEST PASS and paste REPORT_LOCAL.md + your notes into a Claude session.
+
 ## Mac (Apple Silicon) — phase 5: Mac integration
 **New**
 - **Install fonts for Resolve** button on the Library page (Fonts tab): it copies the app's fonts to your user's fonts folder, so Resolve can use them. On Windows it uses the same per-user install as before; on a Mac the fonts go to `~/Library/Fonts`. Restart Resolve afterwards.

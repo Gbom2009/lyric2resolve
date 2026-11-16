@@ -5,8 +5,9 @@ in **16:9 and 9:16** at once. Around that: a full browser **editor**, a **karaok
 visuals** rendered headless into DJ-ready MP4s, free **font and CC0 texture** libraries, an optional **Claude Code
 Assistant**, and a launcher that **updates itself** from GitHub.
 
-Windows + NVIDIA GPU is the target (Whisper on CUDA). Everything works offline after the first setup, except
-updates, asset downloads and the optional Assistant.
+Windows + NVIDIA GPU is the main target (Whisper on CUDA). **Macs with an M chip** (M1–M4) are supported too, as a
+real app, see [the Mac chapter](#mac-apple-silicon). Everything works offline after the first setup, except updates,
+asset downloads and the optional Assistant.
 
 ---
 
@@ -25,6 +26,26 @@ Full steps: **[INSTALL.md](INSTALL.md)**. In short:
 
 Your data (projects, settings, assets, caches, Whisper models, renders, logs) lives in
 **`%LOCALAPPDATA%\lyric2resolve`**, never in the app folder. Updates never touch it.
+
+### Mac (Apple Silicon)
+Full steps: **[INSTALL_MAC.md](INSTALL_MAC.md)**. In short: install Python 3.12 (python.org), Homebrew + `brew install
+ffmpeg`, optionally Blender and Claude Code. Then `git clone` the repo and double-click **`install.command`**: it makes
+**lyric2resolve.app** in Applications (optionally in the Dock). Open it (first time: right-click → **Open**, because the
+app is not signed by Apple) → **Run setup** → **Start editor**. Everything else works as on Windows. The differences:
+
+| | Windows | Mac (M chip) |
+|---|---|---|
+| Whisper | faster-whisper on CUDA, large-v3 | **MLX** on the M chip, large-v3-turbo (CPU fallback) |
+| Separation / PyTorch | CUDA | Metal (MPS) |
+| Blender | OptiX / CUDA | **Metal** (Eevee + Cycles) |
+| Video encode | NVENC | **VideoToolbox** (libx264 fallback) |
+| Render preset to start with | Standard | **Draft** on 8 GB Macs |
+| Fonts for Resolve | per-user Windows fonts | `~/Library/Fonts` (Library → Install fonts for Resolve) |
+| Data folder | `%LOCALAPPDATA%\lyric2resolve` | `~/Library/Application Support/lyric2resolve` |
+| Updates | branch `main` | branch **`mac-release`** (same code, moved forward after each Mac change) |
+
+The self-test on a Mac: `.venv/bin/python scripts/verify_local.py` → REPORT_LOCAL.md. Mac checklist:
+VERIFY_LOCAL.md → "MAC FULL TEST PASS".
 
 ## 2. Usage
 ### In the browser (normal way)
@@ -108,6 +129,8 @@ edits in the app folder block updates (by design); your data folder is never tou
   flags suspicious words but never changes them for you.
 - Text width checks estimate character widths (no font measurement), so warnings are approximate.
 - The Assistant needs your own Claude Code login and counts against your Claude Pro limits.
+- Mac: built and unit-tested in the cloud; GitHub's macOS test machine is not available on this account, so the Mac
+  build is checked on your MacBook (VERIFY_LOCAL.md → MAC FULL TEST PASS). The app is not signed/notarised by Apple.
 
 ## 8. For developers
 Read [CLAUDE.md](CLAUDE.md), [SPEC.md](SPEC.md), [PHASES.md](PHASES.md), [PROGRESS.md](PROGRESS.md),
