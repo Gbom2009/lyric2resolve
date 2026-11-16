@@ -45,8 +45,15 @@ class GpuInfo:
     driver: str = ""
     cuda: tuple[int, int] | None = None
     memory_mb: int = 0
+    kind: str = "nvidia"          # nvidia | apple (Apple Silicon: Metal / MPS, unified memory)
+
+    @property
+    def apple(self) -> bool:
+        return self.kind == "apple"
 
     def describe(self) -> str:
+        if self.apple:
+            return f"{self.name} GPU (Metal / MPS), {self.memory_mb // 1024} GB unified memory"
         if not self.available:
             return "No NVIDIA GPU detected (nvidia-smi not found or failed)"
         cuda = f"{self.cuda[0]}.{self.cuda[1]}" if self.cuda else "?"
@@ -73,7 +80,22 @@ def parse_nvidia_smi(header: str | None, query: str | None) -> GpuInfo:
     return info
 
 
-def detect_gpu(probe: Probe = run_probe) -> GpuInfo:
+def detect_apple_silicon(probe: Probe = run_probe) -> GpuInfo:
+    """macOS: 'Apple M1/M2/…' from sysctl; Intel Macs have no MPS-capable GPU for our purposes."""
+    brand = (probe(["sysctl", "-n", "machdep.cpu.brand_string"]) or "").strip()
+    mem = (probe(["sysctl", "-n", "hw.memsize"]) or "0").strip()
+    if not brand.startswith("Apple"):
+        return GpuInfo()
+    try:
+        mb = int(mem) // (1024 * 1024)
+    except ValueError:
+        mb = 0
+    return GpuInfo(True, brand, "", None, mb, "apple")
+
+
+def detect_gpu(probe: Probe = run_probe, platform: str | None = None) -> GpuInfo:
+    if (platform or sys.platform) == "darwin":
+        return detect_apple_silicon(probe)
     header = probe(["nvidia-smi"])
     query = probe(["nvidia-smi", "--query-gpu=name,driver_version,memory.total",
                    "--format=csv,noheader,nounits"])
@@ -81,6 +103,8 @@ def detect_gpu(probe: Probe = run_probe) -> GpuInfo:
 
 
 def torch_index_tag(gpu: GpuInfo) -> str:
+    if gpu.apple:
+        return "pypi"  # macOS arm64 wheels on PyPI include Metal (MPS) support
     if not gpu.available or not gpu.cuda:
         return "cpu"
     for major, minor, tag in CUDA_TAGS:
@@ -90,7 +114,13 @@ def torch_index_tag(gpu: GpuInfo) -> str:
 
 
 def torch_index_url(gpu: GpuInfo) -> str:
-    return TORCH_INDEX.format(tag=torch_index_tag(gpu))
+    tag = torch_index_tag(gpu)
+    return "https://pypi.org/simple" if tag == "pypi" else TORCH_INDEX.format(tag=tag)
+
+
+def torch_index_args(gpu: GpuInfo) -> list[str]:
+    tag = torch_index_tag(gpu)
+    return [] if tag == "pypi" else ["--index-url", TORCH_INDEX.format(tag=tag)]
 
 
 # ------------------------------------------------------------------ tools
@@ -113,6 +143,17 @@ def windows_candidates(env: dict[str, str], tool: str) -> list[Path]:
     return out
 
 
+MAC_BIN_DIRS = ("/opt/homebrew/bin", "/usr/local/bin")   # Homebrew on Apple Silicon / Intel
+
+
+def mac_candidates(env: dict[str, str], tool: str) -> list[Path]:
+    home = Path(env.get("HOME") or str(Path.home()))
+    if tool == "blender":
+        return [Path("/Applications/Blender.app/Contents/MacOS/Blender"),
+                home / "Applications" / "Blender.app" / "Contents" / "MacOS" / "Blender"]
+    return [Path(d) / tool for d in MAC_BIN_DIRS]
+
+
 def find_tool(tool: str, configured: str = "", env: dict[str, str] | None = None,
               which: Callable[[str], str | None] = shutil.which, platform: str | None = None) -> Path | None:
     """Configured path > PATH > common install folders (Windows)."""
@@ -127,6 +168,10 @@ def find_tool(tool: str, configured: str = "", env: dict[str, str] | None = None
         return Path(hit)
     if platform.startswith("win"):
         for cand in windows_candidates(env, tool):
+            if cand.is_file():
+                return cand
+    if platform == "darwin":
+        for cand in mac_candidates(env, tool):
             if cand.is_file():
                 return cand
     return None
@@ -170,6 +215,10 @@ for n in out["versions"]:
 if "torch" in out["versions"] and "torch" not in out["errors"]:
     import torch
     out["cuda"] = bool(torch.cuda.is_available())
+    try:
+        out["mps"] = bool(torch.backends.mps.is_available())
+    except Exception:
+        out["mps"] = False
 print("L2R_TORCH " + json.dumps(out))
 """
 
@@ -206,6 +255,10 @@ def torch_problems(info: dict, gpu: "GpuInfo") -> list[str]:
     if "torch" not in v:
         return []
     problems = [f"{n} does not load ({e})" for n, e in (info.get("errors") or {}).items()]
+    if gpu.apple:  # macOS: one PyPI build, no CPU/CUDA variants; only MPS matters
+        if info.get("mps") is False and not info.get("errors"):
+            problems.append("torch cannot use the Apple GPU (torch.backends.mps.is_available() is False)")
+        return problems
     builds = {n: _split(x)[1] for n, x in v.items()}
     tlocal = builds["torch"]
     if len(set(builds.values())) > 1:
@@ -256,16 +309,16 @@ def plan_setup(repo: Path, python: Path, gpu: GpuInfo, mode: str = "full",
                 plan.notes.append("PyTorch is broken (" + "; ".join(torch_broken) + ") - reinstalling a matching "
                                   "torch/torchaudio/torchvision set (~2-3 GB download).")
                 plan.commands.append([str(python), "-m", "pip", "uninstall", "-y", *TORCH_PACKAGES])
-                plan.commands.append(pip + ["-r", str(path), "--index-url", TORCH_INDEX.format(tag=tag)])
+                plan.commands.append(pip + ["-r", str(path)] + torch_index_args(gpu))
             elif torch_installed:
                 plan.notes.append("torch already installed and working - skipped.")
                 if mode == "full":  # still add torchvision when an older setup did not install it
-                    plan.commands.append(pip + ["-r", str(path), "--index-url", TORCH_INDEX.format(tag=tag)])
+                    plan.commands.append(pip + ["-r", str(path)] + torch_index_args(gpu))
             else:
                 if tag == "cpu":
                     plan.notes.append("No NVIDIA GPU/CUDA detected: installing CPU-only torch "
                                       "(transcription will be slow).")
-                plan.commands.append(pip + ["-r", str(path), "--index-url", TORCH_INDEX.format(tag=tag)])
+                plan.commands.append(pip + ["-r", str(path)] + torch_index_args(gpu))
             if pins is not None:
                 plan.commands.append([str(python), str(repo / "scripts" / "setup_update.py"), "--write-pins",
                                       str(pins)])

@@ -46,7 +46,15 @@ Assistant, clips and Resolve export as on Windows, using the M chip's GPU/Neural
 - Cannot: your Mac's real GPU speed, Gatekeeper prompts, Resolve/Blender GUIs, Rekordbox/Serato on Mac — those go in
   VERIFY_LOCAL (Mac section) and your REPORT_LOCAL.md, same loop as on Windows.
 
-## Questions before starting
+## Decisions (2026-11-16, from the user)
+1. **Light `.app` + git Update now** (no self-contained Python bundle).
+2. Test Mac: **MacBook Air, base model (8 GB RAM, fanless)** → defaults: Whisper **large-v3-turbo** (MLX), Eevee
+   PREVIEW/DRAFT render presets suggested first, free Whisper memory before Blender starts.
+3. **MLX Whisper** as the Mac engine (faster-whisper CPU int8 as fallback).
+4. **Separate Mac release channel**: shared code is developed on `main` (Windows unchanged); Mac installs follow the
+   branch **`mac-release`**, which is moved forward to `main` only after the macOS CI job passes.
+
+## Questions before starting (answered above)
 1. App style: lightweight `.app` that keeps the git **Update now** (recommended) — or a fully self-contained app with
    its own Python inside (bigger, no git needed, but updates mean downloading a new app each time)?
 2. Do you have a Mac to test on (which chip and how much RAM)? 16 GB+ is comfortable for Whisper large-v3 + Blender.

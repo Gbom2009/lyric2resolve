@@ -1,4 +1,6 @@
 # Optional vocal separation fallback (only used when no acapella is given).
-audio-separator[gpu]>=0.30
+audio-separator[gpu]>=0.30; sys_platform != "darwin"
+# Mac (Apple Silicon): onnxruntime with CoreML + torch on MPS (no CUDA there)
+audio-separator[cpu]>=0.30; sys_platform == "darwin"
 # audio-separator imports audioread but does not declare it (it used to come with librosa < 1.0). Checked 2026-11-16.
 audioread>=3.0

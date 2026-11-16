@@ -62,6 +62,9 @@ def claude_candidates(env: dict[str, str]) -> list[Path]:
         out += [Path(appdata) / "npm" / "claude.cmd", Path(appdata) / "npm" / "claude.exe"]
     if local:
         out += [Path(local) / "Programs" / "claude" / "claude.exe"]
+    out += [Path("/opt/homebrew/bin/claude"), Path("/usr/local/bin/claude")]   # macOS (Homebrew / npm)
+    if home:
+        out += [Path(home) / ".npm-global" / "bin" / "claude"]
     return out
 
 

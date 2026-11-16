@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
@@ -15,7 +16,8 @@ STATE_NAME = "updater_state.json"
 @dataclass
 class UpdaterConfig:
     remote: str = "origin"
-    branch: str = "main"
+    # Mac installs follow their own release branch (moved forward only after the macOS CI job passed)
+    branch: str = field(default_factory=lambda: "mac-release" if sys.platform == "darwin" else "main")
     # Optional: expected remote URL. If set, the updater refuses to fetch when the
     # clone's remote points elsewhere (only fetch from the configured remote).
     repo_url: str = ""
