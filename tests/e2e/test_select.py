@@ -20,6 +20,7 @@ def test_renders_blocks_gaps_and_audio(page):
 
 
 def test_click_drag_and_shift_click_selection(page):
+    page.wait_for_function("L2R.audioReady === true", timeout=10000)  # no layout shift during the drag
     a, b = word(page, "sing").bounding_box(), word(page, "night").bounding_box()
     page.mouse.move(a["x"] + 5, a["y"] + 5)
     page.mouse.down()
