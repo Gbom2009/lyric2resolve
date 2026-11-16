@@ -13,6 +13,7 @@ APP_COMMANDS = {
     "editor": "lyric2resolve.editor.app",
     "assets": "lyric2resolve.assets",
     "export": "lyric2resolve.export",
+    "visuals": "lyric2resolve.visuals.blender_gen",
 }
 
 

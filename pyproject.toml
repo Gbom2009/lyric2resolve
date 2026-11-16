@@ -23,4 +23,4 @@ markers = [
 addopts = "-m 'not local'"
 
 [tool.setuptools.package-data]
-lyric2resolve = ["editor/static/*", "editor/static/vendor/*", "export/resolve_template/*.py"]
+lyric2resolve = ["editor/static/*", "editor/static/vendor/*", "export/resolve_template/*.py", "visuals/blender_template/*.py"]

@@ -3,6 +3,18 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 14 — Audio-reactive Blender scenes
+**New**
+- `lyric2resolve visuals <project.json> --template <name>` prepares an audio-reactive Blender scene for your song, in 16:9 and 9:16, at your project's frame rate.
+- Five scene templates: **spectrum bars**, **pulsing blob**, **tunnel**, **particle field** (sparkles), **neon floor grid**.
+- The song is analysed into curves: bass (20-150 Hz), mids (150-2000 Hz), highs (2-12 kHz), loudness, onsets and beats, smoothed with attack/release and normalised. The curves are saved as `curves.json`/`curves.csv` next to the scene, so you can tweak them without analysing again.
+- Default look: bass = glowing orange + scale pulse, mids = glowing blue (+ rotation), highs = glowing green + sparkles, loudness drives the light, beats give a small camera shake. Choruses/drops glow brighter than verses. Everything is configurable in `mapping.yaml` (colours per band and per section, amounts).
+- Materials use a texture from your CC0 library (or procedural patterns: noise, grid, hex, cracks, stripes) with the audio-reactive glow layered on top; textures are packed into the .blend.
+- Build the .blend files with `blender -b -P l2r_scene.py -- scene_data.json` (the next phase does this and the rendering for you).
+
+**What to test**
+- Generate a scene for your song, build it with Blender, open the .blend and scrub the timeline: shapes should pulse with the music.
+
 ## Phase 13 — Free texture library (CC0) + Library page
 **New**
 - `lyric2resolve assets sync --textures [--resolution 1k|2k|4k]` downloads a hand-picked starter pack of free CC0 textures and HDRIs for glowing visuals from Poly Haven and ambientCG: brushed/dark metal, sci-fi panels, carbon fiber, concrete, lava/cracked rock, rock, rubber, leather, fabric, tiles/grids, ice, foil, plus dark night and studio HDRIs. Full PBR sets (colour, normal, roughness, height, AO, metalness, emission where available).

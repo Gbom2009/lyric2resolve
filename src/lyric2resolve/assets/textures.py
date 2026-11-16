@@ -307,10 +307,20 @@ def custom_assets(root: Path) -> list[TextureAsset]:
     return out
 
 
+def procedural_assets(root: Path) -> list[TextureAsset]:
+    folder = root / "procedural"
+    if not folder.exists():
+        return []
+    return [TextureAsset(f.stem, f.stem.replace("_", " ").title(), "procedural", "texture", "procedural masks", "",
+                         "lyric2resolve", "CC0 1.0 (generated)", LICENSE_URL, f.stem.split("_")[-1],
+                         f"procedural/{f.name}", {"emission": f"procedural/{f.name}", "color": f"procedural/{f.name}"})
+            for f in sorted(folder.glob("*.png"))]
+
+
 def list_textures(root: Path | None = None) -> list[dict]:
     root = root or textures_dir()
     lib = [a for a in load_manifest(root).get("assets", [])]
-    return lib + [asdict(a) for a in custom_assets(root)]
+    return lib + [asdict(a) for a in custom_assets(root) + procedural_assets(root)]
 
 
 def main_sync(res: str = "1k") -> int:

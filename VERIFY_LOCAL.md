@@ -87,3 +87,9 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] `assets sync --textures` completes (~27 assets at 1k); CREDITS.md + manifest.json in `%LOCALAPPDATA%\lyric2resolve\assets\textures`. (3 assets verified from the cloud on 2026-11-16.)
 - [ ] Interrupt it (Ctrl+C) halfway and run again → continues, no duplicate downloads.
 - [ ] Library page shows thumbnails; custom folder textures appear.
+
+## Phase 14 — Blender scenes (built + rendered with Blender 5.3 `bpy` in the cloud/CI, Cycles CPU)
+- [ ] With your installed Blender: `blender -b -P l2r_scene.py -- scene_data.json` builds both .blend files (report your Blender version; tested with 5.3).
+- [ ] Open in Blender, play the timeline: motion and glow follow bass/mids/highs; sections change intensity.
+- [ ] Eevee viewport/render looks right (Eevee could not be tested in the cloud; Cycles was).
+- [ ] Packed textures: move the .blend to another folder → still textured.
