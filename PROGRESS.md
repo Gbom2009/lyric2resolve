@@ -6,7 +6,7 @@ MODE: gated
 | # | Phase | Status | Branch / PR |
 |---|-------|--------|-------------|
 | 0 | Planning docs | merged (initial commit on main) | main |
-| 1 | Skeleton + launcher/updater | in progress | phase-01-launcher-updater |
+| 1 | Skeleton + launcher/updater | PR open — ready, waiting for user test | phase-01-launcher-updater / PR #1 |
 | 2 | Setup script + verify_local + settings | planned | |
 | 3 | Audio inputs / alignment / instrumental | planned | |
 | 4 | Transcription + project JSON | planned | |
@@ -29,23 +29,28 @@ MODE: gated
 Statuses: planned / in progress / PR open / merged / tested-OK / needs fixes / waiting for user
 
 ## CURRENT STEP LOG
-Phase 1 (branch `phase-01-launcher-updater`):
-- [ ] package skeleton + paths.py (data folder)
-- [ ] updater logic (gitops, changelog, config, steps/rollback, self-copy)
-- [ ] tests/test_updater.py with temp bare repo
-- [ ] Tkinter UI + launcher.pyw
-- [ ] install.ps1/install.bat + INSTALL.md + shortcut
-- [ ] CI workflow, CHANGELOG entry, VERIFY_LOCAL.md
-Next: start with the skeleton.
+Phase 1 (branch `phase-01-launcher-updater`, PR #1):
+- [x] package skeleton + paths.py (data folder)
+- [x] updater logic: `updater/{gitops,changelog,config,core,messages,selfcopy,cli}.py`
+- [x] tests/test_updater.py (temp bare repo as fake remote; UI smoke tests run under xvfb / Windows runner)
+- [x] Tkinter UI `updater/ui.py` + `launcher.pyw`
+- [x] install.ps1/install.bat + INSTALL.md + shortcuts
+- [x] CI (Linux 3.11/3.12 + Windows incl. `install.ps1 -NoShortcuts` smoke test), CHANGELOG, VERIFY_LOCAL.md
+- [x] CI green (Linux 3.11/3.12 + Windows incl. install.ps1 smoke) → PR #1 marked ready
+- WAITING FOR USER: merge PR #1, first-time install (INSTALL.md), run Phase 1 TEST CHECKLIST (PHASES.md), reply.
+Next (after reply): pull main, record feedback here, branch `phase-02-setup-settings` from main, apply fixes first ("Fixes from testing phase 1"), then build Phase 2.
 
 ## Decisions
-- Python package in `src/lyric2resolve/` (src layout), installed editable into the venv → clean imports, tests run against the package.
+- Python package in `src/lyric2resolve/` (src layout). Phase 1: launcher puts `src` on sys.path (no pip install needed); later phases may install it editable.
 - User data lives OUTSIDE the clone: `%LOCALAPPDATA%\lyric2resolve` (Windows) / `~/.local/share/lyric2resolve` (else), override `LYRIC2RESOLVE_DATA`. Assets (fonts/textures) therefore live in `<data>/assets/...`; the repo only holds manifests/curation lists. Reason: the updater hard-resets code and must never touch user data.
 - Launcher + updater are stdlib only (Tkinter, subprocess git) so they run before heavy deps exist.
 - Updater self-update: launcher copies the `updater` package to a temp dir and runs it from there as a separate process (`python -m` with PYTHONPATH=temp), then exits.
-- Update strategy: fetch → tag `l2r-rollback-<timestamp>` (+ moving `l2r-rollback-latest`) → `git merge --ff-only origin/<branch>`; if not fast-forward but tree clean → `git reset --hard origin/<branch>`; dirty tree → refuse.
+- Update strategy: fetch → tag `l2r-rollback/<timestamp>` → `git merge --ff-only origin/<branch>`; if not fast-forward but tree clean → `git reset --hard origin/<branch>`; dirty tree → refuse.
 - Frontend: vanilla JS, no build step (keeps the updater's "rebuild frontend" step a no-op and avoids Node on the PC).
-- Branching: the cloud harness for the first session designated branch `claude/lyric2resolve-setup-flkcw3`; phase branches follow the spec naming when pushing is allowed (see open issues).
+- Branching: phase branches `phase-NN-slug` as in the spec (pushing them works). The harness-designated `claude/...` branch of session 1 is unused.
+- CI runs on PRs + pushes to main only (no duplicate runs); a Windows runner also runs the tests and `install.ps1 -NoShortcuts`.
+- Rollback tags `l2r-rollback/<timestamp>` are local-only (never pushed); 5 kept. Manual roll back steps back one version at a time; the newer version is then offered again as an update (= undo).
+- Dependency step runs only when the hash of `requirements/*.txt` + `pyproject.toml` changes (state in `<data>/settings/updater_state.json`); from Phase 2 it calls `scripts/setup_update.py --update` if present.
 
 ## Open issues
 - (none yet)

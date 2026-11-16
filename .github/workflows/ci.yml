@@ -1,0 +1,36 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: sudo apt-get update -q && sudo apt-get install -y -q xvfb
+      - run: pip install -r requirements/dev.txt
+      - run: xvfb-run -a python -m pytest -q
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements/dev.txt
+      - run: python -m pytest -q
+      - name: Install script smoke test (no shortcuts)
+        shell: powershell
+        run: |
+          .\install.ps1 -NoShortcuts
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          .\.venv\Scripts\python.exe launcher.pyw version

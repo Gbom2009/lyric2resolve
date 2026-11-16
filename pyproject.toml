@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lyric2resolve"
+version = "0.1.0"
+description = "Song + acapella -> DaVinci Resolve lyric timeline, editor, karaoke and audio-reactive visuals"
+requires-python = ">=3.10"
+
+[project.scripts]
+lyric2resolve = "lyric2resolve.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "local: needs the user's Windows PC (GPU, Whisper, Blender, Resolve); skipped in CI",
+]
+addopts = "-m 'not local'"
