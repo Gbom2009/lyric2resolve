@@ -145,3 +145,9 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Editor started by hand (`python -m lyric2resolve editor`): Update now explains to use the launcher instead.
 - [ ] `lyric2resolve batch <folder>` on 2-3 real songs on the GPU: all projects + exports created, `batch_report.md` correct; a song without an acapella is separated.
 
+## Fixes from testing (1) — new project in the editor
+- [ ] Projects window → **+ New project…** with a real song + acapella (+ lyrics) on the GPU: progress log runs, the project opens, words look right.
+- [ ] Same without an acapella (separation; slow the first time).
+- [ ] With no project open: the right-hand panel shows the hint; Play/Export open the Projects window.
+- [ ] If the right-hand buttons still do nothing WITH a project open: press F12 → Console, and send a screenshot of the red errors.
+

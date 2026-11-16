@@ -7,8 +7,8 @@ You are continuing **lyric2resolve**, a Windows app (Python, NVIDIA/CUDA) that t
 
 ## Current state
 - Merged on main: Phase 0 (docs), Phase 1 (launcher/updater, PR #1).
-- **PR #2** (branch `continuous-2026-11-16`, MODE continuous): Phases 2-19 all built, CI green (Linux 3.11/3.12 + e2e Playwright, Windows incl. install.ps1 smoke, real-bpy Blender job). Marked ready for review.
-- **Waiting for the user**: merge PR #2 → launcher *Update now* (first time: *Run setup*) → run the FULL TEST PASS in VERIFY_LOCAL.md → paste REPORT_LOCAL.md + notes. Nothing on the PC has been verified yet (Phase 1 checklist included).
+- **PR #2** (Phases 2-19) is MERGED into main.
+- User feedback 1 (2026-11-16): side-panel buttons "don't work" + no way to create a project in the UI → fixed on branch `fixes-2026-11-16` (PR "Fixes from testing (1)"): New project dialog, no-project guards/empty states. Waiting for the user to merge + Update + retest, then the FULL TEST PASS in VERIFY_LOCAL.md.
 - User facts (session 3): Claude Code CLI is installed + logged in on the PC; brand values come from the public repo Gbom2009/funqtion-site.
 
 ## Maintenance mode (what the next sessions do)

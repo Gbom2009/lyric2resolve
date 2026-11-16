@@ -104,6 +104,7 @@
   // ------------------------------------------------------------------ rendering
   L2R.setState = (st) => {
     L2R.state = st;
+    document.body.classList.toggle("no-project", !st);
     $("#project-name").textContent = st.project.name || "Untitled";
     $("#btn-undo").disabled = !st.history.can_undo;
     $("#btn-redo").disabled = !st.history.can_redo;
@@ -296,20 +297,37 @@
   });
 
   // ------------------------------------------------------------------ buttons + projects
-  $("#btn-undo").onclick = () => L2R.undo();
-  $("#btn-redo").onclick = () => L2R.redo();
-  $("#btn-play").onclick = () => L2R.togglePlay();
-  $("#btn-play-sel").onclick = () => L2R.playSelection();
+  // Without an open project, buttons explain what to do instead of silently doing nothing.
+  L2R.requireProject = () => {
+    if (L2R.state) return true;
+    L2R.setStatus("No project open — open one or make a new one first", true);
+    showProjects();
+    return false;
+  };
+  $("#btn-undo").onclick = () => L2R.requireProject() && L2R.undo();
+  $("#btn-redo").onclick = () => L2R.requireProject() && L2R.redo();
+  $("#btn-play").onclick = () => {
+    if (!L2R.requireProject()) return;
+    if (!L2R.audioReady) { L2R.setStatus("No audio loaded for this project (editing still works)", true); return; }
+    L2R.togglePlay();
+  };
+  $("#btn-play-sel").onclick = () => {
+    if (!L2R.requireProject()) return;
+    if (!L2R.selectedSpan()) { L2R.setStatus("Select some words first (click or drag over them)"); return; }
+    L2R.playSelection();
+  };
   $("#audio-source").onchange = () => L2R.loadAudio();
   $("#zoom").addEventListener("input", () => { if (L2R.ws && L2R.audioReady) L2R.ws.zoom(Number($("#zoom").value)); });
   $("#btn-projects").onclick = () => showProjects();
 
   async function showProjects() {
-    const data = await L2R.api("GET", "/api/projects");
+    let data;
+    try { data = await L2R.api("GET", "/api/projects"); }
+    catch (e) { L2R.setStatus(e.message, true); return; }
     const list = $("#project-list");
     list.innerHTML = "";
     $("#project-dir").textContent = data.projects_dir ? `Projects folder: ${data.projects_dir}` : "";
-    if (!data.projects.length) list.innerHTML = "<li class='hint'>No projects yet.</li>";
+    if (!data.projects.length) list.innerHTML = "<li class='hint'>No projects yet — click <b>+ New project…</b> to make your first one.</li>";
     data.projects.forEach((p) => {
       const li = document.createElement("li");
       const b = document.createElement("button");
@@ -320,13 +338,15 @@
           $("#project-dialog").close();
           L2R.clearSelection();
           L2R.loadAudio();
+          L2R.setStatus("Ready — every edit is saved automatically");
         } catch (e) { L2R.setStatus(e.message, true); }
       };
       li.appendChild(b);
       list.appendChild(li);
     });
-    $("#project-dialog").showModal();
+    if (!$("#project-dialog").open) $("#project-dialog").showModal();
   }
+  L2R.showProjects = showProjects;
 
   async function boot() {
     initWave();
@@ -335,7 +355,11 @@
       L2R.setStatus("Ready — every edit is saved automatically");
       L2R.loadAudio();
     } catch (e) {
-      if (e.status === 409) { L2R.setStatus("Open a project to start"); showProjects(); }
+      if (e.status === 409) {
+        document.body.classList.add("no-project");
+        L2R.setStatus("No project open — open one or make a new one");
+        showProjects();
+      }
       else L2R.setStatus(e.message, true);
     }
   }
