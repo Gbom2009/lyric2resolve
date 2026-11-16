@@ -156,3 +156,8 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] `verify_local.py`: torch_cuda ✅ with your GPU name.
 - [ ] New project with a real song gets past "Loading Whisper" (first time: model download, ~3 GB for large-v3).
 
+## Fixes from testing (3) — Microsoft Store Python
+- [ ] `.venv\Scripts\python -c "import sys; print(sys.base_prefix)"` → contains `WindowsApps`? (= Store Python; report it either way).
+- [ ] After Update + launcher restart: **Open data folder** opens `C:\Users\<you>\lyric2resolve-data` (Store Python) and shows `settings` + `projects`.
+- [ ] New project with the same song converts and transcribes.
+

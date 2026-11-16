@@ -59,7 +59,18 @@ class Ffmpeg:
         code, err = self.runner(self.wav_command(src, tmp, sample_rate))
         if code != 0 or not tmp.exists():
             tmp.unlink(missing_ok=True)
-            raise AudioError(f"ffmpeg could not convert {src.name}: {err.strip()[-500:]}")
+            hint = ""
+            if "No such file or directory" in err and src.is_file():
+                # Python sees the file, ffmpeg does not: e.g. Microsoft Store Python's AppData redirection
+                from lyric2resolve.paths import store_python
+
+                hint = ("\nPython can see this file but ffmpeg cannot. " + (
+                    "This Python is the Microsoft Store version, which hides files it writes in AppData from other "
+                    "programs. Restart the launcher (the app then uses a folder all programs can see) or install "
+                    "Python from python.org and run install.bat again." if store_python() else
+                    "Check that the file is not on a disconnected/cloud-only drive and that ffmpeg is a normal "
+                    "Windows ffmpeg (winget install Gyan.FFmpeg)."))
+            raise AudioError(f"ffmpeg could not convert {src.name}: {err.strip()[-500:]}{hint}")
         tmp.replace(dst)
         return dst
 

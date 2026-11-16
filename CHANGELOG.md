@@ -3,6 +3,19 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Fixes from testing (3) — "ffmpeg could not convert … No such file or directory"
+**Fixed**
+- New project failed with `ffmpeg … Error opening input: No such file or directory` although the file was there. Cause: when Python comes from the **Microsoft Store**, everything it writes in `AppData` (and in TEMP) is quietly hidden in a private folder. Python itself still sees those files; ffmpeg, Blender, Resolve and Explorer don't.
+  - With Store Python the app now keeps its data in **`C:\Users\<you>\lyric2resolve-data`**, where all programs see the same files. Your settings and projects are copied there automatically the first time. The Whisper model is downloaded once more.
+  - Temporary files go there too (`tmp`) for the same reason.
+  - `install.bat` warns when it picks Store Python. Python from python.org is still the recommended choice.
+  - If ffmpeg still can't open a file that Python can see, the error message now says why and what to do.
+- A failed New project no longer leaves a half-made folder behind, which made names turn into "(2)", "(3)".
+
+**What to test**
+- Close the launcher completely, open it again (Update now first), then New project with the same song → conversion works.
+- Launcher → **Open data folder** now shows your projects.
+
 ## Fixes from testing (2) — "Could not load this library: libtorchaudio.pyd"
 **Fixed**
 - New project failed while loading Whisper with `Could not load this library: …\torchaudio\lib\libtorchaudio.pyd`. Cause: setup installed the CUDA version of PyTorch, but a later step (the vocal-separation package needs `torchvision`) silently replaced it with the newest PyPI PyTorch, which is CPU-only on Windows. The CUDA torchaudio left behind could no longer load.

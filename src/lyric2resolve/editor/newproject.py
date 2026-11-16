@@ -134,7 +134,11 @@ class NewProjectJobs:
                     self._state.update(ok=False, error=str(exc) or traceback.format_exc(limit=2))
             finally:
                 with self._lock:
+                    failed = not self._state.get("ok")
                     self._state.update(running=False, done=True)
+                folder = Path(song).parent.parent
+                if failed and folder.parent == self.projects_dir and not (folder / "project.json").exists():
+                    shutil.rmtree(folder, ignore_errors=True)  # no half-made projects / "(2)", "(3)" names
 
         self._thread = threading.Thread(target=work, daemon=True)
         self._thread.start()

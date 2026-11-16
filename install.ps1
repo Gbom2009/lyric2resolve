@@ -37,6 +37,13 @@ if (-not $Py) {
     Fail "No suitable Python found. Install Python 3.12 from https://www.python.org/downloads/windows/ (tick 'tcl/tk and IDLE' and 'py launcher'), then run install.bat again."
 }
 Write-Host ("Using: " + ($Py -join " "))
+$pyExe = $Py[0]; $pyA = @(); if ($Py.Count -gt 1) { $pyA = $Py[1..($Py.Count - 1)] }
+$prefix = & $pyExe @pyA -c "import sys; print(sys.base_prefix)" 2>$null
+if ("$prefix" -match "WindowsApps|PythonSoftwareFoundation") {
+    Write-Host "WARNING: this is Python from the Microsoft Store. It hides files it writes in AppData from other" -ForegroundColor Yellow
+    Write-Host "programs (ffmpeg, Blender, Resolve). The app works around it by keeping your data in" -ForegroundColor Yellow
+    Write-Host "$env:USERPROFILE\lyric2resolve-data, but Python from https://www.python.org is recommended." -ForegroundColor Yellow
+}
 
 Step "Creating the virtual environment (.venv)"
 $VenvPy = Join-Path $Repo ".venv\Scripts\python.exe"

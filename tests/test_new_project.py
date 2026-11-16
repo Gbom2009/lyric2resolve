@@ -77,6 +77,7 @@ def test_new_project_errors(client, tmp_path):
     client.jobs.wait(30)
     st = client.get("/api/projects/new/status").json()
     assert not st["ok"] and "Run setup" in st["error"]
+    assert not (tmp_path / "projects" / "S").exists()  # failed attempt cleaned up, name free again
 
 
 def test_default_engine_explains_missing_whisper(monkeypatch):
