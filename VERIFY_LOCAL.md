@@ -182,3 +182,10 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Assistant: 📎 attach an image, ask "describe this image" → Claude sees it; ask it to add a note to CLAUDE.md → no permission error.
 - [ ] New project with Look = Lyric video: titles big + centred + animated in Resolve (FULL level).
 
+## Mac (Apple Silicon) — install + app (phases 1-2)
+- [ ] install.command (double-click; right-click > Open the first time): .venv, lyric2resolve.app in Applications, icon, Dock (if chosen).
+- [ ] The app opens the launcher (no Terminal window); "Open data folder" opens ~/Library/Application Support/lyric2resolve.
+- [ ] Run setup opens Terminal; ends with "PyTorch OK: ... " (MPS); Start editor opens the browser.
+- [ ] Settings page: GPU line "Apple M… GPU (Metal / MPS), 8 GB"; ffmpeg found in /opt/homebrew/bin.
+- [ ] Update now works (channel mac-release).
+
