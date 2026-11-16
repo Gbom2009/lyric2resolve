@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, replace
 
-__all__ = ["RenderPreset", "PRESETS", "get", "replace"]
+__all__ = ["RenderPreset", "PRESETS", "get", "recommended", "replace"]
 
 
 @dataclass
@@ -68,3 +68,17 @@ def get(name: str, **overrides) -> RenderPreset:
     p = replace(base, **clean)
     p.engine = p.engine.upper()
     return p
+
+
+def recommended(gpu) -> tuple[str, str]:
+    """(preset name, reason) for this machine. A setup_tools.GpuInfo goes in.
+
+    Apple Silicon shares its memory between CPU and GPU, and a base MacBook Air (8 GB, no fan) slows down on long
+    renders: Draft first there, Standard only for the final video."""
+    if getattr(gpu, "apple", False):
+        gb = round((gpu.memory_mb or 0) / 1024)
+        if gb and gb <= 8:
+            return "draft", (f"{gb} GB Mac: start with Draft (or Preview); render Standard only for the final video, "
+                             "with other apps closed. A fanless MacBook Air slows down during long renders.")
+        return "standard", "Mac (Apple Silicon): Eevee renders on the GPU through Metal."
+    return "standard", ""

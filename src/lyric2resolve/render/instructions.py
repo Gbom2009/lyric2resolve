@@ -27,6 +27,10 @@ Everything here can be rendered by the app (`lyric2resolve render …`), but the
 - **NVIDIA driver** up to date (GeForce/Studio driver). Eevee uses the GPU automatically; Cycles needs
   *Edit → Preferences → System → Cycles Render Devices → OptiX* (RTX cards) or *CUDA* (older cards).
 - **ffmpeg** (to turn the frames into an MP4 with the song): `winget install Gyan.FFmpeg`.
+- **Mac (Apple Silicon)**: Blender from blender.org dragged into Applications; Eevee and Cycles render on the GPU
+  through **Metal** (Cycles: *Preferences → System → Cycles Render Devices → Metal*). ffmpeg: `brew install ffmpeg`
+  (the app encodes with Apple's hardware encoder, VideoToolbox). On an 8 GB / fanless MacBook Air use Preview or
+  Draft while working and Standard only for the final video, with other apps closed.
 
 ## 2. Settings and why
 | Setting | Value here | Why |

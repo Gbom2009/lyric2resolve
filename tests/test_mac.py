@@ -177,3 +177,72 @@ def test_engine_from_settings_on_mac(monkeypatch):
     monkeypatch.setattr(transcription, "choose_backend", lambda device, platform=None, has_mlx=None: "mlx")
     e = transcription.engine_from_settings()
     assert e.opt.backend == "mlx" and e.opt.model == "large-v3-turbo" and e.opt.device == "cpu"
+
+
+# ------------------------------------------------------------------ phase 4: rendering on the Mac
+
+def test_pick_encoder_per_platform():
+    from lyric2resolve.render import mux
+
+    both = lambda ff, name: True  # noqa: E731
+    assert mux.pick_encoder("ffmpeg", "darwin", both) == "h264_videotoolbox"
+    assert mux.pick_encoder("ffmpeg", "win32", both) == "h264_nvenc"
+    assert mux.pick_encoder("ffmpeg", "darwin", lambda ff, n: False) == "libx264"
+    assert mux.pick_encoder("ffmpeg", "linux", lambda ff, n: n == "h264_videotoolbox") == "libx264"
+
+
+def test_videotoolbox_command_keeps_dj_format():
+    from lyric2resolve.render import mux
+
+    s = mux.MuxSettings(fps=30, encoder="h264_videotoolbox")
+    cmd = mux.mux_command("ffmpeg", "f_%04d.png", 1, Path("song.wav"), Path("o.mp4"), s)
+    i = cmd.index("-c:v")
+    assert cmd[i + 1] == "h264_videotoolbox" and cmd[cmd.index("-q:v") + 1] == "65"
+    assert "-allow_sw" in cmd and "-crf" not in cmd and "-preset" not in cmd
+    for flag in ("-profile:v", "-fps_mode", "-g", "-movflags"):
+        assert flag in cmd  # same Rekordbox/Serato-safe stream as NVENC/libx264
+    assert mux.vt_quality(0) == 100 and mux.vt_quality(60) == 1
+
+
+def test_videotoolbox_failure_falls_back_to_libx264(monkeypatch):
+    from lyric2resolve.render import mux
+
+    seen = []
+
+    def fake_run(cmd):
+        enc = cmd[cmd.index("-c:v") + 1]
+        seen.append(enc)
+        if enc != "libx264":
+            raise RuntimeError("VideoToolbox session failed")
+
+    monkeypatch.setattr(mux, "run", fake_run)
+    s = mux.MuxSettings(fps=25, encoder="h264_videotoolbox")
+    assert mux.encode("ffmpeg", "f_%04d.png", 1, Path("s.wav"), Path("o.mp4"), s) == "libx264"
+    assert seen == ["h264_videotoolbox", "libx264"]
+
+
+def test_recommended_preset_for_8gb_air():
+    from lyric2resolve.editor import visuals_api
+    from lyric2resolve.render import presets
+    from lyric2resolve.setup_tools import GpuInfo
+
+    air = GpuInfo(True, "Apple M1", "", None, 8192, "apple")
+    name, why = presets.recommended(air)
+    assert name == "draft" and "8 GB" in why
+    assert presets.recommended(GpuInfo(True, "Apple M3 Max", "", None, 36 * 1024, "apple"))[0] == "standard"
+    assert presets.recommended(GpuInfo(True, "RTX 4070", "560", (12, 4), 12000))[0] == "standard"
+    assert visuals_api.machine_preset(lambda: air)["name"] == "draft"
+
+    def broken():
+        raise OSError("no sysctl")
+
+    assert visuals_api.machine_preset(broken)["name"] == "standard"
+
+
+def test_metal_cpu_fallback_message_on_mac(monkeypatch):
+    from lyric2resolve.render import blender
+
+    monkeypatch.setattr(blender.sys, "platform", "darwin")
+    dev, msg = blender.choose_device({"backends": {}})
+    assert dev == "CPU" and "Metal" in msg and "NVIDIA" not in msg
+    assert blender.choose_device({"backends": {"METAL": ["Apple M1"]}})[0] == "METAL"
