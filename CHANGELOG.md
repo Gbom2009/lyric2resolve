@@ -3,6 +3,18 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 7 — The editor in your browser (part 1)
+**New**
+- The launcher now starts the app: after the update check it starts the editor and opens it in your browser. The small launcher window stays open with "Open editor in browser", "Check for updates", "Roll back" and "Open data folder"; closing it stops the editor.
+- If the full setup has not been run yet, the launcher says so and offers "Run setup".
+- Editor screen: waveform of the song (switch to acapella or instrumental), zoom, your lyric blocks with every word as a chip, instrumental gaps shown between the lines, low-confidence and flagged words marked.
+- Select words by click, click-and-drag, or Shift+click; arrow keys move the selection (Shift extends). The selection is highlighted on the waveform.
+- Play / pause from the cursor (Space), play just the selection (Shift+Space), undo/redo (Ctrl+Z / Ctrl+Y). "Projects" opens another song.
+
+**What to test**
+- Start the shortcut → editor opens in the browser with your project list (make a project first with `transcribe`).
+- Select words with the mouse and keyboard, play the selection, switch audio sources, zoom.
+
 ## Phase 6 — Editor engine (backend)
 **New**
 - The engine behind the browser editor: merge selected words into one lyric block, split a block at any word (word timings stay exactly as they were), move a word to the neighbouring block, edit text, nudge timing, remove blocks, add/resize/remove instrumental gaps, unlimited undo/redo. Every edit is saved to `project.json` right away.

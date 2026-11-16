@@ -38,3 +38,11 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 ## Phase 5 — analysis
 - [ ] `analyze` on 2-3 real songs: BPM correct (or exactly half/double), downbeats on the "1", sections plausible, key plausible.
 - [ ] Gaps: intro/break/outro detected; flagged words make sense (report false alarms).
+
+## Phase 7 — editor part 1 (manual browser checklist)
+- [ ] Launcher shortcut → after the update check the browser opens the editor; launcher shows "Editor running at http://127.0.0.1:8765/". Closing the launcher stops it (page stops responding).
+- [ ] Before setup_windows.bat: launcher shows "full setup has not been run" + "Run setup".
+- [ ] Waveform loads for song / acapella / instrumental; zoom slider and +/− work.
+- [ ] Drag-select, Shift+click, arrows, Esc; Space plays from the clicked word; Shift+Space plays only the selection.
+- [ ] The playing word gets an outline and scrolls into view.
+- [ ] Windows Firewall should not prompt (server listens on 127.0.0.1 only); report if it does.

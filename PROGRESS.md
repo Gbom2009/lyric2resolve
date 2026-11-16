@@ -12,8 +12,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 4 | Transcription + project JSON | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 5 | Music analysis + gaps + sanity | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 6 | Editor backend API | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 7 | Editor frontend 1 | in progress | continuous-2026-11-16 / PR #2 |
-| 8 | Editor frontend 2 | planned | |
+| 7 | Editor frontend 1 | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 8 | Editor frontend 2 | in progress | continuous-2026-11-16 / PR #2 |
 | 9 | Styling + fonts | planned | |
 | 10 | FCPXML export | planned | |
 | 11 | Resolve script + SRT/CSV/EDL | planned | |
@@ -35,10 +35,13 @@ Phase 3: done (audio/{convert,wavio,align,stems,__init__}.py, `audio-check` CLI,
 Phase 4: done (project.py, transcription/{engine,__init__}.py, `transcribe` CLI, verify whisper checks, tests/data/tiny_vocal.wav).
 Phase 5: done (analysis/{music,gaps,sanity,__init__}.py, `analyze` CLI, tests/test_analysis.py).
 Phase 6: done (editor/{ops,presets,history,app}.py, `editor` CLI, tests/test_editor_api.py).
-Phase 7 (frontend 1): next → `editor/static/{index.html,app.js,style.css}` + vendored wavesurfer, launcher opens editor, Playwright test.
+Phase 7: done (static/{index.html,style.css,app.js}, vendored wavesurfer 7.12.12, project picker API, launcher starts editor via updater/appctl.py, tests/e2e/*).
+Phase 8 (frontend 2): next → static/{blocks.js,gaps.js,review.js}, editor/layout_check.py, tests/e2e/test_merge_split.py.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- Frontend: vanilla JS, global `window.L2R` with hooks (render/selection/keydown/ready) so later files plug in; wavesurfer 7.12.12 UMD vendored in static/vendor. E2E tests: Python Playwright (CI installs chromium; locally the preinstalled one).
+- Launcher = app control window: runs the editor as a child process (no console, log in data/logs/editor.log), picks a free port from settings.editor_port, opens the browser, stops it on close/update/rollback.
 - Editor ops are pure functions on Project, called via a whitelist (`editor.app.OPS`) from `POST /api/op/{name}`; undo/redo = full project snapshots (simple, projects are small); failed ops restore the snapshot; every successful op saves immediately.
 - PHRASE preset restarts at lyric line breaks; presets never cross gaps/sections; max_chars splits at the biggest pause near the middle.
 - Music analysis: librosa only (no madmom: unmaintained, hard on Win/Py3.12). Beat tracking at hop 256 (hop 512 cannot represent 120 BPM), trim=False, grid extended at constant tempo over quiet parts; BPM from least-squares fit. Downbeats = beat phase with most low-band energy. Sections = checkerboard novelty on beat-synced chroma+MFCC+RMS SSM, labelled by energy.

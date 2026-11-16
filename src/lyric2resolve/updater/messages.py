@@ -5,7 +5,7 @@ from __future__ import annotations
 from . import changelog
 from .core import AHEAD, DIVERGED, ERROR, NOT_CHECKED, OFFLINE, UP_TO_DATE, RollbackResult, UpdateResult, UpdateStatus, changed_files_summary
 
-NO_APP_YET = "No app interface yet"
+NO_APP_YET = "lyric2resolve"
 
 
 def status_line(status: UpdateStatus | None, version: str) -> str:
@@ -62,3 +62,19 @@ def rollback_text(result: RollbackResult) -> str:
         return (f"Rolled back from {result.old[:7]} to {result.new[:7]} ({result.tag}).\n"
                 "The newer version will be offered again as an update.")
     return f"Roll back not possible:\n{result.error}"
+
+
+APP_LINES = {
+    "idle": "Editor: not running.",
+    "checking": "Editor: checking the installation...",
+    "starting": "Editor: starting...",
+    "running": "Editor running at {url} (opened in your browser).",
+    "needs_setup": ("Editor: the full setup has not been run yet ({detail}).\n"
+                    "Click 'Run setup' (installs PyTorch/Whisper/audio libraries, takes a while), "
+                    "then 'Start editor'."),
+    "failed": "Editor could not start. {detail}",
+}
+
+
+def app_line(state: str, url: str = "", detail: str = "") -> str:
+    return APP_LINES.get(state, state).format(url=url, detail=detail or "unknown error")

@@ -108,11 +108,19 @@ class _Base:
 
 
 class LauncherWindow(_Base):
-    def __init__(self, repo: Path, skip_check: bool = False, login_check: bool = False, master=None):
+    def __init__(self, repo: Path, skip_check: bool = False, login_check: bool = False, master=None,
+                 auto_start: bool = True):
         super().__init__("lyric2resolve", master)
         self.repo, self.git, self.cfg = repo, Git(repo), load_config()
         self.login_check = login_check
         self.version = core.version_label(self.git)
+        self.auto_start = auto_start and not login_check
+        self.server = None            # editor subprocess
+        self.app_state = "idle"       # idle | checking | starting | running | needs_setup | failed
+        self.app_detail = ""
+        self.url = ""
+        self.last_status = None
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         if login_check:
             self.root.withdraw()
         if login_check or (self.cfg.check_at_launch and not skip_check):
@@ -133,17 +141,91 @@ class LauncherWindow(_Base):
                 self.root.destroy()
             else:
                 self.show_status(payload)
+                if self.auto_start and self.app_state == "idle":
+                    self.start_app()
         elif tag == "rollback":
             self.messagebox.showinfo("Roll back", messages.rollback_text(payload), parent=self.root)
             self.version = core.version_label(self.git)
+            self.app_state = "idle"
             self.check_now()
+        elif tag == "deps":
+            ok, detail = payload
+            if ok:
+                self.app_state = "starting"
+                self.run_bg(self._start_server, "started")
+            else:
+                self.app_state, self.app_detail = "needs_setup", detail
+            self.show_status(self.last_status)
+        elif tag == "started":
+            ok, detail = payload
+            self.app_state, self.app_detail = ("running", "") if ok else ("failed", detail)
+            if ok:
+                self.open_browser()
+            self.show_status(self.last_status)
+
+    # ------------------------------------------------------------ app (editor server)
+    def start_app(self):
+        from . import appctl
+
+        self.app_state = "checking"
+        self.show_status(self.last_status)
+        self.run_bg(lambda: appctl.deps_ready(self.repo), "deps")
+
+    def _start_server(self):
+        from lyric2resolve.settings import load_settings
+
+        from . import appctl
+
+        s, _ = load_settings()
+        port = appctl.pick_port(s.editor_port, s.editor_host)
+        log = paths.ensure_data_dir() / "logs" / "editor.log"
+        self.server = appctl.start_editor(self.repo, port, log, s.editor_host)
+        self.url = f"http://{s.editor_host}:{port}/"
+        ok = appctl.wait_for_port(port, s.editor_host, timeout=60, alive=lambda: self.server.poll() is None)
+        return ok, "" if ok else f"The editor did not start. Details: {log}"
+
+    def open_browser(self):
+        import webbrowser
+
+        if self.url:
+            webbrowser.open(self.url)
+
+    def stop_app(self):
+        from . import appctl
+
+        appctl.stop(self.server)
+        self.server = None
+        self.app_state = "idle"
+
+    def run_setup(self):
+        from . import appctl
+
+        appctl.run_setup(self.repo)
+        self.messagebox.showinfo("Setup", "The setup runs in a separate window (this can take a while).\n"
+                                 "When it says 'Setup complete', click 'Start editor'.", parent=self.root)
+
+    def on_close(self):
+        self.stop_app()
+        self.root.destroy()
 
     def show_status(self, status):
+        self.last_status = status
         f = self.clear()
         self.label(f, "lyric2resolve", title=True)
         self.label(f, messages.status_line(status, self.version))
-        self.buttons(f, [("Check now", self.check_now), ("Roll back", self.do_rollback),
-                         ("Open data folder", lambda: open_folder(paths.ensure_data_dir()))])
+        self.label(f, messages.app_line(self.app_state, self.url, self.app_detail))
+        spec = []
+        if self.app_state == "running":
+            spec.append(("Open editor in browser", self.open_browser))
+        elif self.app_state == "needs_setup":
+            spec += [("Run setup", self.run_setup), ("Start editor", self.start_app)]
+        elif self.app_state in ("idle", "failed"):
+            spec.append(("Start editor", self.start_app))
+        spec += [("Check for updates", self.check_now), ("Roll back", self.do_rollback),
+                 ("Open data folder", lambda: open_folder(paths.ensure_data_dir()))]
+        self.buttons(f, spec)
+        if self.app_state == "running":
+            self.label(f, "Closing this window stops the editor.")
 
     def show_update(self, status):
         f = self.clear()
@@ -160,12 +242,14 @@ class LauncherWindow(_Base):
         core_pkg = Path(core.__file__).resolve().parents[1]
         from .selfcopy import start_apply_process
 
+        self.stop_app()  # release files held by the running app before replacing them
         start_apply_process(core_pkg, self.repo)
         self.root.destroy()
 
     def do_rollback(self):
         if self.messagebox.askyesno("Roll back", "Go back to the previous version of the app?\n"
                                     "Your projects and settings are not touched.", parent=self.root):
+            self.stop_app()
             self.run_bg(lambda: core.rollback(self.git), "rollback")
 
     def mainloop(self):
@@ -210,8 +294,7 @@ class ApplyWindow(_Base):
         if result.ok:
             self.label(f, "Update complete", title=True)
             self.textbox(f, messages.whats_changed_text(result))
-            # No app interface yet (Phase 7 adds the editor): "Close" reopens the launcher status window.
-            self.buttons(f, [("Close", self._finish)])
+            self.buttons(f, [("Start app", self._finish)])
         else:
             self.label(f, "Update failed", title=True)
             self.textbox(f, messages.failure_text(result))

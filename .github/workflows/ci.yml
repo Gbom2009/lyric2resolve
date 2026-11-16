@@ -17,7 +17,8 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: sudo apt-get update -q && sudo apt-get install -y -q xvfb
-      - run: pip install -r requirements/dev.txt -r requirements/core.txt
+      - run: pip install -r requirements/dev.txt -r requirements/core.txt playwright
+      - run: python -m playwright install --with-deps chromium
       - run: xvfb-run -a python -m pytest -q
   windows:
     runs-on: windows-latest

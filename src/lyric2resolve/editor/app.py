@@ -149,36 +149,78 @@ class EditorSession:
         return Path(value) if value and Path(value).is_file() else None
 
 
-def create_app(session: EditorSession):
+def list_projects(projects_dir: Path) -> list[dict]:
+    out = []
+    for f in sorted(Path(projects_dir).glob(f"*/{proj.PROJECT_FILE}")):
+        try:
+            p = proj.load(f)
+        except proj.ProjectError:
+            continue
+        out.append({"name": p.name, "path": str(f), "modified": p.modified, "words": len(p.words),
+                    "blocks": len(p.blocks), "language": p.language})
+    out.sort(key=lambda d: d["modified"], reverse=True)
+    return out
+
+
+def create_app(session: EditorSession | None = None, projects_dir: Path | None = None):
+    """session: project opened at start (optional). projects_dir: folder offered in the project picker."""
     from fastapi import Body, FastAPI, HTTPException
     from fastapi.responses import FileResponse, HTMLResponse
     from fastapi.staticfiles import StaticFiles
 
     app = FastAPI(title="lyric2resolve editor")
-    app.state.session = session
+    holder: dict[str, EditorSession | None] = {"session": session}
+    allowed: set[Path] = {session.path.resolve()} if session else set()
+    app.state.holder = holder
+
+    def current() -> EditorSession:
+        s = holder["session"]
+        if s is None:
+            raise HTTPException(status_code=409, detail="no project open")
+        return s
+
+    @app.get("/api/projects")
+    def projects():
+        found = list_projects(projects_dir) if projects_dir else []
+        cur = holder["session"]
+        return {"projects": found, "current": str(cur.path) if cur else None,
+                "projects_dir": str(projects_dir) if projects_dir else None}
+
+    @app.post("/api/open")
+    def open_project(body: dict = Body(...)):
+        path = Path(str(body.get("path", ""))).resolve()
+        inside = projects_dir is not None and Path(projects_dir).resolve() in path.parents
+        if not (inside or path in allowed) or path.name != proj.PROJECT_FILE:
+            raise HTTPException(status_code=403, detail="only projects from the projects folder can be opened")
+        try:
+            holder["session"] = EditorSession(path)
+        except proj.ProjectError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        allowed.add(path)
+        return holder["session"].state()
 
     @app.get("/api/state")
     def get_state():
-        return session.state()
+        return current().state()
 
     @app.post("/api/op/{name}")
     def do_op(name: str, args: dict = Body(default_factory=dict)):
         try:
-            return session.apply(name, args)
+            return current().apply(name, args)
         except ops.OpError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.post("/api/undo")
     def undo():
-        return session.undo()
+        return current().undo()
 
     @app.post("/api/redo")
     def redo():
-        return session.redo()
+        return current().redo()
 
     @app.get("/api/audio/{kind}")
     def audio(kind: str):
-        path = session.audio_path(kind)
+        path = current().audio_path(kind)
         if path is None:
             raise HTTPException(status_code=404, detail=f"no {kind} audio in this project")
         return FileResponse(path, media_type="audio/wav")
@@ -188,12 +230,11 @@ def create_app(session: EditorSession):
 
         @app.get("/")
         def index():
-            return FileResponse(STATIC_DIR / "index.html")
-    else:
+            return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-store"})
+    else:  # pragma: no cover - only before the frontend existed
         @app.get("/")
         def index_placeholder():
-            return HTMLResponse("<h1>lyric2resolve editor</h1><p>The editor UI arrives in Phase 7. "
-                                "API docs: <a href='/docs'>/docs</a></p>")
+            return HTMLResponse("<h1>lyric2resolve editor</h1><p><a href='/docs'>API docs</a></p>")
 
     return app
 
@@ -207,21 +248,25 @@ def main(argv: list[str]) -> int:
 
     s, _ = load_settings()
     ap = argparse.ArgumentParser(prog="lyric2resolve editor")
-    ap.add_argument("--project", type=Path, required=True)
+    ap.add_argument("--project", type=Path, help="project.json to open (default: show the project list)")
     ap.add_argument("--port", type=int, default=s.editor_port)
     ap.add_argument("--host", default=s.editor_host)
     ap.add_argument("--no-browser", action="store_true")
     args = ap.parse_args(argv)
-    try:
-        session = EditorSession(args.project)
-    except proj.ProjectError as exc:
-        print(f"ERROR: {exc}")
-        return 1
+    from lyric2resolve import paths
+
+    session = None
+    if args.project:
+        try:
+            session = EditorSession(args.project)
+        except proj.ProjectError as exc:
+            print(f"ERROR: {exc}")
+            return 1
     import uvicorn
 
     url = f"http://{args.host}:{args.port}/"
     if not args.no_browser:
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
     print(f"Editor running at {url}  (Ctrl+C to stop)")
-    uvicorn.run(create_app(session), host=args.host, port=args.port, log_level="warning")
+    uvicorn.run(create_app(session, paths.ensure_data_dir() / "projects"), host=args.host, port=args.port, log_level="warning")
     return 0
