@@ -162,9 +162,11 @@ def test_code_dir_is_repo_root():
 
 
 def test_requirements_hash(tmp_path):
-    write(tmp_path, "requirements/a.txt", "x\n")
+    req = tmp_path / "requirements" / "a.txt"
+    req.parent.mkdir(parents=True)
+    req.write_bytes(b"x\n")  # bytes: write_text would translate newlines on Windows
     h1 = core.requirements_hash(tmp_path)
-    write(tmp_path, "requirements/a.txt", "x\r\n")
+    req.write_bytes(b"x\r\n")
     assert core.requirements_hash(tmp_path) == h1  # line endings don't count
     write(tmp_path, "pyproject.toml", "[project]\n")
     assert core.requirements_hash(tmp_path) != h1
