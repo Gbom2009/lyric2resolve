@@ -3,3 +3,5 @@
 *.bat text eol=crlf
 *.wav binary
 *.png binary
+*.command text eol=lf
+*.sh text eol=lf
