@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+# user data / downloaded assets never go in git (they live in the data folder)
+assets/textures/*
+!assets/textures/README.md
+assets/fonts/*
+!assets/fonts/README.md
+out/
+renders/
+cache/
+*.log
+REPORT_LOCAL.md
+REPORT_LOCAL.json
+.updater_state.json
