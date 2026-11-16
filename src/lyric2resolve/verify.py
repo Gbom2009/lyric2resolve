@@ -151,11 +151,52 @@ def _apis(ctx: Context) -> CheckResult:
     return CheckResult("asset_apis", FAIL if bad else OK, "; ".join(good + bad))
 
 
+@check("audio_offset")
+def _audio_offset(ctx: Context) -> CheckResult:
+    """Pure-math A/B offset detection on synthetic audio (checks numpy/scipy install)."""
+    import numpy as np
+
+    from lyric2resolve.audio import align
+
+    sr = 44100
+    rng = np.random.default_rng(0)
+    v = rng.standard_normal((sr * 6, 2)).astype(np.float32) * 0.1
+    late = align.compensate(v, sr, -120.0, length=len(v))
+    res = align.estimate_offset(v, late, sr)
+    ok = abs(res.offset_ms - 120.0) < 1.0
+    return CheckResult("audio_offset", OK if ok else FAIL, f"expected +120.0 ms, got {res.offset_ms:+.2f} ms")
+
+
+@check("vocal_separation")
+def _separation(ctx: Context) -> CheckResult:
+    try:
+        import audio_separator  # noqa: F401
+    except ImportError:
+        return CheckResult("vocal_separation", WARN, "audio-separator not installed (optional; only needed "
+                           "when you have no acapella). Re-run setup_windows.bat to retry.")
+    if ctx.quick:
+        return CheckResult("vocal_separation", SKIP, "installed; smoke test skipped (--quick)")
+    import tempfile
+
+    import numpy as np
+
+    from lyric2resolve import paths
+    from lyric2resolve.audio import stems, wavio
+
+    with tempfile.TemporaryDirectory() as tmp:
+        sr = 44100
+        t = np.arange(sr * 5) / sr
+        x = (0.2 * np.sin(2 * np.pi * 220 * t) + 0.2 * np.sin(2 * np.pi * 55 * t)).astype(np.float32)
+        song = wavio.write(Path(tmp) / "song.wav", np.stack([x, x], axis=1), sr)
+        backend = stems.AudioSeparatorBackend(model_dir=paths.ensure_data_dir() / "models" / "separation")
+        v, i = backend.separate(song, Path(tmp) / "out")
+        return CheckResult("vocal_separation", OK, f"{backend.model}: {v.name}, {i.name}")
+
+
 # Placeholders so the report shows what is still to come (later phases replace them).
 PENDING = {
     "whisper_model_load": "Phase 4",
     "whisper_tiny_clip": "Phase 4",
-    "vocal_separation": "Phase 3",
     "blender_3_frame_render": "Phase 15",
     "fcpxml_validity": "Phase 10",
 }

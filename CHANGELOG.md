@@ -3,6 +3,18 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 3 — Audio inputs, A/B sync check, instrumental
+**New**
+- Your song (Track A) and acapella (Track B) are converted to 44.1 kHz wav with ffmpeg (mp3, wav, flac, m4a, ...). Converted files are cached, so the same song is only converted once.
+- Sync check: the app measures whether the acapella starts earlier or later than the vocals in the song (in milliseconds) and warns you. Optional auto-compensation shifts the acapella to match.
+- Instrumental: made by subtracting the acapella from the song (used later by karaoke mode), cached.
+- No acapella? The app can separate the vocals itself (BS-Roformer via audio-separator, Demucs as backup), cached per song.
+- Command: `lyric2resolve audio-check --song song.mp3 --acapella vocals.wav [--compensate]`.
+
+**What to test**
+- `.venv\Scripts\python.exe -m lyric2resolve audio-check --song <song> --acapella <acapella>` → prints the offset (≈0 ms for matching stems) and where the instrumental was saved; listen to the instrumental wav.
+- Same without `--acapella` → separates the vocals (takes a minute on GPU, first run downloads the model).
+
 ## Phase 2 — Full setup, settings and the local check script
 **New**
 - `setup_windows.bat`: installs everything the app needs into its own environment: PyTorch with the CUDA version that matches your NVIDIA driver, Whisper (faster-whisper + stable-ts), audio libraries, and optional vocal separation. Safe to run again.

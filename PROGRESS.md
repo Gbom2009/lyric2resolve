@@ -8,8 +8,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 0 | Planning docs | merged (initial commit on main) | main |
 | 1 | Skeleton + launcher/updater | merged (user test pending) | PR #1 |
 | 2 | Setup script + verify_local + settings | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 3 | Audio inputs / alignment / instrumental | in progress | continuous-2026-11-16 / PR #2 |
-| 4 | Transcription + project JSON | planned | |
+| 3 | Audio inputs / alignment / instrumental | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 4 | Transcription + project JSON | in progress | continuous-2026-11-16 / PR #2 |
 | 5 | Music analysis + gaps + sanity | planned | |
 | 6 | Editor backend API | planned | |
 | 7 | Editor frontend 1 | planned | |
@@ -31,10 +31,13 @@ Statuses: planned / in progress / PR open / merged / tested-OK / needs fixes / w
 ## CURRENT STEP LOG
 Continuous mode, branch `continuous-2026-11-16` (one PR into main, phase-labelled commits).
 Phase 2: done (setup_tools.py, settings.py, verify.py, scripts/setup_update.py, scripts/verify_local.py, setup_windows.ps1/.bat, tests/test_setup_settings.py).
-Phase 3 (audio): next → `src/lyric2resolve/audio/{convert,align,stems}.py` + tests/test_audio.py.
+Phase 3: done (audio/{convert,wavio,align,stems,__init__}.py, `audio-check` CLI, verify checks audio_offset + vocal_separation, tests/test_audio.py).
+Phase 4 (transcription + project JSON): next → `project.py`, `transcription/{engine,align}.py`, tests/test_transcription_project.py.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- Offset convention: `offset_ms > 0` = acapella starts later than the song's vocals. Cross-correlation at 11025 Hz on the first 120 s, ±10 s max lag, parabolic refinement.
+- Instrumental = song − g·acapella (least-squares gain per channel); cached by content hash. CLI: `python -m lyric2resolve <app-command>` routes app commands via `__main__.APP_COMMANDS`, everything else to the updater CLI.
 - Python package in `src/lyric2resolve/` (src layout). Phase 1: launcher puts `src` on sys.path (no pip install needed); later phases may install it editable.
 - User data lives OUTSIDE the clone: `%LOCALAPPDATA%\lyric2resolve` (Windows) / `~/.local/share/lyric2resolve` (else), override `LYRIC2RESOLVE_DATA`. Assets (fonts/textures) therefore live in `<data>/assets/...`; the repo only holds manifests/curation lists. Reason: the updater hard-resets code and must never touch user data.
 - Launcher + updater are stdlib only (Tkinter, subprocess git) so they run before heavy deps exist.
@@ -55,6 +58,7 @@ Phase 1 user test: not done yet (user chose continuous); fold its checklist into
 ## Pending VERIFY_LOCAL items
 - Phase 1: install, shortcut, update flow, self-update, rollback on Windows (see VERIFY_LOCAL.md).
 - Phase 2: setup_windows.bat, verify_local report (waiting for user: paste REPORT_LOCAL.md).
+- Phase 3: audio-check with a real song + acapella; separation model name (waiting for user: test song + acapella).
 
 ## Local verification reports (paste below)
 - (none yet)

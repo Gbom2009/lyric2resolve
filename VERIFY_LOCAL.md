@@ -23,3 +23,8 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Optional `audio-separator[gpu]` may fail to install (warning only); report the message.
 - [ ] `scripts/verify_local.py` writes REPORT_LOCAL.md: expect ok for python/tkinter/git/ffmpeg/gpu/torch_cuda/asset_apis; blender ok or warning.
 - [ ] Updating through the launcher after this change runs the dependency step (progress shows step 4 for a long time) and then succeeds.
+
+## Phase 3 — audio
+- [ ] `audio-check` on a real song + acapella: offset ≈ 0 ms, confidence shown, instrumental wav sounds like the song without vocals.
+- [ ] Shift the acapella in an editor by ~100 ms → `audio-check` reports ≈100 ms "later"; `--compensate` fixes it.
+- [ ] Without acapella: separation works on GPU (verify_local `vocal_separation` ok). Confirm the default model name `model_bs_roformer_ep_317_sdr_12.9755.ckpt` exists in your audio-separator version (`audio-separator --list_models`).
