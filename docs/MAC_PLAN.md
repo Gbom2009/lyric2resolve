@@ -1,6 +1,6 @@
 # lyric2resolve for Mac (Apple Silicon M1–M4) — plan
 
-Status: **plan only, waiting for confirmation**. Branch `mac-app`. The Windows app keeps working exactly as it is:
+Status: phases 1-2 merged (PRs #10, #11), `mac-release` created; phase 3 (MLX Whisper) in progress. The macOS CI job is cancelled by GitHub on this account (billing/minutes): the user chose to continue with the MacBook as the Mac test. Branch `mac-app`. The Windows app keeps working exactly as it is:
 one code base, with Mac-specific parts behind the same small interfaces (like the GPU/Whisper/ffmpeg ones already are).
 
 ## Goal

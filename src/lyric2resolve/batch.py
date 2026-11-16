@@ -140,7 +140,11 @@ def run_song(job: BatchJob, out_root: Path, *, settings, engine, ffmpeg, cache_d
         ps = project_settings(settings)
         if fps:
             ps.fps = float(fps)
-        p = transcription.run(Path(prepared.vocals_wav), engine, job.title, lyrics, prepared.to_dict(), ps)
+        try:
+            p = transcription.run(Path(prepared.vocals_wav), engine, job.title, lyrics, prepared.to_dict(), ps)
+        finally:
+            if hasattr(engine, "close") and getattr(engine, "close_after_use", True):
+                engine.close()  # give the memory back (8 GB Macs: Blender, analysis)
         if getattr(engine, "fallback_reason", ""):
             res.messages.append("WARNING: " + engine.fallback_reason)
             log(f"[{job.title}] WARNING: {engine.fallback_reason}")

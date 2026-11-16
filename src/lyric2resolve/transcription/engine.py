@@ -36,6 +36,7 @@ class EngineOptions:
     vad: bool = True
     vad_threshold: float = 0.35   # singing scores lower than speech in Silero VAD (default 0.5 drops sung lines)
     model_dir: str | None = None  # download/cache folder (data/models/whisper)
+    backend: str = "faster-whisper"   # faster-whisper (CTranslate2: NVIDIA/CPU) | mlx (Apple Silicon M chips)
 
 
 class Engine(Protocol):
@@ -121,6 +122,12 @@ class StableTsEngine:
     def _load(self, device: str, compute_type: str):
         import stable_whisper  # heavy, PC only
 
+        if self.opt.backend == "mlx":
+            import os
+
+            if self.opt.model_dir:  # MLX models come from Hugging Face; keep them in the app's models folder
+                os.environ.setdefault("HF_HUB_CACHE", self.opt.model_dir)
+            return stable_whisper.load_mlx_whisper(self.opt.model)
         kwargs = {"device": device, "compute_type": compute_type}
         if self.opt.model_dir:
             kwargs["download_root"] = self.opt.model_dir
@@ -128,10 +135,36 @@ class StableTsEngine:
 
     def model(self):
         if self._model is None:
+            if self.opt.backend == "mlx":
+                try:
+                    self._model = self._load("mps", "float16")
+                except Exception as exc:  # no MLX / model problem: CPU engine instead of failing
+                    self._mlx_fallback(exc)
+                return self._model
             if self.opt.device == "cuda":
                 add_cuda_dll_dirs()
             self._model = self._load(self.opt.device, self.opt.compute_type)
         return self._model
+
+    def _mlx_fallback(self, exc: BaseException) -> None:
+        self.fallback_reason = (f"MLX Whisper could not be used ({exc}); Whisper ran on the CPU instead (slower). "
+                                "Run the launcher's Run setup / setup_mac.command to (re)install mlx-whisper.")
+        self.opt.backend, self.opt.device, self.opt.compute_type = "faster-whisper", "cpu", "int8"
+        self._model = self._load("cpu", "int8")
+
+    def close(self) -> None:
+        """Free the model's memory (8 GB Macs: before Blender starts)."""
+        self._model = None
+        import gc
+
+        gc.collect()
+        if self.opt.backend == "mlx":
+            try:
+                import mlx.core as mx
+
+                (getattr(mx, "clear_cache", None) or mx.metal.clear_cache)()
+            except Exception:  # noqa: BLE001 - best effort
+                pass
 
     def _cpu_fallback(self, exc: BaseException) -> None:
         self.fallback_reason = (f"GPU libraries could not be loaded ({exc}); Whisper ran on the CPU instead "
@@ -151,18 +184,26 @@ class StableTsEngine:
 
     def vad_kwargs(self) -> dict:
         use = self.opt.vad and self.opt.vad_threshold > 0
+        if self.opt.backend == "mlx":  # stable-ts' own Silero VAD (same threshold meaning)
+            return {"vad": bool(use), "vad_threshold": self.opt.vad_threshold} if use else {"vad": False}
         out: dict = {"vad_filter": use}
         if use:
             out["vad_parameters"] = {"threshold": self.opt.vad_threshold, "speech_pad_ms": 500}
         return out
 
     def params(self, mode: str) -> dict:
-        return {"engine": "stable-ts/faster-whisper", "model": self.opt.model, "device": self.opt.device,
+        return {"engine": f"stable-ts/{self.opt.backend}", "model": self.opt.model, "device": self.opt.device,
                 "compute_type": self.opt.compute_type, "vad": self.opt.vad, "vad_threshold": self.opt.vad_threshold,
                 "mode": mode,
                 "condition_on_previous_text": False, "word_timestamps": True}
 
     def detect_language(self, audio_path: str) -> str:
+        if self.opt.backend == "mlx":  # MLX has no separate detector: transcribe the first 30 s and read it
+            from mlx_whisper.audio import SAMPLE_RATE, load_audio
+
+            clip = load_audio(audio_path)[: 30 * SAMPLE_RATE]
+            res = self._run(lambda m: m.transcribe(clip, word_timestamps=False, regroup=False))
+            return getattr(res, "language", None) or "en"
         from faster_whisper import decode_audio
 
         audio = decode_audio(audio_path, sampling_rate=16000)

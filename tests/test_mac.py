@@ -100,3 +100,80 @@ def test_claude_found_in_homebrew_folder():
     from lyric2resolve.claude_link import cli
 
     assert Path("/opt/homebrew/bin/claude") in cli.claude_candidates({"HOME": "/Users/me"})
+
+
+# ------------------------------------------------------------------ phase 3: MLX Whisper on the M chip
+def test_choose_backend():
+    from lyric2resolve.transcription import choose_backend
+
+    assert choose_backend("mps", "darwin", has_mlx=True) == "mlx"
+    assert choose_backend("mps", "darwin", has_mlx=False) == "faster-whisper"   # CPU fallback
+    assert choose_backend("cuda", "win32", has_mlx=True) == "faster-whisper"
+
+
+class _FakeStable:
+    def __init__(self, fail_mlx=False):
+        self.loaded, self.fail_mlx, self.calls = [], fail_mlx, []
+
+    def load_mlx_whisper(self, name):
+        if self.fail_mlx:
+            raise ImportError("No module named 'mlx'")
+        self.loaded.append(("mlx", name))
+        return self._model()
+
+    def load_faster_whisper(self, name, **kw):
+        self.loaded.append(("faster", name, kw.get("device")))
+        return self._model()
+
+    def _model(self):
+        outer = self
+
+        class M:
+            def transcribe(self, audio, **kw):
+                outer.calls.append(kw)
+                from types import SimpleNamespace
+
+                w = SimpleNamespace(word="hi", start=1.0, end=1.4, probability=0.9)
+                return SimpleNamespace(segments=[SimpleNamespace(words=[w])], language="nl")
+
+        return M()
+
+
+def test_mlx_engine_transcribes_with_its_own_vad_and_frees_memory(monkeypatch, tmp_path):
+    from lyric2resolve.transcription import engine
+
+    fake = _FakeStable()
+    monkeypatch.setitem(sys.modules, "stable_whisper", fake)
+    monkeypatch.delenv("HF_HUB_CACHE", raising=False)
+    e = engine.StableTsEngine(engine.EngineOptions(model="large-v3-turbo", backend="mlx", device="mps",
+                                                   model_dir=str(tmp_path / "models")))
+    t = e.transcribe("x.wav")
+    assert fake.loaded == [("mlx", "large-v3-turbo")] and [w.text for w in t.words] == ["hi"]
+    kw = fake.calls[0]
+    assert kw["vad"] is True and kw["vad_threshold"] == 0.35 and "vad_filter" not in kw
+    assert kw["condition_on_previous_text"] is False and kw["word_timestamps"] is True
+    assert t.params["engine"] == "stable-ts/mlx" and sys.modules["os"].environ["HF_HUB_CACHE"] == str(tmp_path / "models")
+    e.close()
+    assert e._model is None
+
+
+def test_mlx_failure_falls_back_to_cpu(monkeypatch):
+    from lyric2resolve.transcription import engine
+
+    fake = _FakeStable(fail_mlx=True)
+    monkeypatch.setitem(sys.modules, "stable_whisper", fake)
+    e = engine.StableTsEngine(engine.EngineOptions(backend="mlx", device="mps"))
+    e.transcribe("x.wav")
+    assert fake.loaded == [("faster", "large-v3", "cpu")] and "MLX Whisper could not be used" in e.fallback_reason
+    assert "vad_filter" in fake.calls[0]  # now the faster-whisper options
+
+
+def test_engine_from_settings_on_mac(monkeypatch):
+    from lyric2resolve import transcription
+    from lyric2resolve.settings import AppSettings
+
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setattr("lyric2resolve.settings.load_settings", lambda d=None: (AppSettings(), []))
+    monkeypatch.setattr(transcription, "choose_backend", lambda device, platform=None, has_mlx=None: "mlx")
+    e = transcription.engine_from_settings()
+    assert e.opt.backend == "mlx" and e.opt.model == "large-v3-turbo" and e.opt.device == "cpu"
