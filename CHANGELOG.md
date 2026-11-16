@@ -3,6 +3,20 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 18 — Settings page, Team Funqtion branding, batch mode, update banner
+**New**
+- **Settings** page (button in the editor): Programs & GPU (ffmpeg, Blender and Claude Code are found automatically, or set a path; shows your NVIDIA GPU), defaults for new projects (frame rate, resolution, layouts, start timecode, styling level, Whisper model, device, language), Assistant options, and update options. Every change is saved immediately.
+- **Team Funqtion branding** toggle: the dark Team Funqtion look (near-black, orange `#f68712`, mono type, logo), taken from the funqtion-site repo. It applies to the editor, Library, Ideas, Settings and Karaoke. Off = the normal light theme. It works offline; the brand fonts are used when they are in your font library (JetBrains Mono is now in the font sync list).
+- A button that adds the **Team Funqtion text style** (Archivo Black, orange glow) to the open project.
+- **Update banner** in the browser: when a new version is on GitHub you see "Update available" with what's new. **Update now** hands over to the launcher, which stops the editor, updates safely (rollback point, automatic rollback on problems) and shows what changed. **Later** hides the banner for this session.
+- **Batch mode**: `lyric2resolve batch <folder>` runs every song in a folder through the whole pipeline (convert, transcribe, analyse, blocks, export). Songs and acapellas are paired by name (`Song.mp3` + `Song (Acapella).wav`), and `Song.txt` gives the lyrics. Or use a `queue.yaml`. One failing song does not stop the rest; `batch_report.md` shows the result per song. `--dry-run` only lists what it found.
+
+**What to test**
+- Settings: check the tool paths and the GPU line are right; change the frame rate, then start a new project → it uses the new default.
+- Switch Team Funqtion branding on: every page turns dark/orange with the logo; off again → light.
+- Put 2 songs (+ acapellas) in a folder, run `lyric2resolve batch <folder> --dry-run`, then without `--dry-run`.
+- After the next merge: the editor shows the update banner; **Update now** → the launcher updates and reopens.
+
 ## Phase 17 — Assistant: Claude Code inside the app (optional)
 **New**
 - **Assistant (Claude)** card at the top of the editor's side panel: type what you want ("make every chorus one word per block with a glowing style", "check the flagged words", "export both layouts") and Claude does it inside the app. Changes show up live in the lyrics and can be undone with Undo.

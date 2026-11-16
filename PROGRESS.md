@@ -23,8 +23,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 15 | Headless render + DJ mux | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 16 | Prompt generator + templates | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 17 | Claude link | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 18 | Settings UI / branding / batch / update banner | in progress | continuous-2026-11-16 / PR #2 |
-| 19 | Full test pass + docs | planned | |
+| 18 | Settings UI / branding / batch / update banner | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 19 | Full test pass + docs | in progress | continuous-2026-11-16 / PR #2 |
 
 Statuses: planned / in progress / PR open / merged / tested-OK / needs fixes / waiting for user
 
@@ -46,12 +46,16 @@ Phase 14: done (visuals/{bands,mapping,procedural,blender_gen}.py, visuals/blend
 Phase 15: done (render/{presets,blender,runner,mux,instructions,__init__}.py, `render` CLI, tests/data/fake_blender.py, tests/test_render.py, docs/DJ_VIDEO_GUIDE.md).
 Phase 16: done (visuals/{brief,prompts}.py, templates.py, /ideas page (static/ideas.{html,js}), `ideas` CLI, apply_template op, tests/test_prompts_templates.py).
 Phase 17: done (claude_link/{__init__,cli,notes,mcp_server}.py, render/jobs.py, editor endpoints /api/assistant/* + /api/render*, static/assistant.js (side-panel card), docs/ASSISTANT.md, verify checks claude_cli + mcp_server, tests/test_claude_link.py + tests/data/fake_claude.py + tests/e2e/test_assistant.py).
-Phase 18 (settings UI, Funqtion branding, batch, update banner): next. Brand source = public repo github.com/Gbom2009/funqtion-site (readable via git clone; user said to use it).
+Phase 18: done (branding.py + config/brand_funqtion.json + static/brand/funqtion-logo.svg, editor/settings_api.py (/api/settings, /api/settings/updater, /api/update/*, /theme.css, /api/brand, /settings), static/{settings.html,settings.js,update_banner.js}, appctl update-request hand-off + launcher watcher, batch.py (`batch` CLI, run_song = single-song pipeline), tests/test_settings_batch.py + e2e/test_settings.py).
+Phase 19 (full test pass, README, DJ guide, consolidated VERIFY_LOCAL, end-to-end CLI, verify blender_3_frame_render): next.
 Phase 19 TODO noted: verify_local `blender_3_frame_render` is still a pending placeholder (Phase 15 did not add it) -> implement in Phase 19.
 Session 3 (2026-11-16): user confirmed: continue on PR #2, Claude CLI installed on PC, try funqtion-site for branding, test everything later.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- Branding: tokens from the public funqtion-site repo (css/tokens.css, commit 8bccd0f) in `config/brand_funqtion.json`; user edits go in `<data>/settings/brand_funqtion.json` (editing the repo copy would make the code folder dirty and block updates). Served as `/theme.css` (CSS variable overrides) on every page; brand fonts only from the local font library (offline, no Google requests). Toggle = `funqtion_branding` (or theme "funqtion").
+- Browser update banner: the editor runs `core.check_for_update` in a background thread (cached 30 min); "Update now" writes `<data>/settings/update_request.json` and the launcher (polling every 2 s while the editor runs) does the normal self-copying update. Only when the editor was started by the launcher (env L2R_LAUNCHER=1). Tests set L2R_NO_UPDATE_CHECK=1 so no git fetch runs.
+- Batch: folder pairing by name tokens (acapella/vocals/vox/voice, "_" counts as separator) or queue.yaml; never stops on one failure; report rewritten after every song. `batch.run_song` is the single-song pipeline reused by the Phase 19 CLI.
 - Claude link: real CLI only (`claude -p --output-format stream-json --verbose`, prompt via stdin to avoid claude.cmd quoting; `--session-id` first, `--resume` after; `--mcp-config <project>/.l2r_mcp.json --allowedTools mcp__lyric2resolve`). Flags + event shapes verified on CLI 2.1.325 in the cloud (one real run). ANTHROPIC_API_KEY is removed from the child env so the user's subscription is used. Lost session (resume fails) -> automatic retry with a new id.
 - MCP server is stdlib JSON-RPC (no `mcp` package): initialize/ping/tools/list/tools/call, newline-delimited. With `--editor-url` it edits through the running editor's API (one owner of the project + shared undo; the browser card reloads state after each tool result); without it, it edits project.json directly via EditorSession.
 - Assistant UI = card in the editor side panel (not a separate page) so edits are visible live; polling `/api/assistant/events?after=n` (no websockets).

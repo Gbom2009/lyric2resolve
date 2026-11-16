@@ -156,3 +156,9 @@ legend { font-size: 12px; color: var(--muted); }
 .asst-tool { color: var(--muted); font-family: var(--mono); font-size: 12px; padding: 0 9px; }
 .asst-note { color: var(--muted); font-size: 12.5px; padding: 0 9px; }
 .asst-error { border: 1px solid var(--flag); color: var(--flag); background: var(--panel); }
+
+/* in-app update banner */
+.update-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 16px; background: var(--block-active); border-bottom: 1px solid var(--accent); }
+.update-banner[hidden] { display: none; }
+.update-banner .update-log { flex-basis: 100%; max-height: 260px; overflow: auto; white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px; margin: 4px 0 0; }
+body:has(> .update-banner:not([hidden])) { grid-template-rows: auto auto auto 1fr auto; }

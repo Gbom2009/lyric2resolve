@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>lyric2resolve library</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/theme.css">
   <style>
     body { display: block; }
     .lib { padding: 12px 16px 40px; }
@@ -27,6 +28,7 @@
     <div class="brand"><span class="logo">l2r</span> Library</div>
     <a href="/">← Editor</a>
   </header>
+  <div id="update-banner" class="update-banner" hidden></div>
   <main class="lib">
     <div class="tabs"><button id="tab-tex" class="on">Textures</button><button id="tab-fonts">Fonts</button></div>
     <section id="pane-tex">
@@ -44,5 +46,6 @@
     </section>
   </main>
   <script src="/static/library.js"></script>
+  <script src="/static/update_banner.js"></script>
 </body>
 </html>

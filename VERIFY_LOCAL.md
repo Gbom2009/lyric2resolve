@@ -113,3 +113,10 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] verify_local: `claude_cli` ok, `mcp_server` ok.
 - [ ] (optional) Blender MCP per docs/ASSISTANT.md.
 
+## Phase 18 — settings, branding, batch, update banner
+- [ ] Settings page: ffmpeg/Blender/Claude found (or "not found" + help); GPU line shows your NVIDIA card; setting a wrong path shows "not found".
+- [ ] Branding on/off changes every page (editor, Library, Ideas, Settings, Karaoke); readable in both themes. After `assets sync --fonts`, the branded pages use JetBrains Mono / Archivo Black.
+- [ ] Update banner: after a merge, the editor (started from the launcher) shows "Update available"; **Update now** → the editor stops, the launcher's progress window runs, "What changed" appears, then the editor starts again on the new version.
+- [ ] Editor started by hand (`python -m lyric2resolve editor`): Update now explains to use the launcher instead.
+- [ ] `lyric2resolve batch <folder>` on 2-3 real songs on the GPU: all projects + exports created, `batch_report.md` correct; a song without an acapella is separated.
+

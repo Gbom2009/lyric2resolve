@@ -199,9 +199,10 @@ def list_projects(projects_dir: Path) -> list[dict]:
 
 def create_app(session: EditorSession | None = None, projects_dir: Path | None = None,
                fonts_root: Path | None = None, settings_dir: Path | None = None, textures_root: Path | None = None,
-               assistant=None, jobs=None):
+               assistant=None, jobs=None, update_checker=None):
     """session: project opened at start (optional). projects_dir: folder offered in the project picker.
-    assistant: claude_link.Assistant (optional Claude link); jobs: render.jobs.RenderJobs (background renders)."""
+    assistant: claude_link.Assistant (optional Claude link); jobs: render.jobs.RenderJobs (background renders);
+    update_checker: editor.settings_api.UpdateChecker (in-browser update banner)."""
     from fastapi import Body, FastAPI, HTTPException, Request
     from fastapi.responses import FileResponse, HTMLResponse
     from fastapi.staticfiles import StaticFiles
@@ -477,6 +478,12 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         if path is None:
             raise HTTPException(status_code=404, detail=f"no {kind} audio in this project")
         return FileResponse(path, media_type="audio/wav")
+
+    from . import settings_api
+    from lyric2resolve.assets import fonts as _fonts_mod
+
+    settings_api.register(app, settings_dir, lambda: _fonts_mod.list_fonts(_fonts_root()), STATIC_DIR,
+                          update_checker)
 
     if (STATIC_DIR / "index.html").exists():
         app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

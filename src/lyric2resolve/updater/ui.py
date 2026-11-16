@@ -161,6 +161,7 @@ class LauncherWindow(_Base):
             self.app_state, self.app_detail = ("running", "") if ok else ("failed", detail)
             if ok:
                 self.open_browser()
+                self.root.after(2000, self._watch_update_request)
             self.show_status(self.last_status)
 
     # ------------------------------------------------------------ app (editor server)
@@ -183,6 +184,18 @@ class LauncherWindow(_Base):
         self.url = f"http://{s.editor_host}:{port}/"
         ok = appctl.wait_for_port(port, s.editor_host, timeout=60, alive=lambda: self.server.poll() is None)
         return ok, "" if ok else f"The editor did not start. Details: {log}"
+
+    def _watch_update_request(self):
+        """'Update now' in the browser banner -> run the normal (self-copying) update from here."""
+        from . import appctl
+
+        if self.app_state != "running":
+            return
+        if appctl.take_update_request(paths.settings_dir()):
+            self.root.deiconify()
+            self.do_update()
+            return
+        self.root.after(2000, self._watch_update_request)
 
     def open_browser(self):
         import webbrowser

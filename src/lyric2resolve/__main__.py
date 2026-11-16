@@ -18,6 +18,7 @@ APP_COMMANDS = {
     "ideas": "lyric2resolve.visuals.prompts",
     "claude": "lyric2resolve.claude_link",
     "mcp-server": "lyric2resolve.claude_link.mcp_server",
+    "batch": "lyric2resolve.batch",
 }
 
 

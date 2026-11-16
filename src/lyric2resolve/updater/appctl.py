@@ -26,8 +26,13 @@ def _flags(console: bool = False) -> int:
     return getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 
+UPDATE_REQUEST = "update_request.json"
+LAUNCHER_ENV = "L2R_LAUNCHER"  # set for the editor when the launcher started it
+
+
 def app_env(repo: Path) -> dict:
     env = dict(os.environ)
+    env[LAUNCHER_ENV] = "1"
     src = str(repo / "src")
     env["PYTHONPATH"] = src + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env.setdefault("PYTHONIOENCODING", "utf-8")
@@ -113,3 +118,26 @@ def setup_command(repo: Path) -> list[str]:
 
 def run_setup(repo: Path) -> subprocess.Popen:
     return subprocess.Popen(setup_command(repo), cwd=str(repo), creationflags=_flags(console=True))
+
+
+# ------------------------------------------------------------------ update request from the browser banner
+def request_update(settings_dir: Path) -> Path:
+    """The editor writes this when you click 'Update now' in the browser; the launcher picks it up."""
+    import json
+
+    path = Path(settings_dir) / UPDATE_REQUEST
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"time": time.time()}), encoding="utf-8")
+    return path
+
+
+def take_update_request(settings_dir: Path, max_age_s: float = 600) -> bool:
+    """True once per fresh request (the file is removed). Stale requests are ignored and removed."""
+    path = Path(settings_dir) / UPDATE_REQUEST
+    try:
+        age = time.time() - path.stat().st_mtime
+        path.unlink()
+    except OSError:
+        return False
+    return age <= max_age_s
+
