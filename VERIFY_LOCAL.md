@@ -227,3 +227,7 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] `.venv/bin/python scripts/verify_local.py` → REPORT_LOCAL.md: torch_cuda "Metal (MPS)", mac_whisper_mlx ok, video_encoder "h264_videotoolbox (hardware) works", resolve_scripts_folder ok, claude_cli found.
 - [ ] Assistant: send a message, then Stop → no leftover `python … mcp_server` process in Activity Monitor.
 - [ ] Windows: Library → Install fonts for Resolve still works (fonts in Resolve after restart).
+
+## Mac fixes from testing (1) — Rosetta / architecture
+- [ ] After Update + reopening the app: Start editor works (no "incompatible architecture" message).
+- [ ] Activity Monitor → CPU tab → "Kind" column for the Python processes says **Apple**, not Intel.

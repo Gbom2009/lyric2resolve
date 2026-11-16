@@ -76,5 +76,13 @@ APP_LINES = {
 }
 
 
+ARCH_MISMATCH = ("Editor: the app started in Intel mode (Rosetta), but setup installed the Apple Silicon (arm64) "
+                 "libraries.\nQuit lyric2resolve and open it again (the launcher now restarts itself natively). Still "
+                 "the same? Run install.command again, and in Finder > Applications > lyric2resolve > Get Info make sure "
+                 "'Open using Rosetta' is off.")
+
+
 def app_line(state: str, url: str = "", detail: str = "") -> str:
+    if state == "needs_setup" and "incompatible architecture" in (detail or ""):
+        return ARCH_MISMATCH
     return APP_LINES.get(state, state).format(url=url, detail=detail or "unknown error")

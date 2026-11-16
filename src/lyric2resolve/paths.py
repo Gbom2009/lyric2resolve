@@ -150,6 +150,38 @@ def atomic_write_text(path: Path, text: str) -> Path:
     return path
 
 
+NATIVE_ENV = "L2R_NATIVE_ARM64"  # set after the launcher restarted itself natively (never loops)
+
+
+def rosetta_translated() -> bool:
+    """macOS: True when this process runs as Intel code under Rosetta on an Apple Silicon Mac."""
+    if sys.platform != "darwin":
+        return False
+    try:
+        import ctypes
+
+        libc = ctypes.CDLL(None)
+        val, size = ctypes.c_int(0), ctypes.c_size_t(ctypes.sizeof(ctypes.c_int))
+        if libc.sysctlbyname(b"sysctl.proc_translated", ctypes.byref(val), ctypes.byref(size), None, 0) != 0:
+            return False
+        return val.value == 1
+    except (OSError, AttributeError):
+        return False
+
+
+def native_relaunch_argv(argv: list[str], env: dict | None = None, translated: bool | None = None,
+                         executable: str | None = None) -> list[str] | None:
+    """Apple Silicon: a Finder/Dock start can run the app (and the universal python.org Python) under Rosetta as
+    Intel code, while setup installed the arm64 packages -> 'incompatible architecture'. Returns the command to
+    restart natively (`arch -arm64 python ...`), or None when nothing needs to happen."""
+    env = os.environ if env is None else env
+    if env.get(NATIVE_ENV) == "1" or not Path("/usr/bin/arch").exists():
+        return None
+    if not (rosetta_translated() if translated is None else translated):
+        return None
+    return ["/usr/bin/arch", "-arm64", executable or sys.executable, *argv]
+
+
 def fix_mac_path(env: dict | None = None, platform: str | None = None) -> list[str]:
     """macOS apps started from Finder/the Dock get a minimal PATH (no Homebrew): add the usual tool folders so
     ffmpeg, git, blender and claude are found by every subprocess. Returns the folders added."""
