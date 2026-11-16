@@ -37,6 +37,8 @@ rest (several GB, takes a while). Then **Start editor**.
 - Lyric fonts in Resolve: Library page → Fonts → **Install fonts for Resolve**, then restart Resolve.
 
 ## Troubleshooting
+- "SSL: CERTIFICATE_VERIFY_FAILED": update the app (it then uses certifi's certificates by itself). Or once: Finder →
+  Applications → Python 3.12 → double-click **Install Certificates.command**.
 - Update failed with "torch 2.2.2" / "Importing the numpy C-extensions failed" (Intel packages got into `.venv`):
   quit lyric2resolve, then in Terminal:
   ```

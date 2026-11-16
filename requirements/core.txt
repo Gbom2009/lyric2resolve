@@ -8,3 +8,4 @@ fastapi>=0.110
 uvicorn>=0.29
 python-multipart>=0.0.9
 lxml>=5.0
+certifi>=2024.2.2   # macOS python.org Python has no system certificates (SSL_CERT_FILE -> certifi)

@@ -3,6 +3,13 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Mac fixes from testing (3) — "CERTIFICATE_VERIFY_FAILED" when transcribing
+**Fixed (Mac)**
+- Transcribing failed with "SSL: CERTIFICATE_VERIFY_FAILED". Python from python.org doesn't use the Mac's trusted certificates, so the first download of Whisper's small voice-detection model was refused. The app now uses the certificate bundle from the `certifi` package automatically (also for font/texture downloads and the self-test). Nothing changes on Windows.
+
+**What to test (Mac)**
+- Update now (it installs one small package), then New project with the same song again. The vocals are already separated (cached), so it goes straight to transcribing.
+
 ## Mac fixes from testing (2) — update failed: "torch 2.2.2", numpy C-extensions
 **Fixed (Mac)**
 - The update's "Install changed dependencies" step ran in Intel mode (Rosetta), because the old launcher was still running that way. pip then installed Intel packages (torch 2.2.2, the last version built for Intel Macs), which clash with the Apple Silicon ones. The setup/update script and the app now always restart themselves natively first, so this can't happen again.

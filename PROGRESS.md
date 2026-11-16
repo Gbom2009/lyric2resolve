@@ -101,6 +101,10 @@ Phase 1 user test: not done yet (user chose continuous); fold its checklist into
 - Google Fonts CSS2 static-TTF trick and Poly Haven/ambientCG endpoints are verified only from the cloud; asset sync must be run on the PC.
 
 ## User test feedback per phase
+- Mac feedback 3 (2026-11-16): clean .venv reinstall worked; New project (song only) separated vocals (1563 s, now
+  cached) then failed transcribing: URLError CERTIFICATE_VERIFY_FAILED (python.org Python has no CA bundle; torch.hub
+  Silero VAD download via urllib). Fix (branch `mac-fix-ssl`): paths.fix_mac_certs sets SSL_CERT_FILE=certifi.where()
+  when the default cafile is missing (called from fix_mac_path: launcher + app); certifi added to core.txt.
 - Mac feedback 2 (2026-11-16): Update to 9f8792a failed at the dependency step: the OLD launcher (still under
   Rosetta) ran setup_update.py as x86_64 → pip installed x86_64 torch 2.2.2 (conflict with audio-separator's
   darwin-arm64 torch>=2.3), numpy C-extensions failed; rolled back. Fix (branch `mac-fix-arch-2`):
