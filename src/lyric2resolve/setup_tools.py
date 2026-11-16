@@ -18,7 +18,8 @@ from typing import Callable
 
 TORCH_INDEX = "https://download.pytorch.org/whl/{tag}"
 # (minimum driver CUDA version, wheel tag) newest first. Verify against pytorch.org when bumping torch.
-CUDA_TAGS = ((12, 8, "cu128"), (12, 6, "cu126"), (12, 4, "cu124"), (11, 8, "cu118"))
+# cu128 stops at torch 2.11 (checked 2026-11-16); drivers with CUDA 13 get cu130 (newer torch, RTX 50 support).
+CUDA_TAGS = ((13, 0, "cu130"), (12, 8, "cu128"), (12, 6, "cu126"), (12, 4, "cu124"), (11, 8, "cu118"))
 
 GROUPS_FULL = ("core", "torch", "ml", "separation")
 GROUPS_CI = ("core",)
@@ -148,6 +149,79 @@ BLENDER_HELP = ("Blender not found. Install Blender 4.x from https://www.blender
 OPTIONAL_GROUPS = ("separation",)  # failure only warns: the app works without it
 
 
+# ------------------------------------------------------------------ torch health
+TORCH_PACKAGES = ("torch", "torchaudio", "torchvision")
+# Runs in the venv's python (a separate process: importing torch inside the setup process would lock its
+# DLLs on Windows while pip replaces them). Prints one JSON line.
+TORCH_PROBE = r"""
+import json
+from importlib import metadata
+out = {"versions": {}, "errors": {}, "cuda": None}
+for n in ("torch", "torchaudio", "torchvision"):
+    try:
+        out["versions"][n] = metadata.version(n)
+    except metadata.PackageNotFoundError:
+        pass
+for n in out["versions"]:
+    try:
+        __import__(n)
+    except Exception as e:
+        out["errors"][n] = f"{type(e).__name__}: {e}"[:300]
+if "torch" in out["versions"] and "torch" not in out["errors"]:
+    import torch
+    out["cuda"] = bool(torch.cuda.is_available())
+print("L2R_TORCH " + json.dumps(out))
+"""
+
+
+def probe_torch(python: Path, probe: Probe | None = None) -> dict:
+    """Installed torch/torchaudio/torchvision versions, import errors and CUDA availability."""
+    import json
+
+    out = (probe or (lambda c: run_probe(c, timeout=240)))([str(python), "-c", TORCH_PROBE]) or ""
+    for line in out.splitlines():
+        if line.startswith("L2R_TORCH "):
+            try:
+                return json.loads(line[len("L2R_TORCH "):])
+            except ValueError:
+                break
+    return {"versions": {}, "errors": {"probe": "could not run the torch check"}, "cuda": None}
+
+
+def _split(v: str) -> tuple[tuple[int, ...], str]:
+    base, _, local = v.partition("+")
+    nums = tuple(int(x) for x in re.findall(r"\d+", base)[:3])
+    return nums, local
+
+
+def torch_problems(info: dict, gpu: "GpuInfo") -> list[str]:
+    """Why the installed torch set is broken ([] = fine or not installed).
+
+    The real-world failure (2026-11-16): a later pip step pulled torchvision from PyPI, which replaced the CUDA
+    torch with PyPI's CPU-only Windows torch; the CUDA torchaudio left behind then fails with
+    'Could not load this library: ...libtorchaudio.pyd'. torchaudio itself no longer needs the exact torch version
+    (torch 2.15 + torchaudio 2.11 load fine), so versions are not compared - builds and imports are.
+    """
+    v = info.get("versions") or {}
+    if "torch" not in v:
+        return []
+    problems = [f"{n} does not load ({e})" for n, e in (info.get("errors") or {}).items()]
+    builds = {n: _split(x)[1] for n, x in v.items()}
+    tlocal = builds["torch"]
+    if len(set(builds.values())) > 1:
+        problems.append("mixed CPU/CUDA builds: " + ", ".join(f"{n} {v[n]}" for n in v))
+    if gpu.available and gpu.cuda and not tlocal.startswith("cu") and info.get("cuda") is not True:
+        problems.append(f"torch {v['torch']} is not a CUDA build although an NVIDIA GPU was found")
+    elif gpu.available and gpu.cuda and info.get("cuda") is False and not info.get("errors"):
+        problems.append("torch cannot use the GPU (torch.cuda.is_available() is False)")
+    return problems
+
+
+def torch_pins(versions: dict) -> str:
+    """Constraints for later pip steps: exact public versions (a local '+cu128' build satisfies them)."""
+    return "".join(f"{n}=={versions[n].partition('+')[0]}\n" for n in TORCH_PACKAGES if n in versions)
+
+
 @dataclass
 class SetupPlan:
     commands: list[list[str]] = field(default_factory=list)
@@ -156,11 +230,19 @@ class SetupPlan:
 
 
 def plan_setup(repo: Path, python: Path, gpu: GpuInfo, mode: str = "full",
-               torch_installed: bool = False, groups: tuple[str, ...] = GROUPS_FULL) -> SetupPlan:
-    """mode 'full' installs everything; 'update' skips torch when it is already installed."""
+               torch_installed: bool = False, groups: tuple[str, ...] = GROUPS_FULL,
+               torch_broken: list[str] | None = None, pins: Path | None = None) -> SetupPlan:
+    """Pip commands per requirement group.
+
+    torch: installed once as a matching torch/torchaudio/torchvision set from the CUDA index; skipped when
+    already installed and healthy; uninstalled + reinstalled when `torch_broken` lists problems.
+    pins: after the torch step its versions are written there and passed as constraints (-c) to every later
+    pip step, so no other package can replace torch with another build (the cause of libtorchaudio errors).
+    """
     pip = [str(python), "-m", "pip", "install", "--disable-pip-version-check"]
     req = repo / "requirements"
     plan = SetupPlan()
+    pinned = False  # becomes True after the torch step wrote the pins file
     plan.commands.append([str(python), "-m", "pip", "install", "--disable-pip-version-check", "-q",
                           "--upgrade", "pip", "setuptools", "wheel"])
     for group in groups:
@@ -168,17 +250,30 @@ def plan_setup(repo: Path, python: Path, gpu: GpuInfo, mode: str = "full",
         if not path.exists():
             continue
         if group == "torch":
-            if mode == "update" and torch_installed:
-                plan.notes.append("torch already installed - skipped (run setup_windows.bat to reinstall).")
-                continue
             tag = torch_index_tag(gpu)
-            if tag == "cpu":
-                plan.notes.append("No NVIDIA GPU/CUDA detected: installing CPU-only torch (transcription will be slow).")
-            plan.commands.append(pip + ["-r", str(path), "--index-url", TORCH_INDEX.format(tag=tag)])
+            if torch_installed and torch_broken:
+                plan.notes.append("PyTorch is broken (" + "; ".join(torch_broken) + ") - reinstalling a matching "
+                                  "torch/torchaudio/torchvision set (~2-3 GB download).")
+                plan.commands.append([str(python), "-m", "pip", "uninstall", "-y", *TORCH_PACKAGES])
+                plan.commands.append(pip + ["-r", str(path), "--index-url", TORCH_INDEX.format(tag=tag)])
+            elif torch_installed:
+                plan.notes.append("torch already installed and working - skipped.")
+                if mode == "full":  # still add torchvision when an older setup did not install it
+                    plan.commands.append(pip + ["-r", str(path), "--index-url", TORCH_INDEX.format(tag=tag)])
+            else:
+                if tag == "cpu":
+                    plan.notes.append("No NVIDIA GPU/CUDA detected: installing CPU-only torch "
+                                      "(transcription will be slow).")
+                plan.commands.append(pip + ["-r", str(path), "--index-url", TORCH_INDEX.format(tag=tag)])
+            if pins is not None:
+                plan.commands.append([str(python), str(repo / "scripts" / "setup_update.py"), "--write-pins",
+                                      str(pins)])
+                pinned = True
         else:
             if group in OPTIONAL_GROUPS:
                 plan.optional.append(len(plan.commands))
-            plan.commands.append(pip + ["-r", str(path)])
+            extra = ["-c", str(pins)] if pinned else []
+            plan.commands.append(pip + ["-r", str(path)] + extra)
     plan.commands.append(pip + ["--no-deps", "-e", str(repo)])
     return plan
 

@@ -1,4 +1,7 @@
 # Installed by scripts/setup_update.py from the PyTorch wheel index that matches your NVIDIA driver
 # (e.g. https://download.pytorch.org/whl/cu128), or the CPU index when no NVIDIA GPU is found.
+# All three in ONE pip command so pip picks a matching set (torchaudio/torchvision pin an exact torch).
+# Later pip steps get these versions as constraints, so nothing can swap torch for a CPU/other build.
 torch
 torchaudio
+torchvision

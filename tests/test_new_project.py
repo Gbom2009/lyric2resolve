@@ -83,7 +83,21 @@ def test_default_engine_explains_missing_whisper(monkeypatch):
     import builtins
 
     real = builtins.__import__
-    monkeypatch.setattr(builtins, "__import__", lambda n, *a, **k: (_ for _ in ()).throw(ImportError(n))
+    monkeypatch.setattr(builtins, "__import__", lambda n, *a, **k: (_ for _ in ()).throw(ImportError(n, name=n))
                         if n in ("faster_whisper", "stable_whisper") else real(n, *a, **k))
     with pytest.raises(RuntimeError, match="Run setup"):
         newproject.default_engine("", "")
+
+
+def test_default_engine_explains_broken_torch(monkeypatch):
+    """The user's error (2026-11-16): torchaudio's DLL fails to load -> explain + how the update repairs it."""
+    import builtins
+
+    real = builtins.__import__
+    err = OSError(r"Could not load this library: D:\app\.venv\Lib\site-packages\torchaudio\lib\libtorchaudio.pyd")
+    monkeypatch.setattr(builtins, "__import__", lambda n, *a, **k: (_ for _ in ()).throw(err)
+                        if n == "stable_whisper" else real(n, *a, **k))
+    monkeypatch.setitem(__import__("sys").modules, "faster_whisper", object())
+    with pytest.raises(RuntimeError, match="Update now") as ei:
+        newproject.default_engine("", "")
+    assert "libtorchaudio.pyd" in str(ei.value)

@@ -35,7 +35,7 @@ def test_parse_nvidia_smi():
     assert not setup_tools.parse_nvidia_smi(None, None).available
 
 
-@pytest.mark.parametrize("cuda,tag", [((13, 0), "cu128"), ((12, 8), "cu128"), ((12, 6), "cu126"),
+@pytest.mark.parametrize("cuda,tag", [((13, 0), "cu130"), ((12, 9), "cu128"), ((12, 8), "cu128"), ((12, 6), "cu126"),
                                       ((12, 5), "cu124"), ((12, 2), "cu118"), ((11, 4), "cpu")])
 def test_torch_index_tag(cuda, tag):
     assert setup_tools.torch_index_tag(setup_tools.GpuInfo(True, cuda=cuda)) == tag
@@ -92,6 +92,70 @@ def test_update_plan_skips_installed_torch():
     assert not any("torch.txt" in " ".join(c) for c in plan.commands)
     assert any("skipped" in n for n in plan.notes)
     assert any("torch.txt" in " ".join(c) for c in _plan(mode="update", torch_installed=False).commands)
+
+
+GPU = setup_tools.GpuInfo(True, "RTX", cuda=(12, 8))
+
+
+def test_torch_problems_detects_the_reported_breakage():
+    # 2026-11-16 on the user's PC: torchvision from PyPI replaced the CUDA torch with PyPI's CPU torch 2.15
+    broken = {"versions": {"torch": "2.15.0", "torchaudio": "2.11.0+cu128", "torchvision": "0.29.2"},
+              "errors": {"torchaudio": r"OSError: Could not load this library: ...\libtorchaudio.pyd"}, "cuda": False}
+    probs = setup_tools.torch_problems(broken, GPU)
+    assert any("does not load" in p for p in probs) and any("mixed CPU/CUDA" in p for p in probs)
+    assert any("not a CUDA build" in p for p in probs)
+    ok = {"versions": {"torch": "2.11.0+cu128", "torchaudio": "2.11.0+cu128", "torchvision": "0.26.0+cu128"},
+          "errors": {}, "cuda": True}
+    assert setup_tools.torch_problems(ok, GPU) == []
+    # torchaudio no longer needs the exact torch version: not a problem by itself
+    newer = {"versions": {"torch": "2.14.1+cu130", "torchaudio": "2.11.0+cu130"}, "errors": {}, "cuda": True}
+    assert setup_tools.torch_problems(newer, GPU) == []
+    assert setup_tools.torch_problems({"versions": {}}, GPU) == []
+    no_gpu = {"versions": {"torch": "2.11.0+cu128"}, "errors": {}, "cuda": False}
+    assert any("cannot use the GPU" in p for p in setup_tools.torch_problems(no_gpu, GPU))
+    cpu = {"versions": {"torch": "2.15.0+cpu", "torchaudio": "2.11.1+cpu"}, "errors": {}, "cuda": False}
+    assert setup_tools.torch_problems(cpu, setup_tools.GpuInfo()) == []
+
+
+def test_torch_pins_and_probe_parsing():
+    assert setup_tools.torch_pins({"torch": "2.11.0+cu128", "torchaudio": "2.11.0+cu128"}) == \
+        "torch==2.11.0\ntorchaudio==2.11.0\n"
+    info = setup_tools.probe_torch(Path("py"), probe=lambda c: 'noise\nL2R_TORCH {"versions": {"torch": "2.11.0"}, '
+                                                               '"errors": {}, "cuda": true}\n')
+    assert info["versions"]["torch"] == "2.11.0" and info["cuda"] is True
+    assert "probe" in setup_tools.probe_torch(Path("py"), probe=lambda c: None)["errors"]
+    real = setup_tools.probe_torch(Path(sys.executable))  # runs the real probe script
+    assert set(real) == {"versions", "errors", "cuda"}
+
+
+def test_plan_pins_torch_for_later_steps_and_repairs_broken_torch(tmp_path):
+    pins = tmp_path / "pins.txt"
+    plan = setup_tools.plan_setup(REPO, Path("py"), GPU, torch_installed=False, pins=pins)
+    flat = [" ".join(c) for c in plan.commands]
+    i_torch = next(i for i, c in enumerate(flat) if "torch.txt" in c)
+    assert "--write-pins" in flat[i_torch + 1]
+    for i, c in enumerate(flat):
+        if any(f"{g}.txt" in c for g in ("ml", "separation")):
+            assert i > i_torch and c.endswith(f"-c {pins}")
+        if "core.txt" in c:
+            assert "-c" not in c.split()  # before the torch step: no pins file yet
+    assert "torchvision" in (REPO / "requirements" / "torch.txt").read_text()
+    rep = setup_tools.plan_setup(REPO, Path("py"), GPU, mode="update", torch_installed=True,
+                                 torch_broken=["torchaudio does not load"], pins=pins)
+    flat = [" ".join(c) for c in rep.commands]
+    i_un = next(i for i, c in enumerate(flat) if "uninstall -y torch torchaudio torchvision" in c)
+    assert "torch.txt --index-url https://download.pytorch.org/whl/cu128" in flat[i_un + 1]
+    assert any("reinstalling" in n for n in rep.notes)
+    healthy = setup_tools.plan_setup(REPO, Path("py"), GPU, mode="update", torch_installed=True, pins=pins)
+    assert not any("torch.txt" in " ".join(c) for c in healthy.commands)
+    assert any("--write-pins" in " ".join(c) for c in healthy.commands)  # still pinned for later steps
+
+
+def test_write_pins_step(tmp_path):
+    out = tmp_path / "p" / "pins.txt"
+    subprocess.run([sys.executable, str(REPO / "scripts" / "setup_update.py"), "--write-pins", str(out)],
+                   check=True, capture_output=True, text=True)
+    assert out.exists()  # empty here (no torch in CI); torch==X lines on the PC
 
 
 def test_cpu_plan_has_note():

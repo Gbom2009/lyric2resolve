@@ -151,3 +151,8 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] With no project open: the right-hand panel shows the hint; Play/Export open the Projects window.
 - [ ] If the right-hand buttons still do nothing WITH a project open: press F12 → Console, and send a screenshot of the red errors.
 
+## Fixes from testing (2) — PyTorch repair
+- [ ] Update now → the dependency step prints "problem: … mixed CPU/CUDA builds …", reinstalls torch/torchaudio/torchvision, and ends with "PyTorch OK: … +cu128 (or +cu130), CUDA available". If it says "still not OK", copy the whole window text into the session.
+- [ ] `verify_local.py`: torch_cuda ✅ with your GPU name.
+- [ ] New project with a real song gets past "Loading Whisper" (first time: model download, ~3 GB for large-v3).
+
