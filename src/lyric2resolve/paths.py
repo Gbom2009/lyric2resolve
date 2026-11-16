@@ -6,6 +6,7 @@ caches, models, logs, renders). It lives OUTSIDE the code folder so the updater
 can never touch it.
 
 Windows: %LOCALAPPDATA%\\lyric2resolve
+         (Python from the Microsoft Store: %USERPROFILE%\\lyric2resolve-data, see store_python())
 Other:   $XDG_DATA_HOME/lyric2resolve or ~/.local/share/lyric2resolve
 Override: environment variable LYRIC2RESOLVE_DATA
 """
@@ -36,13 +37,34 @@ def code_dir() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def data_dir(env: dict[str, str] | None = None, platform: str | None = None) -> Path:
+STORE_DATA_NAME = "lyric2resolve-data"
+
+
+def store_python(prefix: str | None = None) -> bool:
+    """True for Python from the Microsoft Store. Its files written under AppData (and TEMP) are silently
+    redirected to a private package folder: Python still sees them, but ffmpeg, Blender, Resolve and Explorer
+    do not ('Error opening input: No such file or directory'). See docs.python.org, 'Known issues' of the
+    Microsoft Store package."""
+    p = (prefix if prefix is not None else getattr(sys, "base_prefix", sys.prefix)).replace("/", "\\").lower()
+    return "\\windowsapps\\" in p or "pythonsoftwarefoundation.python" in p
+
+
+def legacy_store_dir(env: dict[str, str] | None = None) -> Path:
+    env = os.environ if env is None else env
+    base = env.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+    return Path(base) / APP_NAME
+
+
+def data_dir(env: dict[str, str] | None = None, platform: str | None = None, prefix: str | None = None) -> Path:
     env = os.environ if env is None else env
     platform = sys.platform if platform is None else platform
     override = env.get(DATA_ENV)
     if override:
         return Path(override).expanduser()
     if platform.startswith("win"):
+        if store_python(prefix):  # outside AppData, so other programs see the same files
+            home = env.get("USERPROFILE") or str(Path.home())
+            return Path(home) / STORE_DATA_NAME
         base = env.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
         return Path(base) / APP_NAME
     if platform == "darwin":
@@ -52,10 +74,46 @@ def data_dir(env: dict[str, str] | None = None, platform: str | None = None) -> 
 
 
 def ensure_data_dir(root: Path | None = None) -> Path:
+    default = root is None
     root = data_dir() if root is None else root
     for sub in SUBDIRS:
         (root / sub).mkdir(parents=True, exist_ok=True)
+    if default and sys.platform.startswith("win") and store_python() and not os.environ.get(DATA_ENV):
+        migrate_store_data(legacy_store_dir(), root)
+        use_real_temp(root)
     return root
+
+
+MIGRATED_MARKER = ".migrated-from-appdata"
+
+
+def migrate_store_data(old: Path, new: Path, parts: tuple[str, ...] = ("settings", "projects")) -> list[str]:
+    """Once: copy settings + projects that Store Python wrote into the (redirected) AppData folder.
+    Caches and models are not copied (big; they are re-created/downloaded when needed)."""
+    import shutil
+
+    marker = new / MIGRATED_MARKER
+    if marker.exists() or not old.exists() or old.resolve() == new.resolve():
+        return []
+    copied = []
+    for part in parts:
+        src = old / part
+        if src.is_dir():
+            shutil.copytree(src, new / part, dirs_exist_ok=True)
+            copied.append(part)
+    marker.write_text("copied: " + ", ".join(copied) + "\n", encoding="utf-8")
+    return copied
+
+
+def use_real_temp(root: Path) -> Path:
+    """TEMP is redirected for Store Python too: use a temp folder that every program can see."""
+    import tempfile
+
+    tmp = root / "tmp"
+    tmp.mkdir(parents=True, exist_ok=True)
+    tempfile.tempdir = str(tmp)
+    os.environ["TMP"] = os.environ["TEMP"] = str(tmp)
+    return tmp
 
 
 def settings_dir() -> Path:
