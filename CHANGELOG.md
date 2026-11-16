@@ -3,6 +3,14 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Fixes from testing (6) — Blender: "key Emission Color not found"
+**Fixed**
+- Building a Blender scene failed with `KeyError: 'Emission Color'` on older Blender versions: Blender 3.x calls that setting "Emission". The scenes now work with both names, so Blender 3.6 works too.
+- The render log now shows which Blender version is used. If it's very old, there's a warning, and a failed scene build tells you to update Blender (4.2 LTS or newer is recommended).
+
+**What to test**
+- Visuals page → render **Particle field** (and the other templates) again. Also check the Blender version in the log; updating to the current Blender is still recommended.
+
 ## Mac fixes from testing (3) — "CERTIFICATE_VERIFY_FAILED" when transcribing
 **Fixed (Mac)**
 - Transcribing failed with "SSL: CERTIFICATE_VERIFY_FAILED". Python from python.org doesn't use the Mac's trusted certificates, so the first download of Whisper's small voice-detection model was refused. The app now uses the certificate bundle from the `certifi` package automatically (also for font/texture downloads and the self-test). Nothing changes on Windows.

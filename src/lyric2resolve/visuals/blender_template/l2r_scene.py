@@ -82,6 +82,22 @@ def set_curve(obj, prop: str, values: list[float], start_frame: int = 1, constan
     fc.update()
 
 
+# Principled BSDF socket names changed in Blender 4.0 ("Emission" -> "Emission Color", ...): try the new name first
+SOCKET_ALIASES = {"Emission Color": ("Emission Color", "Emission")}
+
+
+def sock_name(node, name: str) -> str:
+    """The name this Blender version uses for a node input (works on Blender 3.6 to 5.x)."""
+    for n in SOCKET_ALIASES.get(name, (name,)):
+        if n in node.inputs:
+            return n
+    return name
+
+
+def sock(node, name: str):
+    return node.inputs[sock_name(node, name)]
+
+
 def add_driver(target, path: str, controller, var_prop: str, expr: str, index: int = -1):
     """Driver on target.path[index] = expr, with variable v = controller[var_prop] and s = section."""
     fcs = target.driver_add(path, index) if index >= 0 else target.driver_add(path)
@@ -170,12 +186,13 @@ def emissive_material(name: str, ctrl, band: str, color: str, strength: float, b
     mul.operation = "MULTIPLY"
     nt.links.new(ramp.outputs["Color"], mul.inputs[0])
     nt.links.new(mul.outputs[0], bsdf.inputs["Emission Strength"])
-    bsdf.inputs["Emission Color"].default_value = hex_rgba(color)
+    sock(bsdf, "Emission Color").default_value = hex_rgba(color)
     # drivers: strength = band * amount * section ; colour = keyed per section (palette)
     add_driver(nt, f'nodes["{mul.name}"].inputs[1].default_value', ctrl, band, f"(0.15 + v) * {strength:.3f} * s")
     if palette_driven:
+        emit = sock_name(bsdf, "Emission Color")
         for i, ch in enumerate("rgb"):
-            add_driver(nt, f'nodes["{bsdf.name}"].inputs["Emission Color"].default_value', ctrl, f"{band}_{ch}",
+            add_driver(nt, f'nodes["{bsdf.name}"].inputs["{emit}"].default_value', ctrl, f"{band}_{ch}",
                        "v", index=i)
     return mat
 
@@ -280,11 +297,13 @@ def template_floor_grid(ctx):
     mul.operation = "MULTIPLY"
     nt.links.new(brick.outputs["Color"], mul.inputs[0])
     nt.links.new(mul.outputs[0], bsdf.inputs["Emission Strength"])
-    bsdf.inputs["Emission Color"].default_value = hex_rgba(ctx["colors"]["mids"])
+    sock(bsdf, "Emission Color").default_value = hex_rgba(ctx["colors"]["mids"])
     add_driver(nt, f'nodes["{mul.name}"].inputs[1].default_value', ctx["ctrl"], "bass",
                f"(0.3 + v) * {ctx['amount']('bass', 'emission_strength', 6.0):.3f} * s")
+    emit = sock_name(bsdf, "Emission Color")
     for i, ch in enumerate("rgb"):
-        add_driver(nt, f'nodes["{bsdf.name}"].inputs["Emission Color"].default_value', ctx["ctrl"], f"mids_{ch}", "v", index=i)
+        add_driver(nt, f'nodes["{bsdf.name}"].inputs["{emit}"].default_value', ctx["ctrl"], f"mids_{ch}", "v",
+                   index=i)
     plane.data.materials.append(mat)
     sun = mk(bpy.ops.mesh.primitive_uv_sphere_add, radius=4, location=(0, 45, 5))
     sun.data.materials.append(ctx["mats"]["bass"])

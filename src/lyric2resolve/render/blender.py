@@ -39,6 +39,9 @@ def find_blender(configured: str = "", **kw) -> Path | None:
     return setup_tools.find_tool("blender", configured, **kw)
 
 
+MIN_VERSION = (3, 6, 0)  # oldest Blender the scene script handles; 4.2 LTS+ is what it is made and tested for
+
+
 def parse_version(text: str) -> tuple[int, int, int] | None:
     m = re.search(r"Blender (\d+)\.(\d+)(?:\.(\d+))?", text or "")
     return (int(m.group(1)), int(m.group(2)), int(m.group(3) or 0)) if m else None

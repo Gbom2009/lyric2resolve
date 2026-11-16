@@ -9,6 +9,7 @@ You are continuing **lyric2resolve**, a Windows app (Python, NVIDIA/CUDA) that t
 - Merged on main: Phase 0 (docs), Phase 1 (launcher/updater, PR #1).
 - **PR #2** (Phases 2-19) is MERGED into main.
 - Feature updates (2026-11-16): A = PR #8 (merged: Visuals page, + Text, layout fix, VAD 0.35 + missed-lyrics flag, 11 review fixes); B = branch `feature-clips-scenes` (clips track + export, ✨ clips with Claude via custom Blender scenes, 3D lyrics, lyric-video styles + Look, Assistant attachments + scoped write permissions). User asked: merge each PR as soon as CI is green.
+- User feedback 6 (2026-11-16, PC): Blender scene KeyError 'Emission Color' (old Blender) → fixed on branch `fix-blender-sockets` (socket aliases, version in log). Ask which Blender version the PC has.
 - Mac feedback 3 (2026-11-16): setup + editor work on the Mac now; transcription failed CERTIFICATE_VERIFY_FAILED (python.org Python, urllib) → fixed on branch `mac-fix-ssl` (SSL_CERT_FILE → certifi). Waiting for retry.
 - Mac feedback 2 (2026-11-16): update dependency step ran under Rosetta (x86_64 torch 2.2.2 into the arm64 .venv); fixed on branch `mac-fix-arch-2` (ensure_native in setup_update.py / __main__ / launcher); user reinstalls .venv once. Waiting for retry.
 - Mac feedback 1 (2026-11-16): app ran under Rosetta → arm64/x86_64 ImportError; fixed on branch `mac-fix-arch` (launcher native re-exec, plist + start script arch -arm64). Waiting for the user's retry.

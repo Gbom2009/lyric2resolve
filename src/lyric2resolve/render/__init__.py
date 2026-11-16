@@ -84,8 +84,27 @@ def render_project(project_path: Path, template: str = "spectrum_bars", preset_n
     data = json.loads(data_path.read_text(encoding="utf-8"))
     frames = int(data["frames"])
     report = RenderReport(str(folder))
+    ver = None
+    try:
+        ver = runner.version() if hasattr(runner, "version") else None
+    except Exception:  # noqa: BLE001 - the version is only for the log
+        ver = None
+    if ver:
+        note = f"Blender {'.'.join(map(str, ver))}"
+        if ver < bl.MIN_VERSION:
+            note += (f" - older than {bl.MIN_VERSION[0]}.{bl.MIN_VERSION[1]}: the scenes are made for Blender 4.2 LTS or "
+                     "newer; please update Blender (https://www.blender.org/download/)")
+            report.messages.append("WARNING: " + note)
+        log(note)
     log(f"Building the Blender scene ({template}, {preset.name}, {fps} fps)...")
-    blends = runner.build(folder / blender_gen.SCRIPT.name, data_path, log=lambda line: None)
+    try:
+        blends = runner.build(folder / blender_gen.SCRIPT.name, data_path, log=lambda line: None)
+    except RuntimeError as exc:
+        if ver and ver < bl.MIN_VERSION:
+            raise RuntimeError(f"{exc}\n\nYour Blender is {'.'.join(map(str, ver))}; the scenes need Blender 4.2 or "
+                               "newer. Install the current Blender from https://www.blender.org/download/ "
+                               "(Windows: winget install BlenderFoundation.Blender).") from exc
+        raise
     report.blends = [str(b) for b in blends]
     device, msg = ("EEVEE", "Eevee renders on the GPU automatically.")
     if preset.engine == "CYCLES":
