@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>lyric2resolve visuals</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/theme.css">
+  <style>
+    body { display: block; }
+    .vis { padding: 12px 16px 48px; max-width: 1100px; }
+    .vis .card { margin: 12px 0; }
+    .vis h2 { font-size: 16px; margin: 0 0 8px; }
+    .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+    .tpl { border: 2px solid var(--line); border-radius: var(--radius); padding: 10px; cursor: pointer; background: var(--bg); text-align: left; }
+    .tpl.on { border-color: var(--accent); background: var(--block-active); }
+    .tpl b { display: block; margin-bottom: 4px; }
+    .tpl span { font-size: 13px; color: var(--muted); }
+    .opts { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: flex-start; }
+    .opts .field { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--muted); }
+    .opts select { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+    .checks { display: flex; flex-direction: column; gap: 4px; }
+    .checks label { display: flex; flex-direction: row; justify-content: flex-start; gap: 6px; align-items: center; color: var(--text); font-size: 14px; width: auto; }
+    .checks input { width: auto; margin: 0; }
+    .bar { height: 14px; background: var(--block-bg); border-radius: 7px; overflow: hidden; border: 1px solid var(--line); }
+    .bar div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+    pre.log { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px; max-height: 220px; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+    .videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+    .video { border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; background: var(--bg); }
+    .video video { width: 100%; max-height: 260px; background: #000; border-radius: 4px; }
+    .warn-box { border: 1px solid var(--flag); color: var(--flag); padding: 8px 10px; border-radius: 6px; white-space: pre-wrap; }
+    .ok { color: var(--ok); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">l2r</span> Visuals</div>
+    <a href="/">← Editor</a>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </header>
+  <div id="update-banner" class="update-banner" hidden></div>
+  <main class="vis">
+    <h2 id="title">Audio-reactive visuals</h2>
+    <p class="hint">Blender renders a background that moves with your song (bass, mids, highs, beats) in the background — no Blender window, no terminal. The finished video has your full song inside, ready for Resolve (put it on V1 under the lyrics) and for Rekordbox/Serato.</p>
+    <div id="tools"></div>
+
+    <section class="card">
+      <h2>1 · Pick a scene</h2>
+      <div class="tpl-grid" id="templates"></div>
+    </section>
+
+    <section class="card">
+      <h2>2 · Options</h2>
+      <div class="opts">
+        <label class="field">Quality
+          <select id="preset"></select></label>
+        <div class="field">Format
+          <div class="checks">
+            <label><input type="checkbox" name="aspect" value="16:9" checked> 16:9 (YouTube, decks)</label>
+            <label><input type="checkbox" name="aspect" value="9:16"> 9:16 vertical (Reels, TikTok)</label>
+          </div></div>
+        <div class="field">Part of the song
+          <div class="checks" id="sections"><label><input type="radio" name="part" value="" checked> Whole song</label></div></div>
+      </div>
+      <p class="hint" id="preset-desc"></p>
+    </section>
+
+    <section class="card">
+      <h2>3 · Render</h2>
+      <div class="row">
+        <button id="estimate" title="Renders 3 test frames and tells you how long the full render takes and how much disk space it needs">Estimate time</button>
+        <button id="render" class="primary">Render</button>
+        <button id="stop" disabled>Stop</button>
+        <button id="open-folder">Open folder</button>
+      </div>
+      <p class="hint">Stopped renders continue where they stopped when you click Render again with the same options. Tip: start with <b>Preview</b> to check the look, then render <b>Standard</b>.</p>
+      <div class="bar"><div id="bar"></div></div>
+      <p id="progress-text" class="hint"></p>
+      <pre class="log" id="log" hidden></pre>
+    </section>
+
+    <section class="card">
+      <h2>Finished videos</h2>
+      <div class="videos" id="videos"><p class="hint">Nothing rendered yet.</p></div>
+    </section>
+  </main>
+  <script src="/static/update_banner.js"></script>
+  <script src="/static/visuals.js"></script>
+</body>
+</html>

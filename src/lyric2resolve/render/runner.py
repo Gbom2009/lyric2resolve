@@ -181,6 +181,12 @@ class BlenderRunner:
             code, tail, cancelled = self._run(bl.render_command(self.blender, blend, setup, job_path, a, b), on_line,
                                               cancel)
             if cancelled:
+                # Stop kills Blender, possibly while it was writing a PNG: remove the frame it was working on
+                # (and anything newer) so a resume renders it again instead of using a broken file.
+                if state["frame"] is not None:
+                    for n, f in frame_files(out_dir).items():
+                        if n >= state["frame"] and a <= n <= b:
+                            f.unlink(missing_ok=True)
                 return RenderResult(False, True, str(out_dir), state["rendered"], skipped, tail)
             if code != 0:
                 return RenderResult(False, False, str(out_dir), state["rendered"], skipped, tail,

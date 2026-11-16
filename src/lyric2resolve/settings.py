@@ -39,6 +39,8 @@ class AppSettings:
     device: str = "cuda"          # "cuda" | "cpu"
     compute_type: str = "float16"
     language: str = ""            # "" = auto-detect
+    vad_threshold: float = 0.35   # voice filter sensitivity; Silero's default 0.5 is tuned for speech and can
+                                  # drop soft/reverb-heavy sung lines (e.g. a whole first sentence). 0 = filter off
     # timeline / export
     default_fps: float = 25.0
     width: int = 1920
@@ -77,6 +79,12 @@ class AppSettings:
             reset("whisper_model", f"must be one of {WHISPER_MODELS}")
         if self.device not in ("cuda", "cpu"):
             reset("device", "must be 'cuda' or 'cpu'")
+        try:
+            if not 0.0 <= float(self.vad_threshold) <= 0.9:
+                raise ValueError
+            self.vad_threshold = float(self.vad_threshold)
+        except (TypeError, ValueError):
+            reset("vad_threshold", "must be a number between 0 and 0.9")
         if self.claude_permission_mode not in CLAUDE_PERMISSION_MODES:
             reset("claude_permission_mode", f"must be one of {CLAUDE_PERMISSION_MODES}")
         if self.theme not in THEMES:

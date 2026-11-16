@@ -26,8 +26,9 @@
       s.concepts.forEach((c) => {
         const card = el("div", "concept");
         card.append(el("b", "", c.name), el("div", "", c.idea));
-        const code = el("code", "", `lyric2resolve render project.json --template ${c.template} --render-preset preview`);
-        card.append(code);
+        const link = el("a", "btnlink", "Render this scene →");
+        link.href = `/visuals?template=${encodeURIComponent(c.template)}`;
+        card.append(link);
         grid.append(card);
       });
       box.append(grid, el("p", "hint", "Text animation: " + s.text_animation.join(" / ")));

@@ -75,10 +75,11 @@
   btn("Edit", "Edit text (E or Enter)", A.edit, "btn-edit");
   btn("Remove", "Remove the block(s) from the timeline; words stay in the project (Delete)", A.removeBlocks, "btn-remove");
   btn("+ Gap", "Make the selected time an instrumental gap (G)", A.gapFromSelection, "btn-gap");
+  btn("+ Text", "Add your own words/lines where Whisper missed them (T)", () => L.showAddText && L.showAddText(), "btn-add-text");
 
   function updateToolbar(range) {
     const has = !!range;
-    tb.querySelectorAll("button").forEach((b) => { b.disabled = !has; });
+    tb.querySelectorAll("button").forEach((b) => { b.disabled = !has && b.id !== "btn-add-text"; });
   }
   L.hooks.selection.push(updateToolbar);
   updateToolbar(null);
@@ -132,6 +133,23 @@
           L.h("button", { onclick: saveBlock }, "Save block text"),
           b.overridden ? L.h("button", { onclick: () => L.op("set_block_text", { block_id: b.id, text: null }, "reset block text") }, "Reset to words") : ""),
         L.h("p", { class: "hint" }, `Export text: “${b.display}”`));
+      const saveTimes = () => {
+        const si = $("#insp-bstart").value, ei = $("#insp-bend").value;
+        const s = L.parseTime(si), e = L.parseTime(ei);
+        if (!isFinite(s) || !isFinite(e)) return L.setStatus("Times look like 1:23.45 or 83.45", true);
+        // only send what you changed: the shown values are rounded to 1/100 s
+        const args = { block_id: b.id };
+        if (si.trim() !== L.fmt(b.start)) args.start = s;
+        if (ei.trim() !== L.fmt(b.end)) args.end = e;
+        if (args.start === undefined && args.end === undefined) return;
+        L.op("retime_block", args, "set block time");
+      };
+      const tkey = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); saveTimes(); } };
+      body.append(
+        L.h("div", { class: "row" },
+          L.h("label", { class: "field" }, "Block start", L.h("input", { id: "insp-bstart", value: L.fmt(b.start), onkeydown: tkey })),
+          L.h("label", { class: "field" }, "Block end", L.h("input", { id: "insp-bend", value: L.fmt(b.end), onkeydown: tkey }))),
+        L.h("button", { onclick: saveTimes, title: "Words inside are stretched/moved along" }, "Set block time"));
     }
   }
   L.hooks.selection.push(renderInspector);
@@ -141,6 +159,7 @@
   L.hooks.keydown.push((ev) => {
     if (ev.ctrlKey || ev.metaKey) return false;
     const k = ev.key.toLowerCase();
+    if (k === "t" && !ev.altKey && L.state) { L.showAddText(); return true; }
     if (!sel().length) return false;
     if (ev.altKey && ev.key === "ArrowLeft") { A.movePrev(); return true; }
     if (ev.altKey && ev.key === "ArrowRight") { A.moveNext(); return true; }

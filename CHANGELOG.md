@@ -3,6 +3,35 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Visuals page, your own text, steadier editor (feature update A)
+**New**
+- **Visuals** button in the editor: render the audio-reactive Blender visuals without the terminal. Pick a scene (spectrum bars, pulsing blob, tunnel, particle field, neon floor grid; each has a short description), the quality (Preview → Ultra), 16:9 and/or 9:16, and the whole song or one section. **Estimate time** first, then **Render**: it runs in the background with a progress bar and time left, **Stop** and continue later. Finished videos play right on the page, and **Open folder** shows them in Explorer. The Ideas page's scene suggestions now link straight to it.
+- **+ Text** (or the **T** key): add words, lines or whole sentences Whisper missed. Type the text, set the start and end time (pre-filled from the playhead, and it shows the free time there), and choose one block per line, one block, or one per word. The words are spread over the time range. Instrumental gaps make room automatically. Undo works.
+- **Block start / end** can be typed in the Selection card (the words inside move and stretch along).
+- **Clearer times**: the waveform ruler shows minutes:seconds, and the play time is bigger.
+- **"Missed lyrics" warnings** in the Review card: stretches where the acapella has singing but there are no words (e.g. a missed first sentence), with an **Add text here** button.
+
+**Changed**
+- Whisper's voice filter is gentler for singing (0.35 instead of 0.5). The old setting was made for speech and could drop soft or reverb-heavy sung lines, such as a whole first sentence. Adjustable in Settings ("Voice filter sensitivity"; 0 = off).
+
+**Fixed** (several of these were found in a code review)
+- The Resolve script couldn't find your export with Microsoft Store Python, and may not have been installed where Resolve looks for it. It now checks both data folders and installs the script so Resolve can see it.
+- Applying a preset to one section made the other half of a lyric line that crosses into that section disappear from the export.
+- Nudging or retiming a word past its neighbour silently dropped a block from the export. Words can no longer pass each other; you get a clear message instead.
+- "Set block time" could refuse a valid change because of rounding.
+- New project from the browser now corrects a detected time offset between song and acapella (before, every title could be a little late or early).
+- Batch mode no longer overwrites a project you already edited (`--overwrite` if you really want that). Songs with "Voice"/"Vox" in the title are no longer mistaken for acapellas.
+- The Assistant can no longer switch the open project behind your back, and a double click can't start it twice.
+- After **Stop**, a half-written frame is removed, so continuing the render doesn't produce a broken video.
+- Updates no longer fail when the app folder's path contains an apostrophe (e.g. `C:\Users\O'Brien`).
+- The editor jumped and resized non-stop after loading a long song at the normal zoom level. The zoomed waveform was pushing the page wider, the waveform redrew for the new width, the page shrank again, and so on.
+
+**What to test**
+- Open You're Not Alone at the normal zoom: the screen stays still.
+- Visuals → Preview render of one scene → the video plays on the page.
+- Add the missed first sentence with **+ Text**, check it in Karaoke and in the export.
+- Make a new project of the same song: is the first sentence there now?
+
 ## Fixes from testing (5) — "Library cublas64_12.dll is not found or cannot be loaded"
 **Fixed**
 - New project got through the vocal separation, then failed when Whisper started on the GPU: `cublas64_12.dll is not found`. Whisper's engine (CTranslate2) needs NVIDIA's cuBLAS 12 DLL, which it doesn't include itself.

@@ -128,8 +128,12 @@ class HttpBackend:
 
     def _ensure_open(self) -> None:
         cur = (self._call("GET", "api/projects") or {}).get("current")
-        if not cur or Path(cur).resolve() != self.path.resolve():
+        if not cur:
             self._call("POST", "api/open", {"path": str(self.path)})
+        elif Path(cur).resolve() != self.path.resolve():
+            # never switch the project under the user's feet (their next edit would hit the wrong project)
+            raise ToolError(f"The editor now has another project open ({Path(cur).parent.name}). Ask the user to "
+                            f"open '{self.path.parent.name}' again (Projects button) before editing it.")
 
     def state(self) -> dict:
         self._ensure_open()

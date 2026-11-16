@@ -14,6 +14,7 @@
       <button id="btn-projects" title="Open another project">Projects</button>
       <button id="btn-export" class="primary" title="Export the timeline files">Export…</button>
       <a href="/library" id="btn-library" class="btnlink" title="Browse textures and fonts">Library</a>
+      <a href="/visuals" id="btn-visuals" class="btnlink" title="Render audio-reactive Blender visuals (no terminal needed)">Visuals</a>
       <a href="/ideas" id="btn-ideas" class="btnlink" title="Visual ideas, Claude Code prompts, project templates">Ideas</a>
       <a href="/settings" id="btn-settings" class="btnlink" title="Paths, defaults, theme/branding, Assistant, updates">Settings</a>
       <button id="btn-karaoke" title="Play this song in karaoke mode (opens a new window you can move to a second screen)">Karaoke</button>
@@ -65,7 +66,7 @@
   <footer class="shortcuts" id="shortcuts">
     <b>Space</b> play/pause · <b>Shift+Space</b> play selection · <b>click/drag/Shift+click</b> select words ·
     <b>←/→</b> move · <b>Shift+←/→</b> extend · <b>Esc</b> clear · <b>M</b> merge · <b>S</b> split · <b>W</b> words ·
-    <b>Alt+←/→</b> move word to block · <b>E</b> edit · <b>[ ]</b> nudge (Shift = 100 ms) · <b>G</b> gap · <b>Del</b> remove block ·
+    <b>Alt+←/→</b> move word to block · <b>E</b> edit · <b>[ ]</b> nudge (Shift = 100 ms) · <b>G</b> gap · <b>T</b> add your own text · <b>Del</b> remove block ·
     <b>Ctrl+Z / Ctrl+Y</b> undo/redo · <b>+/−</b> zoom
   </footer>
 
@@ -106,6 +107,26 @@
     <pre id="new-log" class="export-result" hidden></pre>
   </dialog>
 
+  <dialog id="addtext-dialog">
+    <h2>Add your own text</h2>
+    <p class="hint">For lyrics Whisper missed. Type a word, a line or several lines. The words are spread over the time range below.</p>
+    <label class="field">Text <textarea id="addtext-text" rows="4" placeholder="e.g. Acid"></textarea></label>
+    <div class="row">
+      <label class="field">Start (m:ss.ss) <input id="addtext-start" type="text" inputmode="decimal"></label>
+      <label class="field">End (m:ss.ss) <input id="addtext-end" type="text" inputmode="decimal"></label>
+      <button type="button" id="addtext-playhead" title="Start at the current play position">Start = playhead</button>
+    </div>
+    <p class="hint" id="addtext-free"></p>
+    <label class="field">Blocks
+      <select id="addtext-mode">
+        <option value="lines">one block per line</option>
+        <option value="block">all in one block</option>
+        <option value="words">one block per word</option>
+      </select></label>
+    <div class="row"><button class="primary" id="addtext-go">Add text</button><button type="button" id="addtext-close">Close</button></div>
+    <p class="hint" id="addtext-msg"></p>
+  </dialog>
+
   <dialog id="export-dialog">
     <h2>Export</h2>
     <p class="hint">Files are generated from your edited blocks and saved in the project's <code>export</code> folder.</p>
@@ -126,6 +147,7 @@
   <script src="/static/vendor/wavesurfer.timeline.min.js"></script>
   <script src="/static/app.js"></script>
   <script src="/static/blocks.js"></script>
+  <script src="/static/addtext.js"></script>
   <script src="/static/gaps.js"></script>
   <script src="/static/review.js"></script>
   <script src="/static/styles.js"></script>

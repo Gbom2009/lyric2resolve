@@ -63,6 +63,8 @@ OPS: dict[str, Callable] = {
     "set_word_timing": ops.set_word_timing,
     "nudge_words": ops.nudge_words,
     "nudge_block": ops.nudge_block,
+    "add_text": ops.add_text,
+    "retime_block": ops.retime_block,
     "add_gap": ops.add_gap,
     "update_gap": ops.update_gap,
     "remove_gap": ops.remove_gap,
@@ -149,7 +151,7 @@ class EditorSession:
                 problems = self.project.validate()
                 if problems:
                     raise ops.OpError("; ".join(problems))
-            except (ops.OpError, ValueError, TypeError, proj.ProjectError, styling.StyleError, OSError) as exc:
+            except Exception as exc:  # any failure (also KeyError/AttributeError from odd input) is rolled back
                 # restore the snapshot: a failed op never leaves a half-edited project
                 restored = self.history.undo(self.project)
                 self.history.redo_stack.clear()
@@ -498,6 +500,10 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
 
     newproject.register(app, _new_jobs, _open_new)
 
+    from . import visuals_api
+
+    visuals_api.register(app, current, settings_dir)
+
     from . import settings_api
     from lyric2resolve.assets import fonts as _fonts_mod
 
@@ -514,6 +520,10 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         @app.get("/library")
         def library_page():
             return FileResponse(STATIC_DIR / "library.html", headers={"Cache-Control": "no-store"})
+
+        @app.get("/visuals")
+        def visuals_page():
+            return FileResponse(STATIC_DIR / "visuals.html", headers={"Cache-Control": "no-store"})
 
         @app.get("/ideas")
         def ideas_page():

@@ -20,6 +20,8 @@ class Flag:
     kind: str        # zero_length | very_short | very_long | overlap | low_confidence | repeat | outside_vocals | hallucination
     message: str
     severity: str = "warn"   # warn | info
+    start: float | None = None   # time range for flags that are not about one word (missed_lyrics)
+    end: float | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -76,6 +78,44 @@ def check(project: Project, activity: list[tuple[float, float]] | None = None) -
         if pos >= 0:
             idx = joined[:pos].count(" ")
             flags.append(Flag(words[idx].id, "hallucination", f"'{h}' looks like a Whisper hallucination"))
+    flags += missed_lyrics(project, activity)
     order = {w.id: k for k, w in enumerate(words)}
-    flags.sort(key=lambda f: order.get(f.word_id, 0))
+    flags.sort(key=lambda f: f.start if f.start is not None else
+               (words[order[f.word_id]].start if f.word_id in order else 0.0))
     return flags
+
+
+MISSED_MIN_S = 1.5    # singing this long without any word is suspicious
+MISSED_JOIN_S = 0.6   # activity spans closer than this count as one phrase
+
+
+def missed_lyrics(project: Project, activity: list[tuple[float, float]] | None) -> list[Flag]:
+    """Singing (vocal activity) with no words at all: Whisper probably missed a line (often the first one).
+    Flagged with its time range so the editor can offer 'Add text here'. Instrumental gaps are skipped."""
+    if not activity:
+        return []
+    spans: list[list[float]] = []
+    for s, e in sorted(activity):
+        if spans and s - spans[-1][1] <= MISSED_JOIN_S:
+            spans[-1][1] = max(spans[-1][1], e)
+        else:
+            spans.append([s, e])
+    out = []
+    for s, e in spans:
+        if e - s < MISSED_MIN_S:
+            continue
+        if any(w.start < e and w.end > s for w in project.words):
+            continue
+        if any(g.start <= s and g.end >= e for g in project.gaps if g.source == "manual"):
+            continue
+        nxt = next((w for w in project.words if w.start >= e), project.words[-1] if project.words else None)
+        out.append(Flag(nxt.id if nxt else "", "missed_lyrics",
+                        f"singing at {_mmss(s)}–{_mmss(e)} but no lyrics: Whisper may have missed a line "
+                        "(use Add text)", "warn", round(s, 2), round(e, 2)))
+    return out
+
+
+def _mmss(t: float) -> str:
+    m, sec = divmod(max(0.0, t), 60)
+    return f"{int(m)}:{sec:05.2f}"
+

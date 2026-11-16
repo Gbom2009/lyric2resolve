@@ -170,3 +170,20 @@ def test_flags_sorted_by_word_order():
     p = proj.Project(words=[W(1, "a", 0, 0, 0.1), W(2, "b", 1, 1, 0.1)])
     ids = [f.word_id for f in sanity.check(p)]
     assert ids == sorted(ids)
+
+
+def test_missed_lyrics_flag_singing_without_words():
+    """Fixes from testing: Whisper missed the whole first sentence -> point it out, with its time range."""
+    from lyric2resolve import project as proj
+    from lyric2resolve.analysis import sanity
+
+    words = proj.make_words([{"text": t, "start": 10 + i * 0.5, "end": 10.4 + i * 0.5} for i, t in enumerate("a b c".split())])
+    p = proj.Project(words=words, blocks=proj.blocks_by_line(words))
+    activity = [(2.0, 3.0), (3.3, 5.5), (10.0, 11.5), (20.0, 20.8)]  # first line sung at 2-5.5 s, no words there
+    flags = [f for f in sanity.check(p, activity) if f.kind == "missed_lyrics"]
+    assert len(flags) == 1 and flags[0].start == 2.0 and flags[0].end == 5.5 and "0:02.00" in flags[0].message
+    assert flags[0].word_id == words[0].id  # jumps to the next word
+    assert sanity.check(p, activity)[0].kind == "missed_lyrics"  # listed in time order (it comes first)
+    p.gaps = [proj.Gap("g1", 1.0, 6.0, "manual")]  # you marked it instrumental yourself -> no flag
+    assert not [f for f in sanity.check(p, activity) if f.kind == "missed_lyrics"]
+    assert sanity.missed_lyrics(p, None) == []

@@ -66,10 +66,14 @@ def find_jobs(folder: Path) -> list[BatchJob]:
     """Pair songs and acapellas in a folder by file name (see module docstring)."""
     folder = Path(folder)
     files = sorted(p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in AUDIO_EXT)
-    vocals = {_base(p.stem): p for p in files if _VOCAL_TOKEN.search(p.stem)}
+    plain = {p.stem.strip().lower() for p in files if not _VOCAL_TOKEN.search(p.stem)} | \
+        {_base(p.stem) for p in files if not _VOCAL_TOKEN.search(p.stem)}
+    # a "vocals" file only counts as an acapella when a song with the same base name exists
+    # ("The Voice.mp3" alone is a song)
+    vocals = {_base(p.stem): p for p in files if _VOCAL_TOKEN.search(p.stem) and _base(p.stem) in plain}
     jobs = []
     for p in files:
-        if _VOCAL_TOKEN.search(p.stem):
+        if p in vocals.values():
             continue
         lyr = p.with_suffix(".txt")
         aca = vocals.get(p.stem.strip().lower()) or vocals.get(_base(p.stem))
@@ -113,7 +117,7 @@ def project_settings(s) -> proj.ProjectSettings:
 def run_song(job: BatchJob, out_root: Path, *, settings, engine, ffmpeg, cache_dir: Path,
              formats: list[str] | None = None, granularity: str | None = None, fps: float | None = None,
              analyze: bool = True, compensate: bool = False, install_resolve_script: bool = False,
-             do_export: bool = True, log: Callable[[str], None] = print) -> JobResult:
+             do_export: bool = True, overwrite: bool = False, log: Callable[[str], None] = print) -> JobResult:
     """One song through the whole pipeline. Never raises: errors come back in the result."""
     from lyric2resolve import export as ex
     from lyric2resolve import transcription
@@ -154,6 +158,9 @@ def run_song(job: BatchJob, out_root: Path, *, settings, engine, ffmpeg, cache_d
             presets.apply_sections_config(p, presets.load_sections_yaml(Path(job.sections)))
         presets.apply_presets(p, granularity)
         folder = Path(out_root) / ex.safe_name(job.title)
+        if (folder / proj.PROJECT_FILE).exists() and not overwrite:
+            raise FileExistsError(f"a project '{job.title}' already exists in {folder} (your edits are kept). "
+                                  "Use --overwrite to replace it, or rename the song.")
         path = proj.save(p, folder / proj.PROJECT_FILE)
         res.project = str(path)
         if not do_export:
@@ -222,6 +229,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--no-analyze", action="store_true")
     ap.add_argument("--compensate", action="store_true", help="auto-compensate A/B offsets")
     ap.add_argument("--dry-run", action="store_true", help="only list the jobs")
+    ap.add_argument("--overwrite", action="store_true", help="replace existing projects with the same name")
     a = ap.parse_args(argv)
     try:
         jobs = jobs_from(a.source)
@@ -248,7 +256,7 @@ def main(argv: list[str]) -> int:
     results = run_batch(jobs, out, settings=s, engine=engine_from_settings(a.model, a.language),
                         ffmpeg=Ffmpeg(str(exe)), cache_dir=data / "cache", formats=a.formats,
                         granularity=a.granularity, fps=a.fps, analyze=not a.no_analyze, compensate=a.compensate,
-                        install_resolve_script=True)
+                        install_resolve_script=True, overwrite=a.overwrite)
     print(f"\n{sum(r.ok for r in results)}/{len(results)} done. Report: {out / 'batch_report.md'}")
     (out / "batch_report.json").write_text(json.dumps([asdict(r) for r in results], indent=2), encoding="utf-8")
     return 0 if all(r.ok for r in results) else 2

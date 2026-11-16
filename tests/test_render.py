@@ -228,3 +228,34 @@ def test_verify_blender_3_frame_render_with_fake_blender():
     assert res.status == verify.OK, res.detail
     (res,) = verify.run_checks(verify.Context(repo=ctx.repo, quick=True), only={"blender_3_frame_render"})
     assert res.status == verify.SKIP
+
+
+def test_visuals_api_options_videos_and_files(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from lyric2resolve.editor import visuals_api
+    from lyric2resolve.editor.app import EditorSession, create_app
+
+    path = make_project(tmp_path)
+    opened = []
+    monkeypatch.setattr(visuals_api, "open_in_explorer", lambda target, opener=None: opened.append([str(target)]))
+    app = create_app(EditorSession(path))
+    c = TestClient(app)
+    o = c.get("/api/visuals/options").json()
+    assert {t["id"] for t in o["templates"]} >= {"tunnel", "spectrum_bars"} and all(t["description"] for t in o["templates"])
+    assert "preview" in [p["name"] for p in o["presets"]] and "blender" in o["tools"]
+    assert c.get("/api/visuals/videos").json()["videos"] == []
+    vid = path.parent / "visuals" / "tunnel" / "preview" / "x_16x9.mp4"
+    vid.parent.mkdir(parents=True)
+    vid.write_bytes(b"mp4")
+    (path.parent / "visuals" / "_estimate").mkdir()
+    (path.parent / "visuals" / "_estimate" / "e.mp4").write_bytes(b"x")
+    vids = c.get("/api/visuals/videos").json()["videos"]
+    assert [v["name"] for v in vids] == ["x_16x9.mp4"] and vids[0]["folder"] == "visuals/tunnel/preview"
+    assert c.get("/api/visuals/file/visuals/tunnel/preview/x_16x9.mp4").content == b"mp4"
+    assert c.get("/api/visuals/file/project.json").status_code == 404  # only files inside visuals/
+    assert c.get("/api/visuals/file/visuals/../project.json").status_code == 404
+    assert c.post("/api/visuals/open-folder", json={"folder": "visuals/tunnel/preview"}).status_code == 200
+    assert opened and opened[-1][-1].endswith("preview")
+    assert c.post("/api/visuals/open-folder", json={"folder": ".."}).status_code == 403
+    assert c.get("/visuals").status_code == 200

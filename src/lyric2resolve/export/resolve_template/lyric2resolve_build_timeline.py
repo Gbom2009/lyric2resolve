@@ -40,11 +40,22 @@ def data_dir() -> Path:
     return Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))) / "lyric2resolve"
 
 
+def data_dirs() -> list[Path]:
+    """All places the app may keep its data (Python from the Microsoft Store uses %USERPROFILE%\\lyric2resolve-data
+    because its AppData writes are hidden from other programs such as Resolve)."""
+    out = [data_dir()]
+    if sys.platform.startswith("win") and not os.environ.get("LYRIC2RESOLVE_DATA"):
+        out.append(Path(os.environ.get("USERPROFILE", str(Path.home()))) / "lyric2resolve-data")
+    return out
+
+
 def load_job(path: str | None = None) -> dict:
     if path is None:
         path = os.environ.get("L2R_JOB")
     if path is None:
-        pointer = data_dir() / "exports" / "last_resolve_job.json"
+        found = [d / "exports" / "last_resolve_job.json" for d in data_dirs()]
+        found = [f for f in found if f.exists()]
+        pointer = max(found, key=lambda f: f.stat().st_mtime) if found else data_dir() / "exports" / "x"
         if not pointer.exists():
             raise RuntimeError("No lyric2resolve export found. In the editor click Export… and tick "
                                "'Resolve script', then run this script again.")

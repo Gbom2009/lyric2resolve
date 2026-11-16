@@ -95,7 +95,23 @@ def apply_presets(p: Project, default: str | None = None, only_section: str | No
         if sec is None:
             raise ValueError(f"unknown section {only_section}")
         target = {w.id for w in p.words if section_for(p, w) is sec}
-        keep = [b for b in p.blocks if not target.intersection(b.word_ids)]
+        keep = []
+        for b in p.blocks:
+            if not target.intersection(b.word_ids):
+                keep.append(b)
+                continue
+            # a block crossing the section boundary: its words outside the section keep their own block(s)
+            run: list[str] = []
+            for wid in b.word_ids + [None]:
+                if wid is not None and wid not in target:
+                    run.append(wid)
+                elif run:
+                    keep.append(Block("", run, None, b.style))
+                    run = []
+        for b in keep:
+            if not b.id:
+                b.id = p.next_id("b")
+                p.blocks.append(b)  # so next_id sees it (the list is replaced below)
     else:
         target = {w.id for w in p.words}
         keep = []

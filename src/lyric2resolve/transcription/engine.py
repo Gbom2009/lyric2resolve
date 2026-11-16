@@ -34,6 +34,7 @@ class EngineOptions:
     compute_type: str = "float16"
     language: str | None = None   # None = auto-detect
     vad: bool = True
+    vad_threshold: float = 0.35   # singing scores lower than speech in Silero VAD (default 0.5 drops sung lines)
     model_dir: str | None = None  # download/cache folder (data/models/whisper)
 
 
@@ -148,16 +149,24 @@ class StableTsEngine:
             self._cpu_fallback(exc)
             return fn(self._model)
 
+    def vad_kwargs(self) -> dict:
+        use = self.opt.vad and self.opt.vad_threshold > 0
+        out: dict = {"vad_filter": use}
+        if use:
+            out["vad_parameters"] = {"threshold": self.opt.vad_threshold, "speech_pad_ms": 500}
+        return out
+
     def params(self, mode: str) -> dict:
         return {"engine": "stable-ts/faster-whisper", "model": self.opt.model, "device": self.opt.device,
-                "compute_type": self.opt.compute_type, "vad": self.opt.vad, "mode": mode,
+                "compute_type": self.opt.compute_type, "vad": self.opt.vad, "vad_threshold": self.opt.vad_threshold,
+                "mode": mode,
                 "condition_on_previous_text": False, "word_timestamps": True}
 
     def detect_language(self, audio_path: str) -> str:
         from faster_whisper import decode_audio
 
         audio = decode_audio(audio_path, sampling_rate=16000)
-        lang, _prob, _all = self._run(lambda m: m.detect_language(audio, vad_filter=self.opt.vad))
+        lang, _prob, _all = self._run(lambda m: m.detect_language(audio, **self.vad_kwargs()))
         return lang
 
     def transcribe(self, audio_path: str) -> Transcript:
@@ -165,7 +174,7 @@ class StableTsEngine:
             audio_path,
             language=self.opt.language or None,
             word_timestamps=True,
-            vad_filter=self.opt.vad,              # faster-whisper's built-in Silero VAD (no extra download)
+            **self.vad_kwargs(),                  # faster-whisper's built-in Silero VAD (no extra download)
             condition_on_previous_text=False,
             regroup=True,
         ))

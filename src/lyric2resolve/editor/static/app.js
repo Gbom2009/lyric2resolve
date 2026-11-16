@@ -16,8 +16,17 @@
   // ------------------------------------------------------------------ helpers
   L2R.fmt = (t) => {
     if (!isFinite(t)) t = 0;
+    t = Math.round(t * 100) / 100;  // round first, so 59.996 shows as 1:00.00 (not 0:60.00)
     const m = Math.floor(t / 60), s = t - m * 60;
     return `${m}:${s.toFixed(2).padStart(5, "0")}`;
+  };
+  // "1:23.45", "83.45" or "83,45" -> seconds (NaN when invalid)
+  L2R.parseTime = (txt) => {
+    const t = String(txt || "").trim().replace(",", ".");
+    if (!t) return NaN;
+    const parts = t.split(":").map(Number);
+    if (parts.some((x) => !isFinite(x) || x < 0)) return NaN;
+    return parts.reduce((acc, x) => acc * 60 + x, 0);
   };
   L2R.setStatus = (msg, isError = false) => {
     const el = $("#status");
@@ -217,7 +226,10 @@
     L2R.ws = WaveSurfer.create({
       container: "#waveform", height: 96, waveColor: getCss("--wave"), progressColor: getCss("--wave-progress"),
       cursorColor: getCss("--text"), minPxPerSec: Number($("#zoom").value), autoScroll: true, autoCenter: true,
-      plugins: [L2R.regions, WaveSurfer.Timeline.create({ container: "#wave-timeline", height: 16 })],
+      plugins: [L2R.regions, WaveSurfer.Timeline.create({
+        container: "#wave-timeline", height: 18, timeInterval: 1, primaryLabelInterval: 5, secondaryLabelInterval: 0,
+        formatTimeCallback: (sec) => { const m = Math.floor(sec / 60), s = Math.round(sec % 60); return `${m}:${String(s).padStart(2, "0")}`; },
+      })],
     });
     L2R.ws.on("ready", (d) => {
       L2R.audioReady = true;
