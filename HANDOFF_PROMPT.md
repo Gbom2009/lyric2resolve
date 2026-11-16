@@ -7,8 +7,8 @@ You are continuing **lyric2resolve**, a Windows app (Python, NVIDIA/CUDA) that t
 
 ## Current state (update every checkpoint)
 - Phase 0 (planning docs): done, on `main` (initial commit).
-- Phase 1 (skeleton + launcher/updater): **in progress** — see PROGRESS.md CURRENT STEP LOG for the exact step.
-- Open PR: see PROGRESS.md / GitHub. Waiting for user test result: no.
+- Phase 1 (skeleton + launcher/updater): built, **PR #1** (`phase-01-launcher-updater`). Once CI is green it is marked ready and we WAIT for the user's Phase 1 test (first-time install via INSTALL.md).
+- Next: Phase 2 (setup script + verify_local + settings) on a new branch from main AFTER the user merged PR #1 and replied.
 - MODE: **gated**. Waiting for user input: nothing yet.
 
 ## Git workflow

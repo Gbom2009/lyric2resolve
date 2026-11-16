@@ -15,7 +15,9 @@ class Entry:
     body: str
 
     def render(self) -> str:
-        return f"{self.heading}\n{self.body}".strip()
+        # Plain-text window: drop Markdown emphasis/code marks.
+        text = f"{self.heading}\n{'-' * min(len(self.heading), 60)}\n{self.body}".strip()
+        return text.replace("**", "").replace("`", "")
 
 
 def parse(text: str | None) -> list[Entry]:
