@@ -69,11 +69,24 @@ def engine_from_settings(model: str | None = None, language: str | None = None) 
     from lyric2resolve.settings import load_settings
 
     s, _ = load_settings()
+    backend = choose_backend(s.device)
+    device = "cpu" if s.device == "mps" else s.device   # CTranslate2 (faster-whisper) has no Apple GPU support
     return StableTsEngine(EngineOptions(
-        model=model or s.whisper_model, device=s.device,
-        compute_type=s.compute_type if s.device == "cuda" else "int8",
+        model=model or s.whisper_model, device=device,
+        compute_type=s.compute_type if device == "cuda" else "int8",
         language=language or s.language or None, vad_threshold=float(s.vad_threshold),
-        model_dir=str(paths.ensure_data_dir() / "models" / "whisper")))
+        model_dir=str(paths.ensure_data_dir() / "models" / "whisper"), backend=backend))
+
+
+def choose_backend(device: str, platform: str | None = None, has_mlx: bool | None = None) -> str:
+    """Apple Silicon (device 'mps') -> MLX when installed; everything else -> faster-whisper."""
+    import importlib.util
+    import sys
+
+    platform = platform or sys.platform
+    if has_mlx is None:
+        has_mlx = importlib.util.find_spec("mlx_whisper") is not None
+    return "mlx" if platform == "darwin" and device == "mps" and has_mlx else "faster-whisper"
 
 
 def main(argv: list[str]) -> int:
