@@ -3,6 +3,16 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Mac (Apple Silicon) — phase 3: Whisper on the M chip
+**New (Mac only)**
+- Whisper runs on your Mac's M chip with Apple's **MLX**: large-v3-turbo by default, which is fast and fits in 8 GB. Forced alignment of your pasted lyrics works too.
+- If MLX can't be used, Whisper falls back to the CPU instead of failing, and the log says why.
+- Whisper's memory is freed right after transcribing, so the 8 GB is free again for the analysis and Blender.
+- Vocal separation uses the Mac's GPU (Metal) through the Mac version of the separation package.
+
+**What to test (Mac)**
+- Run setup (installs mlx-whisper), then New project with a song + acapella → "Loading Whisper…" downloads the turbo model the first time, then transcribes. How long for one song?
+
 ## Mac (Apple Silicon) — phases 1 + 2: foundation, installer and app
 **New (Mac only; nothing changes on Windows)**
 - lyric2resolve runs on Macs with an M chip. The app recognises the chip (GPU = "Apple M… (Metal)"), uses PyTorch with the Mac's GPU, finds Homebrew's ffmpeg, Blender in Applications and Claude Code, and picks Mac-friendly defaults (Whisper large-v3-turbo).

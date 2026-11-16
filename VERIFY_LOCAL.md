@@ -189,3 +189,8 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Settings page: GPU line "Apple M… GPU (Metal / MPS), 8 GB"; ffmpeg found in /opt/homebrew/bin.
 - [ ] Update now works (channel mac-release).
 
+## Mac (Apple Silicon) — phase 3: MLX Whisper
+- [ ] New project log shows no "MLX Whisper could not be used" warning; words look right (also with pasted lyrics).
+- [ ] Time for one ~4 min song (song + acapella) with large-v3-turbo on your Air; Activity Monitor: memory pressure stays green/yellow.
+- [ ] Song-only project: separation finishes (time?).
+
