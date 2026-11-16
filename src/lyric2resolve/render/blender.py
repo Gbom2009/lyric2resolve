@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from pathlib import Path
 
 from lyric2resolve import setup_tools
 
 INSTALL_HELP = (
     "Blender was not found. Install it (free) from https://www.blender.org/download/ "
-    "(or: winget install BlenderFoundation.Blender), then restart the app. If it is installed in an unusual "
-    "folder, set its path in Settings (blender_path).")
+    "(Windows: winget install BlenderFoundation.Blender; Mac: drag Blender into Applications), then restart the "
+    "app. If it is installed in an unusual folder, set its path in Settings (blender_path).")
 
 # Small script run inside Blender to report GPU render devices (OptiX preferred, then CUDA).
 GPU_PROBE = r'''
@@ -59,6 +60,9 @@ def choose_device(probe: dict) -> tuple[str, str]:
     for b in ("OPTIX", "CUDA", "HIP", "ONEAPI", "METAL"):
         if backends.get(b):
             return b, f"GPU rendering with {b}: {', '.join(backends[b])}"
+    if sys.platform == "darwin":
+        return "CPU", ("WARNING: Cycles found no Metal GPU - rendering on the CPU will be much slower. Use Blender 3.1 "
+                       "or newer on an Apple Silicon Mac, or use Eevee (it renders on the GPU through Metal anyway).")
     return "CPU", ("WARNING: no GPU found for Cycles - rendering on the CPU will be much slower. Check the NVIDIA "
                    "driver, or use Eevee (it uses the GPU through OpenGL/Vulkan anyway).")
 

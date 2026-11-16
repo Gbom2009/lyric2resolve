@@ -136,7 +136,7 @@ def render_project(project_path: Path, template: str = "spectrum_bars", preset_n
                 tag = f"{data['name']}_{aspect.replace(':', 'x')}" + ("" if label == "full" else f"_{label}")
                 pattern = str(out_dir / "frame_%04d.png")
                 base = mux.MuxSettings(fps=fps, start_seconds=(a - 1) / fps, audio=not video_only)
-                encoder = "h264_nvenc" if mux.has_encoder(ff, "h264_nvenc") else "libx264"
+                encoder = mux.pick_encoder(ff)
                 for suffix, box in (("", None), ("_dj", (1920, 1080))):
                     if suffix == "_dj" and (video_only or (w <= 1920 and h <= 1080)):
                         continue  # the master already fits the decks

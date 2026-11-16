@@ -41,6 +41,27 @@ def preset_list() -> list[dict]:
     return out
 
 
+_GPU: list = []
+
+
+def machine_preset(detect=None) -> dict:
+    """The preset the Visuals page selects first on this machine (GPU check runs once: sysctl/nvidia-smi)."""
+    from lyric2resolve import setup_tools
+    from lyric2resolve.render import presets
+
+    if detect is not None or not _GPU:
+        try:
+            gpu = (detect or setup_tools.detect_gpu)()
+        except Exception:
+            gpu = setup_tools.GpuInfo()
+        if detect is None:
+            _GPU.append(gpu)
+    else:
+        gpu = _GPU[0]
+    name, why = presets.recommended(gpu)
+    return {"name": name, "reason": why}
+
+
 def tool_status(settings) -> dict:
     from lyric2resolve import setup_tools
     from lyric2resolve.render.blender import find_blender
@@ -91,7 +112,7 @@ def register(app, current, settings_dir: Path | None = None, opener=None) -> Non
 
         s = current()
         p = s.project
-        return {"templates": template_list(), "presets": preset_list(),
+        return {"templates": template_list(), "presets": preset_list(), "recommended": machine_preset(),
                 "layouts": list(p.settings.layouts), "fps": p.settings.fps,
                 "sections": [{"id": x.id, "label": x.label, "start": x.start, "end": x.end} for x in p.sections],
                 "tools": tool_status(load_settings(settings_dir)[0]), "folder": str(project_dir() / "visuals")}

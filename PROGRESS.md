@@ -50,6 +50,7 @@ Phase 18: done (branding.py + config/brand_funqtion.json + static/brand/funqtion
 Phase 19: done (cli.py end-to-end `lyric2resolve --song ...` via batch.run_song, README.md, VERIFY_LOCAL FULL TEST PASS section, verify check blender_3_frame_render (real render path, 3 preview frames; fake-Blender test), tests/test_end_to_end.py).
 ALL PHASES BUILT; PR #2 merged. Fixes from testing (1) on branch `fixes-2026-11-16` (editor/newproject.py, static/newproject.js, app.js guards/no-project state, tests/test_new_project.py + e2e/test_new_project.py). Next session: record the user's REPORT_LOCAL.md + feedback here, fix on a new branch from main ("Fixes from testing").
 Session 3 (2026-11-16): user confirmed: continue on PR #2, Claude CLI installed on PC, try funqtion-site for branding, test everything later.
+Mac app (2026-11-16, docs/MAC_PLAN.md): phases 1-2 merged (#10, #11), phase 3 MLX Whisper PR #12, phase 4 rendering (VideoToolbox encoder via mux.pick_encoder, Metal message, presets.recommended → Draft on 8 GB Macs) on branch `mac-render`. macOS CI job is cancelled by GitHub (billing) → the user's MacBook Air M1 8 GB is the Mac test.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions

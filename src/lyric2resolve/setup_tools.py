@@ -187,7 +187,8 @@ def tool_version(path: Path | None, probe: Probe = run_probe) -> str:
 FFMPEG_HELP = ("ffmpeg not found. Install it with:  winget install Gyan.FFmpeg   (then reopen the launcher),\n"
                "or download from https://www.gyan.dev/ffmpeg/builds/ and set the path in settings.")
 BLENDER_HELP = ("Blender not found. Install Blender 4.x from https://www.blender.org/download/ "
-                "(or: winget install BlenderFoundation.Blender) and set the path in settings if needed.")
+                "(Windows: winget install BlenderFoundation.Blender; Mac: drag Blender into Applications) and set the "
+                "path in settings if needed.")
 
 
 # ------------------------------------------------------------------ pip plans

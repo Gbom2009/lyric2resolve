@@ -194,3 +194,9 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] Time for one ~4 min song (song + acapella) with large-v3-turbo on your Air; Activity Monitor: memory pressure stays green/yellow.
 - [ ] Song-only project: separation finishes (time?).
 
+
+## Mac (Apple Silicon) — phase 4: rendering
+- [ ] Visuals page selects **Draft** by default and shows the "8 GB Mac" hint.
+- [ ] A Preview render finishes; the render log says "GPU rendering with METAL" for Cycles (Eevee also uses Metal).
+- [ ] The MP4 was made with VideoToolbox (fast); `ffprobe` / the DJ check shows H.264 High, yuv420p, AAC. It plays in Rekordbox/Serato on the Mac.
+- [ ] Draft render time for a ~4 min song on your Air (does it slow down after a while — fanless?).

@@ -32,7 +32,7 @@ class MuxSettings:
     audio_rate: int = 48000
     crf: int = 18
     preset: str = "slow"
-    encoder: str = "libx264"        # or h264_nvenc on NVIDIA GPUs
+    encoder: str = "libx264"        # or h264_nvenc (NVIDIA) / h264_videotoolbox (Mac)
     fit_box: tuple[int, int] | None = None   # e.g. (1920, 1080) for the Rekordbox-safe DJ copy
     start_seconds: float = 0.0      # audio offset for a partial (section) render
     audio: bool = True              # False: video only (timeline clips - the song is already on its own track)
@@ -63,6 +63,10 @@ def mux_command(ffmpeg: str, frames_pattern: str, start_number: int, song: Path,
     cmd += ["-vf", ",".join(vf)]
     if s.encoder == "h264_nvenc":
         cmd += ["-c:v", "h264_nvenc", "-preset", "p6", "-rc", "vbr", "-cq", str(s.crf + 1), "-b:v", "0"]
+    elif s.encoder == "h264_videotoolbox":
+        # Apple's hardware encoder (M chips): constant quality (-q:v 1-100, higher = better); allow_sw lets macOS
+        # use its software path instead of failing when the hardware is busy
+        cmd += ["-c:v", "h264_videotoolbox", "-q:v", str(vt_quality(s.crf)), "-allow_sw", "1"]
     else:
         cmd += ["-c:v", "libx264", "-preset", s.preset, "-crf", str(s.crf)]
     cmd += ["-profile:v", "high", "-r", r, "-fps_mode", "cfr", "-g", str(g), "-keyint_min", str(g),
@@ -71,6 +75,24 @@ def mux_command(ffmpeg: str, frames_pattern: str, start_number: int, song: Path,
         cmd += ["-c:a", "aac", "-b:a", s.audio_bitrate, "-ar", str(s.audio_rate), "-ac", "2"]
     cmd += ["-movflags", "+faststart", str(out)]
     return cmd
+
+
+HW_ENCODERS = {"darwin": ("h264_videotoolbox",), "other": ("h264_nvenc",)}
+
+
+def vt_quality(crf: int) -> int:
+    """x264 CRF (lower = better) -> VideoToolbox -q:v (higher = better). CRF 18 -> 65."""
+    return max(1, min(100, 101 - 2 * crf))
+
+
+def pick_encoder(ffmpeg: str, platform: str | None = None, has=None) -> str:
+    """Hardware H.264 encoder when ffmpeg has one for this OS (VideoToolbox on Mac, NVENC elsewhere), else libx264."""
+    has = has or has_encoder
+    key = "darwin" if (platform or sys.platform) == "darwin" else "other"
+    for name in HW_ENCODERS[key]:
+        if has(ffmpeg, name):
+            return name
+    return "libx264"
 
 
 def has_encoder(ffmpeg: str, name: str) -> bool:
@@ -119,14 +141,15 @@ def check_dj_file(info: dict, fps: float) -> list[str]:
 
 def encode(ffmpeg: str, frames_pattern: str, start_number: int, song: Path, out: Path, s: "MuxSettings",
            frame_size: tuple[int, int] | None = None) -> str:
-    """Encode with NVENC when it works on this PC, otherwise libx264. Returns the encoder used."""
+    """Encode with the hardware encoder (NVENC / VideoToolbox) when it works here, otherwise libx264.
+    Returns the encoder used."""
     from dataclasses import replace
 
-    if s.encoder == "h264_nvenc":
+    if s.encoder != "libx264":
         try:
             run(mux_command(ffmpeg, frames_pattern, start_number, song, out, s, frame_size))
-            return "h264_nvenc"
+            return s.encoder
         except RuntimeError:
-            s = replace(s, encoder="libx264")  # listed but unusable (no NVIDIA GPU/driver): fall back
+            s = replace(s, encoder="libx264")  # listed but unusable (no GPU/driver, busy): fall back
     run(mux_command(ffmpeg, frames_pattern, start_number, song, out, s, frame_size))
     return s.encoder

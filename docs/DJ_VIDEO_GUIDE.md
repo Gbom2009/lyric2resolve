@@ -20,7 +20,7 @@ Use the timeline that has the song + lyrics (+ the Blender background on V1).
 |---|---|---|
 | Render | Single clip | Single clip |
 | Format | **MP4** | **MP4** |
-| Codec | **H.264** (pick the *NVIDIA* encoder if listed, otherwise *Native*) | H.264 |
+| Codec | **H.264** (pick the *NVIDIA* encoder if listed — on a Mac *Apple VideoToolbox* — otherwise *Native*) | H.264 |
 | Resolution | **1920 × 1080** | 1080 × 1920 (Rekordbox: use the 16:9 file, or a 608 × 1080 copy) |
 | Frame rate | **same as the timeline** (e.g. 25) | same as the timeline |
 | Quality | Restrict to **16 000–20 000 Kb/s** | 16 000–20 000 Kb/s |
@@ -39,6 +39,7 @@ Name the file like the track (e.g. `Artist - Title (lyrics).mp4`) so it is easy 
 Blender backgrounds and previews rendered with `lyric2resolve render` already get the song muxed in with these
 settings (H.264 High, yuv420p, constant frame rate, keyframe every ≤ 25 frames, AAC 320 kbps 48 kHz, faststart).
 Files larger than 1920×1080 also get a `_dj.mp4` copy that fits Rekordbox.
+Encoder: NVENC on NVIDIA PCs, VideoToolbox on Macs (Apple hardware), otherwise libx264 — same file format either way.
 
 ## C. Check the sync on the decks
 1. Import the MP4 into Rekordbox/Serato like any track; let it analyse (beatgrid).

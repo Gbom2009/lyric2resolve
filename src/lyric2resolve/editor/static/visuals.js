@@ -33,7 +33,12 @@
     }));
     const pre = $("#preset");
     pre.replaceChildren(...opts.presets.map((p) => { const o = el("option", "", `${p.name[0].toUpperCase()}${p.name.slice(1)} — ${p.height}p ${p.engine}`); o.value = p.name; return o; }));
-    const desc = () => { const p = opts.presets.find((x) => x.name === pre.value); $("#preset-desc").textContent = p ? p.description : ""; };
+    const rec = opts.recommended || {};
+    if (rec.name && opts.presets.some((p) => p.name === rec.name)) pre.value = rec.name;
+    const desc = () => {
+      const p = opts.presets.find((x) => x.name === pre.value);
+      $("#preset-desc").textContent = (p ? p.description : "") + (rec.reason ? ` · ${rec.reason}` : "");
+    };
     pre.onchange = desc;
     desc();
     $$("input[name=aspect]").forEach((c) => { c.checked = c.value === "16:9"; });

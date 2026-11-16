@@ -3,6 +3,19 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Mac (Apple Silicon) — phase 4: rendering on the Mac
+**New (Mac)**
+- Videos are encoded with Apple's hardware encoder (**VideoToolbox**): much faster than before, same Rekordbox/Serato-ready format. If it can't be used, the app falls back to the normal encoder.
+- Blender renders on the Mac's GPU through **Metal** (Eevee and Cycles). If Cycles finds no Metal GPU, the warning now says what to do on a Mac.
+- The Visuals page picks a render preset that suits your computer: **Draft** on an 8 GB Mac (with a short tip), Standard elsewhere. You can still pick any preset.
+- Render instructions and the DJ video guide have Mac notes.
+
+**Changed (all)**
+- Windows: nothing changes (NVENC is still used on NVIDIA cards).
+
+**What to test (Mac)**
+- Visuals page → Preview render of a song: does it finish, and how long did Draft take for the whole song?
+
 ## Mac (Apple Silicon) — phase 3: Whisper on the M chip
 **New (Mac only)**
 - Whisper runs on your Mac's M chip with Apple's **MLX**: large-v3-turbo by default, which is fast and fits in 8 GB. Forced alignment of your pasted lyrics works too.
