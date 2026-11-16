@@ -149,9 +149,4 @@ def load_settings(settings_dir: Path | None = None) -> tuple[AppSettings, list[s
 
 
 def save_settings(s: AppSettings, settings_dir: Path | None = None) -> Path:
-    path = settings_path(settings_dir)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(s.to_dict(), indent=2), encoding="utf-8")
-    tmp.replace(path)  # atomic on Windows + POSIX
-    return path
+    return paths.atomic_write_text(settings_path(settings_dir), json.dumps(s.to_dict(), indent=2))

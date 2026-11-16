@@ -237,10 +237,9 @@ def save(project: Project, path: Path) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     project.modified = _now()
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(project.to_dict(), indent=1, ensure_ascii=False), encoding="utf-8")
-    tmp.replace(path)
-    return path
+    from lyric2resolve.paths import atomic_write_text
+
+    return atomic_write_text(path, json.dumps(project.to_dict(), indent=1, ensure_ascii=False))
 
 
 def load(path: Path) -> Project:

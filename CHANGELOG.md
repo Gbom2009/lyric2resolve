@@ -17,6 +17,9 @@ The launcher shows the new entries when an update is available and after updatin
   - **📎 Attach** images, videos or documents (mood boards, logos, example frames, a description). They're saved in the project's `context` folder and ticked files go with your next message; Claude can look at images.
   - Claude may now **read, write and edit files inside the project folder**, including its own notes file, which failed before. Writing outside the project folder stays blocked.
 
+**Fixed**
+- Quick changes on the Settings page could get lost (two saves at the same moment overwrote each other). Settings, projects, playlists and the Assistant session are now saved safely, even when several saves happen at once.
+
 **What to test**
 - Visuals → Preview render with "Lyrics inside the scene": the words appear in 3D at the right moments.
 - Select the break before a drop → ✨ Make a clip with Claude → describe it → the clip appears on the timeline. Export to Resolve: the clip is on V1, the lyrics on V2, and no title during the clip when "replaces the lyrics" is on.

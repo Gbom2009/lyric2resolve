@@ -254,3 +254,27 @@ def test_batch_cli_dry_run(tmp_path, capsys):
     empty = tmp_path / "empty"
     empty.mkdir()
     assert main(["batch", str(empty)]) == 1
+
+
+def test_parallel_settings_saves_never_lose_a_change(client):
+    """CI caught it: two quick changes on the Settings page raced on one temp file and one change was lost."""
+    import concurrent.futures
+
+    keys = [{"default_fps": 29.97}, {"funqtion_branding": True}, {"width": 1280}, {"height": 720},
+            {"language": "nl"}, {"whisper_model": "medium"}]
+    with concurrent.futures.ThreadPoolExecutor(6) as ex:
+        codes = list(ex.map(lambda b: client.put("/api/settings", json=b).status_code, keys * 3))
+    assert set(codes) == {200}
+    s, _ = load_settings(client.sdir)
+    assert (s.default_fps, s.funqtion_branding, s.width, s.height, s.language, s.whisper_model) == \
+        (29.97, True, 1280, 720, "nl", "medium")
+    assert not list(client.sdir.glob("*.tmp"))
+
+
+def test_atomic_write_text(tmp_path):
+    import concurrent.futures
+
+    f = tmp_path / "a" / "x.json"
+    with concurrent.futures.ThreadPoolExecutor(8) as ex:
+        list(ex.map(lambda i: paths.atomic_write_text(f, f"value {i}"), range(40)))
+    assert f.read_text().startswith("value ") and [p.name for p in f.parent.iterdir()] == ["x.json"]

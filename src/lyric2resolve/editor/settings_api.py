@@ -125,8 +125,14 @@ def register(app, settings_dir: Path | None, fonts_list: Callable[[], list[dict]
             out["detected"] = detect_tools(s)
         return out
 
+    save_lock = threading.Lock()  # quick changes arrive as parallel requests: read-modify-write one at a time
+
     @app.put("/api/settings")
     def put_settings(body: dict = Body(...)):
+        with save_lock:
+            return _put_settings(body)
+
+    def _put_settings(body: dict):
         s, _ = st.load_settings(settings_dir)
         data = s.to_dict()
         known = set(st.AppSettings.__dataclass_fields__) - {"extra", "schema_version"}
@@ -145,6 +151,10 @@ def register(app, settings_dir: Path | None, fonts_list: Callable[[], list[dict]
 
     @app.put("/api/settings/updater")
     def put_updater(body: dict = Body(...)):
+        with save_lock:
+            return _put_updater(body)
+
+    def _put_updater(body: dict):
         from lyric2resolve.updater.config import UpdaterConfig, load_config, save_config
 
         cur = load_config(settings_dir).to_dict()

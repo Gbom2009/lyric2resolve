@@ -57,12 +57,9 @@ def load_session(project_dir: Path) -> SessionInfo:
 
 
 def save_session(project_dir: Path, info: SessionInfo) -> Path:
-    path = session_path(project_dir)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(asdict(info), indent=2), encoding="utf-8")
-    tmp.replace(path)
-    return path
+    from lyric2resolve.paths import atomic_write_text
+
+    return atomic_write_text(session_path(project_dir), json.dumps(asdict(info), indent=2))
 
 
 def reset_session(project_dir: Path) -> None:
