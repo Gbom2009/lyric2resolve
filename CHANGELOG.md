@@ -3,6 +3,16 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 19 — One-command pipeline, README, full test pass
+**New**
+- **One command for a whole song**: `lyric2resolve --song full.wav --acapella vocals.wav [--lyrics lyrics.txt] [--sections sections.yaml] --granularity line --fps 25 --model large-v3 [--render-preset standard] --out ./out`. It converts, checks A/B alignment, transcribes (or aligns your lyrics), analyses BPM/sections/gaps, builds the blocks, exports FCPXML (16:9 + 9:16), the Resolve script and SRT/CSV/EDL, installs the Resolve script, and optionally renders visuals. `--open-editor` opens the result.
+- **README.md**: setup, daily use, Resolve import, rendering and DJ use, updates, licenses, limitations, and why there is no `.drp` file.
+- **VERIFY_LOCAL.md** now starts with one **full test pass** in the right order.
+- verify_local: the **Blender 3-frame render** check now really renders (scene build + 3 headless Eevee frames) instead of saying "not implemented".
+
+**What to test**
+- The FULL TEST PASS at the top of VERIFY_LOCAL.md, and paste REPORT_LOCAL.md back into a Claude session.
+
 ## Phase 18 — Settings page, Team Funqtion branding, batch mode, update banner
 **New**
 - **Settings** page (button in the editor): Programs & GPU (ffmpeg, Blender and Claude Code are found automatically, or set a path; shows your NVIDIA GPU), defaults for new projects (frame rate, resolution, layouts, start timecode, styling level, Whisper model, device, language), Assistant options, and update options. Every change is saved immediately.

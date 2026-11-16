@@ -26,6 +26,10 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] in APP_COMMANDS:
         return importlib.import_module(APP_COMMANDS[argv[0]]).main(argv[1:])
+    from lyric2resolve import cli
+
+    if cli.wants_pipeline(argv):  # lyric2resolve --song full.wav --acapella vocals.wav ... (end-to-end)
+        return cli.main(argv)
     from lyric2resolve.updater.cli import main as updater_main
 
     return updater_main(argv)

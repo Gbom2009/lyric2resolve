@@ -36,6 +36,7 @@ class Context:
     quick: bool = False          # skip slow checks (model loads, renders)
     offline: bool = False        # skip network checks
     probe: setup_tools.Probe = setup_tools.run_probe
+    blender_runner: object = None  # tests inject a fake BlenderRunner
 
 
 CheckFn = Callable[[Context], CheckResult]
@@ -296,10 +297,47 @@ def _mcp_server(ctx: Context) -> CheckResult:
     return CheckResult("mcp_server", OK, f"{len(resp[1]['result']['tools'])} tools; get_project works")
 
 
+@check("blender_3_frame_render")
+def _blender_render(ctx: Context) -> CheckResult:
+    """The app's real render path (scene build + headless render) for 3 preview frames of a tiny test song."""
+    import tempfile
+
+    import numpy as np
+
+    from lyric2resolve import project as proj
+    from lyric2resolve.audio import wavio
+    from lyric2resolve.render import presets, render_project
+    from lyric2resolve.render.blender import find_blender
+    from lyric2resolve.settings import load_settings
+
+    if ctx.quick:
+        return CheckResult("blender_3_frame_render", SKIP, "--quick")
+    if ctx.blender_runner is None and not find_blender(load_settings()[0].blender_path):
+        return CheckResult("blender_3_frame_render", WARN, "Blender not found - " + setup_tools.BLENDER_HELP)
+    with tempfile.TemporaryDirectory() as tmp:
+        sr = 44100
+        t = np.arange(4 * sr) / sr
+        y = (0.4 * np.sin(2 * np.pi * 80 * t) * (np.mod(t, 0.5) < 0.1)).astype(np.float32)
+        wav = wavio.write(Path(tmp) / "song.wav", np.stack([y, y], axis=1), sr)
+        words = proj.make_words([{"text": "test", "start": 0.5, "end": 1.0}])
+        path = proj.save(proj.Project(name="verify", words=words, blocks=proj.blocks_by_line(words),
+                                      audio={"song_wav": str(wav), "duration_s": 4.0}),
+                         Path(tmp) / "verify" / proj.PROJECT_FILE)
+        preset = presets.replace(presets.get("preview"), max_seconds=3 / 15)  # 3 frames at 15 fps
+        t0 = time.perf_counter()
+        rep = render_project(path, "spectrum_bars", preset, ["16:9"], do_mux=False, log=lambda m: None,
+                             runner=ctx.blender_runner, textures_root=Path(tmp) / "tex")
+        secs = time.perf_counter() - t0
+        frames = sorted((Path(rep.folder) / "frames" / "16x9").glob("*.png"))
+    if not rep.ok or len(frames) != 3:
+        return CheckResult("blender_3_frame_render", FAIL,
+                           f"{len(frames)} of 3 frames; {' '.join(rep.messages)[-300:]}")
+    return CheckResult("blender_3_frame_render", OK,
+                       f"3 frames (Eevee, 960x540) incl. scene build in {secs:.0f} s; {' '.join(rep.messages)}")
+
+
 # Placeholders so the report shows what is still to come (later phases replace them).
-PENDING = {
-    "blender_3_frame_render": "Phase 15",
-}
+PENDING: dict[str, str] = {}
 
 
 def _pending(name: str, phase: str) -> CheckFn:

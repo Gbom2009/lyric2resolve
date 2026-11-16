@@ -3,11 +3,36 @@
 The cloud sessions run on Linux without GPU/Windows/Resolve/Blender. Everything below must be checked on your PC.
 From Phase 2 on, `scripts/verify_local.py` automates most of it and writes REPORT_LOCAL.md — paste that into the session.
 
+## FULL TEST PASS (start here — about 1-2 hours, in this order)
+The per-phase lists below hold the details; this is the route through them. Tick what works, note what doesn't,
+and paste REPORT_LOCAL.md + your notes into a Claude session.
+
+1. **Install + update** (Phase 1, 2): merge PR #2 → open the launcher → *Update now* → it runs the dependency step
+   (first time: *Run setup*, can take 10-30 min for PyTorch/CUDA). Launcher shows "up to date" and opens the editor.
+2. **Self-test**: `.venv\Scripts\python scripts\verify_local.py` → REPORT_LOCAL.md. Expected all ✅ except optional
+   items: python, tkinter, git, ffmpeg, gpu, torch_cuda, blender, asset_apis, audio_offset, vocal_separation,
+   whisper_model_load, whisper_tiny_clip, fcpxml_validity, claude_cli, mcp_server, blender_3_frame_render.
+3. **Assets**: `.venv\Scripts\python -m lyric2resolve assets sync` then `assets install-fonts` (Phase 9, 13).
+4. **One real song end to end** (Phase 3-5, 19):
+   `.venv\Scripts\python -m lyric2resolve --song "<song>" --acapella "<acapella>" --lyrics lyrics.txt --render-preset preview`
+   → offset printed, project + exports + preview MP4 created. Without `--lyrics` once too (pure Whisper).
+5. **Editor** (Phase 7, 8, 9, 17, 18): open the song in the editor; merge/split/move/edit/nudge/undo; add a gap; click
+   review flags; change a section preset; style + styling level; Assistant: ask it to change something; Settings page;
+   branding on/off.
+6. **Resolve** (Phase 10, 11): import both FCPXMLs; run the build script with STYLED and FULL; nothing in gaps;
+   titles on the right words at 25 and 29.97 fps.
+7. **Karaoke** (Phase 12) on a second screen with the vocal slider and a 2-song queue.
+8. **Visuals + DJ** (Phase 14, 15): STANDARD render of one template; the MP4 plays in sync on Rekordbox and Serato;
+   the Resolve Deliver settings from docs/DJ_VIDEO_GUIDE.md give a deck-playable file.
+9. **Batch** (Phase 18): 2-3 songs in a folder → `lyric2resolve batch <folder>`.
+10. **Update banner + roll back** (Phase 1, 18): after the next merge use the banner's *Update now*; then *Roll back*
+    in the launcher and update again.
+
 ## Phase 1 — install + launcher + updater
 CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows runner; still check by hand:
 - [ ] `install.bat` creates `.venv` and the Desktop + Start-menu shortcuts.
 - [ ] Shortcut opens the launcher **without** a console window.
-- [ ] Status text "No app interface yet - version <hash> (<date>), up to date".
+- [ ] Status text shows the version (hash + date) and "up to date"; from Phase 7 on the editor starts and opens in the browser.
 - [ ] "Open data folder" opens `%LOCALAPPDATA%\lyric2resolve`.
 - [ ] Offline (Wi-Fi off): launcher still opens, says offline, no error popup.
 - [ ] After a PR is merged: "Update available" window with changelog + commits; "Later" changes nothing.

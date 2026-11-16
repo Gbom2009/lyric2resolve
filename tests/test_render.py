@@ -218,3 +218,13 @@ def test_render_estimate_only_and_missing_blender(tmp_path, monkeypatch):
     monkeypatch.setattr(bl, "find_blender", lambda *a, **k: None)
     with pytest.raises(RuntimeError, match="Blender was not found"):
         render_project(path, "floor_grid", "standard", ["9:16"], log=lambda m: None, textures_root=tmp_path / "tex")
+
+
+def test_verify_blender_3_frame_render_with_fake_blender():
+    from lyric2resolve import verify
+
+    ctx = verify.Context(repo=Path(__file__).resolve().parents[1], blender_runner=runner())
+    (res,) = verify.run_checks(ctx, only={"blender_3_frame_render"})
+    assert res.status == verify.OK, res.detail
+    (res,) = verify.run_checks(verify.Context(repo=ctx.repo, quick=True), only={"blender_3_frame_render"})
+    assert res.status == verify.SKIP

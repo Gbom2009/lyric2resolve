@@ -24,7 +24,7 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 16 | Prompt generator + templates | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 17 | Claude link | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 18 | Settings UI / branding / batch / update banner | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 19 | Full test pass + docs | in progress | continuous-2026-11-16 / PR #2 |
+| 19 | Full test pass + docs | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 
 Statuses: planned / in progress / PR open / merged / tested-OK / needs fixes / waiting for user
 
@@ -47,8 +47,8 @@ Phase 15: done (render/{presets,blender,runner,mux,instructions,__init__}.py, `r
 Phase 16: done (visuals/{brief,prompts}.py, templates.py, /ideas page (static/ideas.{html,js}), `ideas` CLI, apply_template op, tests/test_prompts_templates.py).
 Phase 17: done (claude_link/{__init__,cli,notes,mcp_server}.py, render/jobs.py, editor endpoints /api/assistant/* + /api/render*, static/assistant.js (side-panel card), docs/ASSISTANT.md, verify checks claude_cli + mcp_server, tests/test_claude_link.py + tests/data/fake_claude.py + tests/e2e/test_assistant.py).
 Phase 18: done (branding.py + config/brand_funqtion.json + static/brand/funqtion-logo.svg, editor/settings_api.py (/api/settings, /api/settings/updater, /api/update/*, /theme.css, /api/brand, /settings), static/{settings.html,settings.js,update_banner.js}, appctl update-request hand-off + launcher watcher, batch.py (`batch` CLI, run_song = single-song pipeline), tests/test_settings_batch.py + e2e/test_settings.py).
-Phase 19 (full test pass, README, DJ guide, consolidated VERIFY_LOCAL, end-to-end CLI, verify blender_3_frame_render): next.
-Phase 19 TODO noted: verify_local `blender_3_frame_render` is still a pending placeholder (Phase 15 did not add it) -> implement in Phase 19.
+Phase 19: done (cli.py end-to-end `lyric2resolve --song ...` via batch.run_song, README.md, VERIFY_LOCAL FULL TEST PASS section, verify check blender_3_frame_render (real render path, 3 preview frames; fake-Blender test), tests/test_end_to_end.py).
+ALL PHASES BUILT. PR #2 = phases 2-19, ready for the user to merge + run the FULL TEST PASS (VERIFY_LOCAL.md). Next session: record the user's REPORT_LOCAL.md + feedback here, fix on a new branch from main ("Fixes from testing").
 Session 3 (2026-11-16): user confirmed: continue on PR #2, Claude CLI installed on PC, try funqtion-site for branding, test everything later.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
@@ -93,7 +93,8 @@ Phase 1 user test: not done yet (user chose continuous); fold its checklist into
 - Dependency step runs only when the hash of `requirements/*.txt` + `pyproject.toml` changes (state in `<data>/settings/updater_state.json`); from Phase 2 it calls `scripts/setup_update.py --update` if present.
 
 ## Open issues
-- (none yet)
+- Unverified on real hardware/software (by design, see VERIFY_LOCAL.md): Whisper on CUDA, separation model name, Resolve FCPXML import + Text+ input names, Eevee headless render, Rekordbox/Serato playback, Windows launcher/update flow, Claude CLI on Windows (claude.cmd vs claude.exe).
+- Google Fonts CSS2 static-TTF trick and Poly Haven/ambientCG endpoints are verified only from the cloud; asset sync must be run on the PC.
 
 ## User test feedback per phase
 - (none yet)

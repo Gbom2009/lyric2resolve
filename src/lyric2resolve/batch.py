@@ -112,7 +112,8 @@ def project_settings(s) -> proj.ProjectSettings:
 
 def run_song(job: BatchJob, out_root: Path, *, settings, engine, ffmpeg, cache_dir: Path,
              formats: list[str] | None = None, granularity: str | None = None, fps: float | None = None,
-             analyze: bool = True, compensate: bool = False, log: Callable[[str], None] = print) -> JobResult:
+             analyze: bool = True, compensate: bool = False, install_resolve_script: bool = False,
+             log: Callable[[str], None] = print) -> JobResult:
     """One song through the whole pipeline. Never raises: errors come back in the result."""
     from lyric2resolve import export as ex
     from lyric2resolve import transcription
@@ -153,7 +154,10 @@ def run_song(job: BatchJob, out_root: Path, *, settings, engine, ffmpeg, cache_d
         path = proj.save(p, folder / proj.PROJECT_FILE)
         res.project = str(path)
         log(f"[{job.title}] exporting {', '.join(formats or ['fcpxml'])}…")
-        out = ex.export(p, folder / "export", formats or ["fcpxml"])
+        out = ex.export(p, folder / "export", formats or ["fcpxml"],
+                        install_resolve_script=install_resolve_script and "resolve" in (formats or []))
+        if out.get("resolve_script"):
+            res.messages.append(f"Resolve script installed: {out['resolve_script']} (Workspace > Scripts)")
         res.files = out["files"]
         res.messages += out["warnings"]
         res.ok = True
@@ -235,7 +239,8 @@ def main(argv: list[str]) -> int:
     out = a.out or data / "projects"
     results = run_batch(jobs, out, settings=s, engine=engine_from_settings(a.model, a.language),
                         ffmpeg=Ffmpeg(str(exe)), cache_dir=data / "cache", formats=a.formats,
-                        granularity=a.granularity, fps=a.fps, analyze=not a.no_analyze, compensate=a.compensate)
+                        granularity=a.granularity, fps=a.fps, analyze=not a.no_analyze, compensate=a.compensate,
+                        install_resolve_script=True)
     print(f"\n{sum(r.ok for r in results)}/{len(results)} done. Report: {out / 'batch_report.md'}")
     (out / "batch_report.json").write_text(json.dumps([asdict(r) for r in results], indent=2), encoding="utf-8")
     return 0 if all(r.ok for r in results) else 2
