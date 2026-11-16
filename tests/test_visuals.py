@@ -269,3 +269,49 @@ def test_bpy_custom_scene_error_is_reported(tmp_path):
     run = subprocess.run([sys.executable, str(out / "l2r_scene.py"), str(dp)], capture_output=True, text=True,
                          timeout=300, env=dict(os.environ, PYTHONPATH=""))
     assert run.returncode != 0 and "my scene is broken" in (run.stdout + run.stderr)
+
+
+# ------------------------------------------------------------------ fix: older Blender (3.x) socket names
+
+TEMPLATE_DIR = Path(__file__).resolve().parents[1] / "src" / "lyric2resolve" / "visuals" / "blender_template"
+
+
+def _template_module(monkeypatch):
+    import importlib.util
+    import types
+
+    monkeypatch.setitem(sys.modules, "bpy", types.ModuleType("bpy"))  # only the helpers are used
+    spec = importlib.util.spec_from_file_location("l2r_scene_test", TEMPLATE_DIR / "l2r_scene.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_emission_socket_name_works_on_blender_3_and_4(monkeypatch):
+    mod = _template_module(monkeypatch)
+
+    class Node:
+        def __init__(self, names):
+            self.inputs = {n: object() for n in names}
+
+    assert mod.sock_name(Node(["Base Color", "Emission Color", "Emission Strength"]), "Emission Color") == "Emission Color"
+    assert mod.sock_name(Node(["Base Color", "Emission", "Emission Strength"]), "Emission Color") == "Emission"  # 3.x
+    old = Node(["Emission"])
+    assert mod.sock(old, "Emission Color") is old.inputs["Emission"]
+    src = (TEMPLATE_DIR / "l2r_scene.py").read_text(encoding="utf-8")
+    assert 'inputs["Emission Color"]' not in src  # every use goes through sock()/sock_name()
+
+
+@pytest.mark.parametrize("py", ["python3.10", "python3.11"])
+def test_blender_scripts_parse_with_older_blender_python(py):
+    """Blender 3.x ships Python 3.10, 4.x 3.11: no 3.12-only syntax (e.g. nested same-quote f-strings)."""
+    import shutil
+    import subprocess
+
+    exe = shutil.which(py)
+    if not exe:
+        pytest.skip(f"{py} not installed")
+    files = [TEMPLATE_DIR / "l2r_scene.py", *(TEMPLATE_DIR.parent / "scene_examples").glob("*.py")]
+    code = "import ast,sys\nfor f in sys.argv[1:]: ast.parse(open(f, encoding='utf-8').read(), f)"
+    res = subprocess.run([exe, "-c", code, *map(str, files)], capture_output=True, text=True)
+    assert res.returncode == 0, res.stderr

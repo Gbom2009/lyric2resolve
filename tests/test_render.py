@@ -259,3 +259,20 @@ def test_visuals_api_options_videos_and_files(tmp_path, monkeypatch):
     assert opened and opened[-1][-1].endswith("preview")
     assert c.post("/api/visuals/open-folder", json={"folder": ".."}).status_code == 403
     assert c.get("/visuals").status_code == 200
+
+
+def test_old_blender_is_named_in_the_build_error(tmp_path):
+    path = make_project(tmp_path)
+
+    class OldBlender:
+        def version(self):
+            return (3, 3, 1)
+
+        def build(self, script, data, log=None):
+            raise RuntimeError("Building the Blender scene failed:\nKeyError: 'Emission Color'")
+
+    logs = []
+    with pytest.raises(RuntimeError, match=r"Your Blender is 3\.3\.1; the scenes need Blender 4\.2"):
+        render_project(path, "particle_field", "preview", ["16:9"], runner=OldBlender(), log=logs.append,
+                       do_mux=False, textures_root=tmp_path / "tex")
+    assert any("Blender 3.3.1 - older than 3.6" in m for m in logs)

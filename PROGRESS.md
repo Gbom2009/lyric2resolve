@@ -101,6 +101,10 @@ Phase 1 user test: not done yet (user chose continuous); fold its checklist into
 - Google Fonts CSS2 static-TTF trick and Poly Haven/ambientCG endpoints are verified only from the cloud; asset sync must be run on the PC.
 
 ## User test feedback per phase
+- User feedback 6 (2026-11-16, Windows PC): Visuals particle_field build failed: KeyError 'Emission Color' (Principled
+  BSDF socket is "Emission" before Blender 4.0 → PC has an older Blender). Fix (branch `fix-blender-sockets`):
+  sock()/sock_name() aliases in l2r_scene.py, no 3.12-only f-string syntax (Blender 3.x = Python 3.10; test parses
+  with python3.10/3.11), render log shows the Blender version + MIN_VERSION 3.6 warning, build error names the version.
 - Mac feedback 3 (2026-11-16): clean .venv reinstall worked; New project (song only) separated vocals (1563 s, now
   cached) then failed transcribing: URLError CERTIFICATE_VERIFY_FAILED (python.org Python has no CA bundle; torch.hub
   Silero VAD download via urllib). Fix (branch `mac-fix-ssl`): paths.fix_mac_certs sets SSL_CERT_FILE=certifi.where()

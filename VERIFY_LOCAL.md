@@ -238,3 +238,6 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 
 ## Mac fixes from testing (3) — certificates
 - [ ] New project transcribes without CERTIFICATE_VERIFY_FAILED; Library → asset sync / verify_local asset_apis work too.
+
+## Fixes from testing (6) — Blender socket names
+- [ ] Visuals → Particle field Preview builds and renders (no "Emission Color" KeyError); the log names the Blender version.
