@@ -24,6 +24,9 @@ APP_COMMANDS = {
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    from lyric2resolve import paths
+
+    paths.fix_mac_path()  # macOS: apps started from the Dock have no Homebrew in PATH
     if argv and argv[0] in APP_COMMANDS:
         return importlib.import_module(APP_COMMANDS[argv[0]]).main(argv[1:])
     from lyric2resolve import cli

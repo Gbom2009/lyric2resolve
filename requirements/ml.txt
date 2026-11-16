@@ -1,6 +1,8 @@
 # Transcription (Whisper) - needs torch from requirements/torch.txt first.
 faster-whisper>=1.0
 stable-ts>=2.17
+# Mac (Apple Silicon): Whisper on the M chip via Apple MLX (faster-whisper/CTranslate2 has no Mac GPU support)
+mlx-whisper>=0.4; sys_platform == "darwin" and platform_machine == "arm64"
 # PyAV 19 removed av.open(metadata_errors=...), which faster-whisper 1.2.1 uses to decode audio (checked 2026-11-16).
 av>=11,<19
 # GPU: faster-whisper's CTranslate2 needs cublas64_12.dll (+ cuDNN 9). CUDA 12 torch builds ship both in torch/lib;

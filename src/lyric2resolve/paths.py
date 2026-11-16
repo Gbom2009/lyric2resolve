@@ -149,3 +149,18 @@ def atomic_write_text(path: Path, text: str) -> Path:
             tmp.unlink(missing_ok=True)
     return path
 
+
+def fix_mac_path(env: dict | None = None, platform: str | None = None) -> list[str]:
+    """macOS apps started from Finder/the Dock get a minimal PATH (no Homebrew): add the usual tool folders so
+    ffmpeg, git, blender and claude are found by every subprocess. Returns the folders added."""
+    env = os.environ if env is None else env
+    if (platform or sys.platform) != "darwin":
+        return []
+    have = env.get("PATH", "").split(os.pathsep)
+    home = env.get("HOME") or str(Path.home())
+    want = ["/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/bin", f"{home}/.local/bin"]
+    add = [d for d in want if d not in have and Path(d).is_dir()]
+    if add:
+        env["PATH"] = os.pathsep.join(add + [x for x in have if x])
+    return add
+

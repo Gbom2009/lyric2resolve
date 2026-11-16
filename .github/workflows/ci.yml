@@ -35,6 +35,17 @@ jobs:
           .\install.ps1 -NoShortcuts
           if ($LASTEXITCODE -ne 0) { exit 1 }
           .\.venv\Scripts\python.exe launcher.pyw version
+  macos:
+    # Apple Silicon (M-chip) runner: the Mac version runs the same tests (Mac installs follow mac-release)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements/dev.txt -r requirements/core.txt playwright
+      - run: python -m playwright install chromium
+      - run: python -m pytest -q
   blender:
     # real Blender scene generation with the bpy module (Linux only; renders are verified on the PC)
     runs-on: ubuntu-latest

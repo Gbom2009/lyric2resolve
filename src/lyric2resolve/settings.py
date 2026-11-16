@@ -7,6 +7,7 @@ Unknown keys are kept (forward compatible), invalid values fall back to defaults
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
@@ -35,8 +36,9 @@ class AppSettings:
     claude_permission_mode: str = ""   # "" = default (only the app's MCP tools are pre-allowed)
     claude_blender_mcp: bool = False   # also register the community Blender MCP server
     # transcription
-    whisper_model: str = "large-v3"
-    device: str = "cuda"          # "cuda" | "cpu"
+    # Mac (Apple Silicon): MLX on the M chip; large-v3-turbo fits comfortably in 8 GB
+    whisper_model: str = field(default_factory=lambda: "large-v3-turbo" if sys.platform == "darwin" else "large-v3")
+    device: str = field(default_factory=lambda: "mps" if sys.platform == "darwin" else "cuda")  # cuda | mps | cpu
     compute_type: str = "float16"
     language: str = ""            # "" = auto-detect
     vad_threshold: float = 0.35   # voice filter sensitivity; Silero's default 0.5 is tuned for speech and can
@@ -77,8 +79,8 @@ class AppSettings:
             reset("styling_level", f"must be one of {STYLING_LEVELS}")
         if self.whisper_model not in WHISPER_MODELS:
             reset("whisper_model", f"must be one of {WHISPER_MODELS}")
-        if self.device not in ("cuda", "cpu"):
-            reset("device", "must be 'cuda' or 'cpu'")
+        if self.device not in ("cuda", "mps", "cpu"):
+            reset("device", "must be 'cuda' (NVIDIA), 'mps' (Apple Silicon) or 'cpu'")
         try:
             if not 0.0 <= float(self.vad_threshold) <= 0.9:
                 raise ValueError

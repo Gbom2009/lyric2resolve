@@ -12,8 +12,10 @@ sys.path.insert(0, str(ROOT / "src"))
 
 
 def main() -> int:
+    from lyric2resolve import paths
     from lyric2resolve.updater.cli import main as cli_main
 
+    paths.fix_mac_path()  # macOS: an app started from the Dock gets no Homebrew/git in PATH
     args = sys.argv[1:]
     if not args or args[0].startswith("--"):
         args = ["--repo", str(ROOT), "launch", *args]
