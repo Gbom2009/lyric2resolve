@@ -15,15 +15,7 @@ def main() -> int:
     from lyric2resolve import paths
     from lyric2resolve.updater.cli import main as cli_main
 
-    relaunch = paths.native_relaunch_argv([str(Path(__file__).resolve()), *sys.argv[1:]])
-    if relaunch:  # Apple Silicon started us under Rosetta (Intel): restart as arm64, or nothing loads
-        import os
-
-        os.environ[paths.NATIVE_ENV] = "1"
-        try:
-            os.execv(relaunch[0], relaunch)
-        except OSError:
-            pass  # carry on; the editor check explains the problem
+    paths.ensure_native([str(Path(__file__).resolve()), *sys.argv[1:]])  # Rosetta -> restart as arm64
     paths.fix_mac_path()  # macOS: an app started from the Dock gets no Homebrew/git in PATH
     args = sys.argv[1:]
     if not args or args[0].startswith("--"):

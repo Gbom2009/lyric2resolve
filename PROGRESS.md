@@ -101,6 +101,11 @@ Phase 1 user test: not done yet (user chose continuous); fold its checklist into
 - Google Fonts CSS2 static-TTF trick and Poly Haven/ambientCG endpoints are verified only from the cloud; asset sync must be run on the PC.
 
 ## User test feedback per phase
+- Mac feedback 2 (2026-11-16): Update to 9f8792a failed at the dependency step: the OLD launcher (still under
+  Rosetta) ran setup_update.py as x86_64 → pip installed x86_64 torch 2.2.2 (conflict with audio-separator's
+  darwin-arm64 torch>=2.3), numpy C-extensions failed; rolled back. Fix (branch `mac-fix-arch-2`):
+  paths.ensure_native() re-execs natively at the start of setup_update.py, `python -m lyric2resolve` and the
+  launcher. User does a one-time clean .venv reinstall (INSTALL_MAC.md troubleshooting).
 - Mac feedback 1 (2026-11-16, MacBook Air M1, version 1ab2b0a): launcher "full setup has not been run yet" with
   ImportError pydantic_core "incompatible architecture (have 'arm64', need 'x86_64')" → the script-based .app ran the
   universal python.org Python under Rosetta, setup (Terminal) had installed arm64 wheels. Fixed on branch

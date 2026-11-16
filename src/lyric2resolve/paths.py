@@ -182,6 +182,19 @@ def native_relaunch_argv(argv: list[str], env: dict | None = None, translated: b
     return ["/usr/bin/arch", "-arm64", executable or sys.executable, *argv]
 
 
+def ensure_native(argv: list[str], execv=os.execv) -> None:
+    """Restart this Python process natively (arm64) when it runs under Rosetta; returns only when nothing needs to
+    happen. Used by the launcher, the setup/update script (pip under Rosetta installs Intel packages!) and the app."""
+    cmd = native_relaunch_argv(argv)
+    if not cmd:
+        return
+    os.environ[NATIVE_ENV] = "1"
+    try:
+        execv(cmd[0], cmd)
+    except OSError:
+        pass
+
+
 def fix_mac_path(env: dict | None = None, platform: str | None = None) -> list[str]:
     """macOS apps started from Finder/the Dock get a minimal PATH (no Homebrew): add the usual tool folders so
     ffmpeg, git, blender and claude are found by every subprocess. Returns the folders added."""

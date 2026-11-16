@@ -23,6 +23,10 @@ from lyric2resolve.settings import load_settings  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
+    from lyric2resolve import paths
+
+    # Apple Silicon: pip under Rosetta would install Intel (x86_64) packages into the arm64 .venv
+    paths.ensure_native([str(Path(__file__).resolve()), *(sys.argv[1:] if argv is None else argv)])
     ap = argparse.ArgumentParser()
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--full", action="store_true")

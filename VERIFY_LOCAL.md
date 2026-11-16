@@ -231,3 +231,7 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 ## Mac fixes from testing (1) — Rosetta / architecture
 - [ ] After Update + reopening the app: Start editor works (no "incompatible architecture" message).
 - [ ] Activity Monitor → CPU tab → "Kind" column for the Python processes says **Apple**, not Intel.
+
+## Mac fixes from testing (2) — dependency step under Rosetta
+- [ ] After the clean reinstall: Run setup ends with "PyTorch OK" (torch 2.3 or newer, not 2.2.2), Start editor works.
+- [ ] A later Update with changed requirements finishes (the step runs natively).
