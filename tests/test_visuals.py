@@ -201,3 +201,71 @@ def test_procedural_textures_tile_and_png(tmp_path):
     assert listed[0]["source"] == "procedural" and listed[0]["maps"]["emission"] == "procedural/cracks_64.png"
     with pytest.raises(ValueError):
         procedural.generate("plaid", tmp_path)
+
+
+CHECK_TEXT = r'''
+import sys, json, bpy
+bpy.ops.wm.open_mainfile(filepath=sys.argv[1])
+sc = bpy.context.scene
+txt = [o for o in bpy.data.objects if o.type == "FONT"]
+vis = {}
+for f in (10, 40, 90):
+    sc.frame_set(f)
+    vis[f] = [o.data.body for o in txt if not o.hide_render]
+print("RESULT" + json.dumps({"bodies": [o.data.body for o in txt], "visible": vis}))
+'''
+
+
+def _build_and_check(tmp_path, data_path):
+    env = dict(os.environ, PYTHONPATH="")
+    run = subprocess.run([sys.executable, str(tmp_path / "l2r_scene.py"), str(data_path)], capture_output=True,
+                         text=True, timeout=600, env=env)
+    assert run.returncode == 0, run.stdout[-2000:] + run.stderr[-2000:]
+    blend = sorted(tmp_path.glob("*_16x9.blend"))[0]
+    (tmp_path / "check_text.py").write_text(CHECK_TEXT)
+    res = subprocess.run([sys.executable, str(tmp_path / "check_text.py"), str(blend)], capture_output=True,
+                         text=True, timeout=300)
+    return json.loads(next(line for line in res.stdout.splitlines() if line.startswith("RESULT"))[6:])
+
+
+def lyric_project():
+    words = proj.make_words([{"text": w, "start": 1 + i * 0.5, "end": 1.4 + i * 0.5, "line": i // 3}
+                             for i, w in enumerate("we sing this song all night".split())])
+    p = demo_project()
+    p.words, p.blocks = words, proj.blocks_by_line(words)
+    return p
+
+
+@needs_bpy
+def test_bpy_custom_scene_acid_example(tmp_path):
+    """The shipped example custom scene (3D ACID + dripping liquid) builds in real Blender."""
+    from lyric2resolve.visuals import custom
+
+    dp = blender_gen.generate(lyric_project(), tmp_path, "custom", ["16:9"], audio=(song(), SR),
+                              textures_root=tmp_path / "none", custom_script=custom.EXAMPLES_DIR / "acid_drip.py",
+                              time_range=(2.0, 4.0), name="acid", params={"text": "ACID"})
+    info = _build_and_check(tmp_path, dp)
+    assert info["bodies"] == ["ACID"]
+
+
+@needs_bpy
+def test_bpy_lyrics_in_3d_follow_the_words(tmp_path):
+    dp = blender_gen.generate(lyric_project(), tmp_path, "spectrum_bars", ["16:9", "9:16"], audio=(song(), SR),
+                              textures_root=tmp_path / "none", count=10, lyrics_3d=True)
+    info = _build_and_check(tmp_path, dp)
+    assert info["bodies"] == ["we sing this", "song all night"]
+    assert info["visible"]["10"] == [] and info["visible"]["40"] == ["we sing this"]
+    assert info["visible"]["90"] == ["song all night"]
+
+
+@needs_bpy
+def test_bpy_custom_scene_error_is_reported(tmp_path):
+    bad = tmp_path / "bad.py"
+    bad.write_text("def build_scene(ctx):\n    raise ValueError('my scene is broken')\n")
+    out = tmp_path / "scene"
+    out.mkdir()
+    dp = blender_gen.generate(lyric_project(), out, "custom", ["16:9"], audio=(song(), SR),
+                              textures_root=tmp_path / "none", custom_script=bad)
+    run = subprocess.run([sys.executable, str(out / "l2r_scene.py"), str(dp)], capture_output=True, text=True,
+                         timeout=300, env=dict(os.environ, PYTHONPATH=""))
+    assert run.returncode != 0 and "my scene is broken" in (run.stdout + run.stderr)

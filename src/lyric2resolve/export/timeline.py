@@ -187,6 +187,10 @@ def build_plan(project: Project, layout: str = "16:9", beat_markers: str = "down
     no_text = sorted(gaps + hidden)
     clips: list[Clip] = []
     for i, (b, (s_f, e_f)) in enumerate(zip(blocks, raw)):
+        mid = rate.frames((spans[i][0] + spans[i][1]) / 2 + off)
+        if any(a <= mid < z for a, z in hidden):   # sung during a clip that replaces the lyrics
+            warnings.append(f"block {b.id} is replaced by a clip (not shown as text)")
+            continue
         s_f, e_f = _cut_by_gaps(s_f, e_f, no_text)
         if e_f <= s_f:  # entirely inside a gap (or empty): never revive it after the gap
             warnings.append(f"block {b.id} dropped: it lies inside an instrumental gap or has no duration")

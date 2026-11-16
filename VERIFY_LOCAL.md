@@ -174,3 +174,11 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] + Text adds a line where Whisper missed it; it appears in the FCPXML/Resolve export and in Karaoke.
 - [ ] New project of You're Not Alone: first sentence recognised now (voice filter 0.35)? If not, does the Review card show "missed lyrics" there?
 
+## Feature update B — clips, custom scenes, 3D lyrics, lyric look
+- [ ] Visuals Preview render with "Lyrics inside the scene": 3D lyrics appear when sung (Eevee on your GPU; tested in the cloud with Cycles CPU).
+- [ ] ✨ Make a clip with Claude for a short moment: Claude writes scenes/<name>/scene.py, render_clip runs, the clip appears on the clips track; asking for a change re-renders it in place.
+- [ ] + Add video/image: a video and a PNG land at the playhead; previews play in the Clips card.
+- [ ] Resolve: FCPXML import shows clips on the track under the titles; the build script puts clips on V1 and Text+ on V2; no title during a "replaces the lyrics" clip.
+- [ ] Assistant: 📎 attach an image, ask "describe this image" → Claude sees it; ask it to add a note to CLAUDE.md → no permission error.
+- [ ] New project with Look = Lyric video: titles big + centred + animated in Resolve (FULL level).
+

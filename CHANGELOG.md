@@ -3,6 +3,26 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Clips, custom 3D scenes with Claude, lyrics as the star (feature update B)
+**New**
+- **Clips track**: videos on the song's timeline. They are shown as purple regions on the waveform (drag or resize to move them) and in the new **Clips** card, with a preview, start/end and "Go to"/"Snap to bars".
+  - **+ Add video/image**: your own file at the playhead or over the selected words. Images become a short video; a video can't be longer than its file.
+  - **The clip replaces the lyrics here**: the words sung during that clip are not shown as text. Your words stay in the project, so switch it off to bring the text back.
+  - Clips go to **Resolve**: in the FCPXML they are on the video track under the lyrics, and the Resolve script puts clips on V1 and the Text+ lyrics on V2. SRT/CSV/EDL leave out the replaced lyrics too.
+- **✨ Make a clip with Claude**: select a moment (e.g. the one-bar break before "Acid"), describe what you want ("3D ACID text, glowing green liquid dripping down, hits on the beat"), and optionally add reference images. Claude gets the exact times, BPM, bars and the music's energy. It writes a Blender scene, the app renders exactly that moment (video only), and the clip lands on the timeline. Not right? Ask Claude in the Assistant card to change it; it re-renders in place.
+  - Custom scenes live in your project's `scenes/` folder. Claude starts from a built-in example of exactly that idea (3D "ACID" with dripping glowing liquid), and builds on the audio-reactive helpers (bass/mids/highs/beat, bars, lyrics, glow).
+- **Lyrics inside the scene**: on the Visuals page, "Lyrics inside the scene (3D)" (on by default) puts the lyrics as big glowing 3D text into the rendered video, appearing exactly when they're sung, so the render is a finished lyric video.
+- **Lyrics as the main focus**: new **Lyric Video**, **Lyric Video Neon** and **Lyric Video Punch** styles (big, centred, heavy type, glow, pop or word-by-word reveal). New projects get a **Look** choice: *Lyric video* (default: Lyric Video style and the FULL styling level with animations) or *Clean captions*. For an existing project, pick a Lyric Video style in the Text style card.
+- **Assistant**:
+  - **📎 Attach** images, videos or documents (mood boards, logos, example frames, a description). They're saved in the project's `context` folder and ticked files go with your next message; Claude can look at images.
+  - Claude may now **read, write and edit files inside the project folder**, including its own notes file, which failed before. Writing outside the project folder stays blocked.
+
+**What to test**
+- Visuals → Preview render with "Lyrics inside the scene": the words appear in 3D at the right moments.
+- Select the break before a drop → ✨ Make a clip with Claude → describe it → the clip appears on the timeline. Export to Resolve: the clip is on V1, the lyrics on V2, and no title during the clip when "replaces the lyrics" is on.
+- Add one of your own videos and an image with + Add video/image.
+- New project with Look = Lyric video → the export looks like a lyric video, not subtitles.
+
 ## Visuals page, your own text, steadier editor (feature update A)
 **New**
 - **Visuals** button in the editor: render the audio-reactive Blender visuals without the terminal. Pick a scene (spectrum bars, pulsing blob, tunnel, particle field, neon floor grid; each has a short description), the quality (Preview → Ultra), 16:9 and/or 9:16, and the whole song or one section. **Estimate time** first, then **Render**: it runs in the background with a progress bar and time left, **Stop** and continue later. Finished videos play right on the page, and **Open folder** shows them in Explorer. The Ideas page's scene suggestions now link straight to it.
