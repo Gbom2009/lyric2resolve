@@ -239,6 +239,26 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         except ops.OpError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.get("/api/export/formats")
+    def export_formats():
+        from lyric2resolve import export as ex
+
+        return {"formats": sorted(ex.FORMATS), "layouts": ["16:9", "9:16"]}
+
+    @app.post("/api/export")
+    def do_export(body: dict = Body(default_factory=dict)):
+        from lyric2resolve import export as ex
+
+        s = current()
+        out = s.path.parent / "export"
+        try:
+            res = ex.export(s.project, out, body.get("formats") or ["fcpxml"], body.get("layouts") or None,
+                            body.get("beats") or "downbeats")
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        res["folder"] = str(out)
+        return res
+
     @app.post("/api/undo")
     def undo():
         return current().undo()

@@ -15,8 +15,8 @@ MODE: continuous (set 2026-11-16 by user; branch `continuous-2026-11-16`, one PR
 | 7 | Editor frontend 1 | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 8 | Editor frontend 2 | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
 | 9 | Styling + fonts | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
-| 10 | FCPXML export | in progress | continuous-2026-11-16 / PR #2 |
-| 11 | Resolve script + SRT/CSV/EDL | planned | |
+| 10 | FCPXML export | done (in PR #2, not merged) | continuous-2026-11-16 / PR #2 |
+| 11 | Resolve script + SRT/CSV/EDL | in progress | continuous-2026-11-16 / PR #2 |
 | 12 | Karaoke | planned | |
 | 13 | Texture sync + browser | planned | |
 | 14 | Blender generator | planned | |
@@ -38,10 +38,13 @@ Phase 6: done (editor/{ops,presets,history,app}.py, `editor` CLI, tests/test_edi
 Phase 7: done (static/{index.html,style.css,app.js}, vendored wavesurfer 7.12.12, project picker API, launcher starts editor via updater/appctl.py, tests/e2e/*).
 Phase 8: done (static/{blocks,gaps,review}.js, layout.py (shared text layout/safe area), layout warnings in state, tests/e2e/test_merge_split.py).
 Phase 9: done (styling.py, assets/{__init__,fonts}.py, assets/fonts/curation.json, static/styles.js, tests/test_styling_fonts.py + e2e/test_styles.py).
-Phase 10 (FCPXML): next → export/{timecode,timeline,fcpxml}.py, tests/test_fcpxml.py.
+Phase 10: done (export/{timecode,timeline,fcpxml,__init__}.py, editor Export dialog (static/export.js), docs/RESOLVE_IMPORT.md, verify check fcpxml_validity, tests/test_fcpxml.py).
+Phase 11 (Resolve script + SRT/CSV/EDL): next → export/{resolve_script,srt,csv_export,edl}.py, tests/test_exports_resolve.py.
 Phase 1 user test: not done yet (user chose continuous); fold its checklist into the combined test later.
 
 ## Decisions
+- FCPXML 1.9, one file per layout: spine = one gap covering the song from the start TC; song = connected asset-clip lane -1; titles = Basic Title lane 1; markers on the gap. NTSC rates use 1000/1001 with NDF timecode. Apple's DTD is NOT committed (Apple copyright); tests/verify download it from the CommandPost mirror and skip when offline.
+- All exporters share `export/timeline.build_plan` (frame-snapped clips) and `check_plan` (no overlaps, nothing in gaps); export refuses to write if check_plan fails.
 - Styles live in `project.styles` (StyleBook: user presets + default + by_section label→name); built-ins are code. Resolution: block > section own > section by id > by label > default. BASIC ignores presets; STYLED drops animations; FULL keeps them.
 - Fonts: license from google/fonts METADATA.pb (OFL/APACHE2 only; UFL rejected); static TTFs via the Google Fonts CSS2 API with an old User-Agent (variable fonts are unreliable in Resolve). Per-user install: copy to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts + HKCU Fonts registry value. No fonts are committed to the repo.
 - Text width is estimated from character counts (0.55 em mixed / 0.68 em uppercase) in `lyric2resolve/layout.py`; used for warnings now and for wrapping/positions in exports. Font size 0 = auto (7.5% of height in 16:9, 4.4% in 9:16).

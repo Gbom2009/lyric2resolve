@@ -3,6 +3,18 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Phase 10 — Export to DaVinci Resolve (FCPXML), 16:9 and 9:16
+**New**
+- **Export…** button in the editor (and `lyric2resolve export <project.json>`): writes an FCPXML timeline for Resolve for 16:9 (1920×1080) and/or vertical 9:16 (1080×1920), made from your edited blocks.
+- The timeline has the full song on an audio track, one title per lyric block (text wrapped and positioned for each layout, in your style when the styling level is STYLED/FULL), markers for the sections and bars, and starts at 01:00:00:00 (configurable).
+- Frame-accurate at 23.976, 24, 25, 29.97, 30, 50 and 60 fps.
+- Instrumental gaps are respected strictly: no titles (and no bar markers) inside a gap. Lines that fall completely inside a gap are left out and you get a note.
+- Step-by-step import guide: `docs/RESOLVE_IMPORT.md` (incl. what to do if titles arrive as simple Text titles instead of Text+, and why a `.drp` file cannot be generated).
+
+**What to test**
+- Export both layouts and import them in Resolve via File → Import → Timeline (see the guide). Check: the song plays, titles appear on the right words, nothing inside the gaps, markers on sections.
+- Tell me your Resolve version and whether the titles came in as Text or Text+.
+
 ## Phase 9 — Text styles and the font library
 **New**
 - Styling level (how much the app sets up in Resolve): BASIC (plain text, default font/colour), STYLED (your style preset), FULL (styled + simple animations: fade, pop, slide up, word reveal).

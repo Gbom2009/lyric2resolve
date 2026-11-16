@@ -15,3 +15,13 @@ def test_style_card_preview_and_save(page):
     page.locator(".word", has_text="all").first.click()
     page.select_option("#style-block", "My Neon")
     page.wait_for_function("L2R.state.blocks[1].style === 'My Neon'")
+
+
+def test_export_dialog_writes_files(page):
+    page.click("#btn-export")
+    page.wait_for_selector("#export-formats input[value=fcpxml]")
+    page.click("#export-go")
+    page.wait_for_function("document.querySelector('#export-result').textContent.includes('.fcpxml')")
+    text = page.locator("#export-result").inner_text()
+    assert "E2E_song_16x9.fcpxml" in text and "E2E_song_9x16.fcpxml" in text
+    assert (page.session.path.parent / "export" / "E2E_song_9x16.fcpxml").exists()

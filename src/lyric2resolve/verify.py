@@ -227,10 +227,35 @@ def _whisper_clip(ctx: Context) -> CheckResult:
                        f"forced alignment: {len(al.words)} words")
 
 
+@check("fcpxml_validity")
+def _fcpxml(ctx: Context) -> CheckResult:
+    """Generate FCPXML for a synthetic project in both layouts and validate it against Apple's DTD."""
+    import tempfile
+
+    from lyric2resolve import project as proj
+    from lyric2resolve.export import fcpxml
+    from lyric2resolve.export.timeline import build_plan
+
+    words = proj.make_words([{"text": t, "start": 1 + i * 0.5, "end": 1.4 + i * 0.5, "line": i // 3}
+                             for i, t in enumerate("we sing this song all night long".split())])
+    p = proj.Project(name="verify", words=words, blocks=proj.blocks_by_line(words), audio={"duration_s": 10})
+    if ctx.offline:
+        return CheckResult("fcpxml_validity", SKIP, "offline (DTD download needed)")
+    with tempfile.TemporaryDirectory() as tmp:
+        dtd = Path(tmp) / "fcpxml.dtd"
+        req = urllib.request.Request(fcpxml.DTD_URL, headers={"User-Agent": "lyric2resolve-verify/1"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            dtd.write_bytes(r.read())
+        errors = []
+        for layout in ("16:9", "9:16"):
+            errors += fcpxml.validate(fcpxml.to_string(build_plan(p, layout)), dtd)
+    return CheckResult("fcpxml_validity", FAIL if errors else OK,
+                       "; ".join(errors[:3]) or "FCPXML 1.9 valid (16:9 + 9:16); now test the import in Resolve")
+
+
 # Placeholders so the report shows what is still to come (later phases replace them).
 PENDING = {
     "blender_3_frame_render": "Phase 15",
-    "fcpxml_validity": "Phase 10",
 }
 
 

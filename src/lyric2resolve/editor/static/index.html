@@ -11,6 +11,7 @@
     <div class="brand"><span class="logo">l2r</span> <span id="project-name">lyric2resolve</span></div>
     <div class="toolbar" id="main-toolbar">
       <button id="btn-projects" title="Open another project">Projects</button>
+      <button id="btn-export" class="primary" title="Export the timeline files">Export…</button>
       <span class="sep"></span>
       <button id="btn-undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
       <button id="btn-redo" title="Redo (Ctrl+Y)" disabled>Redo</button>
@@ -69,6 +70,21 @@
     <form method="dialog"><button>Close</button></form>
   </dialog>
 
+  <dialog id="export-dialog">
+    <h2>Export</h2>
+    <p class="hint">Files are generated from your edited blocks and saved in the project's <code>export</code> folder.</p>
+    <fieldset><legend>Layouts</legend>
+      <label class="check"><input type="checkbox" name="layout" value="16:9" checked> 16:9 (1920×1080)</label>
+      <label class="check"><input type="checkbox" name="layout" value="9:16" checked> 9:16 vertical (1080×1920)</label>
+    </fieldset>
+    <fieldset><legend>Formats</legend><div id="export-formats"></div></fieldset>
+    <label class="field">Beat markers
+      <select id="export-beats"><option value="downbeats">Bars (downbeats)</option><option value="all">Every beat</option><option value="none">None</option></select>
+    </label>
+    <div class="row"><button class="primary" id="export-go">Export</button><form method="dialog"><button>Close</button></form></div>
+    <pre id="export-result" class="export-result"></pre>
+  </dialog>
+
   <script src="/static/vendor/wavesurfer.min.js"></script>
   <script src="/static/vendor/wavesurfer.regions.min.js"></script>
   <script src="/static/vendor/wavesurfer.timeline.min.js"></script>
@@ -77,5 +93,6 @@
   <script src="/static/gaps.js"></script>
   <script src="/static/review.js"></script>
   <script src="/static/styles.js"></script>
+  <script src="/static/export.js"></script>
 </body>
 </html>

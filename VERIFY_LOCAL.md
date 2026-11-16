@@ -58,3 +58,10 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] `assets sync --fonts` downloads ~30 families (≈60-80 TTF files) into `%LOCALAPPDATA%\lyric2resolve\assets\fonts`; CREDITS.md lists them. (Verified in the cloud for 3 families on 2026-11-16.)
 - [ ] `assets install-fonts` → files in `%LOCALAPPDATA%\Microsoft\Windows\Fonts` and visible in Windows Settings > Fonts; after restarting Resolve they appear in Text+ / Fusion font list (check one static font, e.g. "Montserrat Bold").
 - [ ] Editor: the library fonts render in the style preview (font picker suggestions).
+
+## Phase 10 — FCPXML import (needs Resolve)
+- [ ] verify_local `fcpxml_validity` ok (DTD validation; already passes in CI).
+- [ ] Import `_16x9.fcpxml` in Resolve (File → Import → Timeline): timeline 1920×1080 at the project fps, starts 01:00:00:00, song on A1, titles on V1 aligned with the words (spot-check 5 lines), no titles inside gaps, section/bar markers present.
+- [ ] Same for `_9x16.fcpxml` (1080×1920 timeline).
+- [ ] Test one NTSC rate (29.97 or 23.976): the last title is still in sync at the end of the song.
+- [ ] Note your Resolve version + whether titles arrive as "Text" or "Text+" (expected: Text) and which style attributes survived.

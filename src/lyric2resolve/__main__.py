@@ -12,6 +12,7 @@ APP_COMMANDS = {
     "analyze": "lyric2resolve.analysis",
     "editor": "lyric2resolve.editor.app",
     "assets": "lyric2resolve.assets",
+    "export": "lyric2resolve.export",
 }
 
 
