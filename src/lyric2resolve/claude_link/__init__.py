@@ -57,8 +57,17 @@ class Assistant:
         prompt = (prompt or "").strip()
         if not prompt:
             raise ValueError("empty message")
-        if self.busy():
-            raise RuntimeError("the Assistant is still answering - wait or press Stop")
+        with self._lock:  # check-and-set atomically (double click / Enter + click)
+            if self.busy():
+                raise RuntimeError("the Assistant is still answering - wait or press Stop")
+            self._busy.set()
+        try:
+            return self._send(project_path, prompt, project)
+        except BaseException:
+            self._busy.clear()
+            raise
+
+    def _send(self, project_path: Path, prompt: str, project=None) -> dict:
         s = self._settings()
         exe = cli.find_claude(s.claude_cli_path, self.env, self.which)
         if not exe:
@@ -74,7 +83,6 @@ class Assistant:
             self.events = []
             self.turn += 1
             self.project_path = project_path
-        self._busy.set()
         threading.Thread(target=self._turn, args=(exe, cfg, project_path, prompt, s), daemon=True).start()
         return {"turn": self.turn}
 

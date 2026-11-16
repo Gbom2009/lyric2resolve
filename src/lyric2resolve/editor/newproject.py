@@ -123,7 +123,7 @@ class NewProjectJobs:
                     log("No acapella: separating the vocals from the song (slow, cached afterwards)…")
                 res = batch.run_song(job, self.projects_dir, settings=s, engine=engine, ffmpeg=ff,
                                      cache_dir=paths.ensure_data_dir() / "cache", granularity=granularity,
-                                     do_export=False, log=log)
+                                     do_export=False, compensate=True, log=log)
                 for m in res.messages:
                     if m and not m.startswith("Traceback"):
                         log(m.splitlines()[0])

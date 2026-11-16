@@ -116,9 +116,18 @@ def test_timing_nudges():
     assert w.end == pytest.approx(0.35)
     with pytest.raises(ops.OpError):
         ops.nudge_words(p, [w.id], -1, edge="end")
-    ops.set_word_timing(p, w.id, 2.0, 2.5)
+    ops.set_word_timing(p, w.id, 1.0, 1.3)
     with pytest.raises(ops.OpError):
         ops.set_word_timing(p, w.id, 3.0, 2.0)
+    # words may not pass their neighbours (the export silently dropped such blocks); refused ops change nothing
+    with pytest.raises(ops.OpError, match="cannot pass"):
+        ops.set_word_timing(p, w.id, 2.0, 2.5)
+    assert (w.start, w.end) == (1.0, 1.3)
+    b2 = p.blocks[1]
+    before = [(x.start, x.end) for x in p.block_words(b2)]
+    with pytest.raises(ops.OpError, match="cannot pass"):
+        ops.nudge_block(p, b2.id, 2.5)
+    assert [(x.start, x.end) for x in p.block_words(b2)] == before
     ops.nudge_block(p, p.blocks[1].id, 0.5)
     assert p.block_span(p.blocks[1])[0] == pytest.approx(make_project().block_span(make_project().blocks[1])[0] + 0.5)
 

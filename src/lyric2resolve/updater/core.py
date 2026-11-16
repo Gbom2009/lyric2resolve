@@ -153,8 +153,8 @@ def dependency_commands(repo: Path, python: Path) -> list[list[str]]:
 
 
 def self_check_command(repo: Path, python: Path) -> list[str]:
-    code = ("import sys; sys.path.insert(0, r'%s'); import lyric2resolve, lyric2resolve.updater.core; "
-            "print('ok', lyric2resolve.__version__)") % (repo / "src")
+    code = ("import sys; sys.path.insert(0, %r); import lyric2resolve, lyric2resolve.updater.core; "
+            "print('ok', lyric2resolve.__version__)") % str(repo / "src")
     return [str(python), "-c", code]
 
 

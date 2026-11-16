@@ -73,9 +73,23 @@ def resolve_scripts_dir(env: dict | None = None, platform: str | None = None) ->
     return Path.home() / ".local" / "share" / "DaVinciResolve" / "Fusion" / "Scripts" / "Utility"
 
 
-def install_script(target_dir: Path | None = None) -> Path:
+def install_script(target_dir: Path | None = None, store_python: bool | None = None, run=None) -> Path:
     target_dir = target_dir or resolve_scripts_dir()
-    target_dir.mkdir(parents=True, exist_ok=True)
     dst = target_dir / SCRIPT_NAME
+    if store_python is None:
+        store_python = sys.platform.startswith("win") and paths.store_python()
+    if store_python:
+        # Microsoft Store Python hides what it writes in AppData from other programs (Resolve would never see the
+        # script). A child process is not affected, so let cmd.exe create the folder and copy the file.
+        import subprocess
+
+        run = run or (lambda cmd: subprocess.run(cmd, capture_output=True, text=True,
+                                                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)))
+        run(["cmd", "/c", "mkdir", str(target_dir)])
+        res = run(["cmd", "/c", "copy", "/Y", str(TEMPLATE), str(dst)])
+        if getattr(res, "returncode", 0) != 0:
+            raise OSError(f"could not copy the Resolve script to {dst}: {getattr(res, 'stderr', '')}")
+        return dst
+    target_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(TEMPLATE, dst)
     return dst

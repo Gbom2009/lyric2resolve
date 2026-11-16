@@ -173,17 +173,43 @@ def set_word_text(p: Project, word_id: str, text: str) -> None:
     p.words[_word_pos(p, word_id)].text = text
 
 
+def _check_order(p: Project) -> None:
+    """Words must stay in time order (blocks, exports and karaoke rely on it). Small overlaps are allowed."""
+    for a, b in zip(p.words, p.words[1:]):
+        if b.start < a.start - 1e-6:
+            raise OpError(f"'{b.text}' would start before '{a.text}' ({b.start:.2f} s < {a.start:.2f} s): "
+                          "words cannot pass each other. Move the neighbouring words too, or use smaller steps.")
+
+
 def set_word_timing(p: Project, word_id: str, start: float | None = None, end: float | None = None) -> None:
     w = p.words[_word_pos(p, word_id)]
     s = w.start if start is None else max(0.0, round(float(start), 3))
     e = w.end if end is None else max(0.0, round(float(end), 3))
     if e < s:
         raise OpError("end must be after start")
+    old = (w.start, w.end)
     w.start, w.end = s, e
+    try:
+        _check_order(p)
+    except OpError:
+        w.start, w.end = old
+        raise
 
 
 def nudge_words(p: Project, word_ids: list[str], delta: float, edge: str = "both") -> None:
-    """Shift start/end/both of words by delta seconds (never below 0, never end < start)."""
+    """Shift start/end/both of words by delta seconds (never below 0, never end < start, never past a neighbour)."""
+    before = {wid: (p.words[_word_pos(p, wid)].start, p.words[_word_pos(p, wid)].end) for wid in word_ids}
+    try:
+        _nudge(p, word_ids, delta, edge)
+        _check_order(p)
+    except OpError:
+        for wid, (a, b) in before.items():
+            w = p.words[_word_pos(p, wid)]
+            w.start, w.end = a, b
+        raise
+
+
+def _nudge(p: Project, word_ids: list[str], delta: float, edge: str) -> None:
     for wid in word_ids:
         w = p.words[_word_pos(p, wid)]
         s = w.start + delta if edge in ("both", "start") else w.start
@@ -283,6 +309,11 @@ def retime_block(p: Project, block_id: str, start: float | None = None, end: flo
     lo, hi = idx[ws[0].id], idx[ws[-1].id]
     prev_end = p.words[lo - 1].end if lo > 0 else 0.0
     next_start = p.words[hi + 1].start if hi + 1 < len(p.words) else float("inf")
+    tol = 0.006  # the browser shows/sends centiseconds; clamp tiny rounding differences instead of refusing
+    if prev_end - tol <= s < prev_end:
+        s = prev_end
+    if next_start < e <= next_start + tol:
+        e = next_start
     if s < prev_end - 1e-6 or e > next_start + 1e-6:
         raise OpError(f"that would overlap the neighbouring words (free range: {prev_end:.2f} - "
                       f"{next_start:.2f} s)" if next_start != float("inf") else

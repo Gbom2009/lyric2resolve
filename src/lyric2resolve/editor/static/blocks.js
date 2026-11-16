@@ -134,9 +134,15 @@
           b.overridden ? L.h("button", { onclick: () => L.op("set_block_text", { block_id: b.id, text: null }, "reset block text") }, "Reset to words") : ""),
         L.h("p", { class: "hint" }, `Export text: “${b.display}”`));
       const saveTimes = () => {
-        const s = L.parseTime($("#insp-bstart").value), e = L.parseTime($("#insp-bend").value);
+        const si = $("#insp-bstart").value, ei = $("#insp-bend").value;
+        const s = L.parseTime(si), e = L.parseTime(ei);
         if (!isFinite(s) || !isFinite(e)) return L.setStatus("Times look like 1:23.45 or 83.45", true);
-        L.op("retime_block", { block_id: b.id, start: s, end: e }, "set block time");
+        // only send what you changed: the shown values are rounded to 1/100 s
+        const args = { block_id: b.id };
+        if (si.trim() !== L.fmt(b.start)) args.start = s;
+        if (ei.trim() !== L.fmt(b.end)) args.end = e;
+        if (args.start === undefined && args.end === undefined) return;
+        L.op("retime_block", args, "set block time");
       };
       const tkey = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); saveTimes(); } };
       body.append(

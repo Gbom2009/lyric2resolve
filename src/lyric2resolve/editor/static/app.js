@@ -16,6 +16,7 @@
   // ------------------------------------------------------------------ helpers
   L2R.fmt = (t) => {
     if (!isFinite(t)) t = 0;
+    t = Math.round(t * 100) / 100;  // round first, so 59.996 shows as 1:00.00 (not 0:60.00)
     const m = Math.floor(t / 60), s = t - m * 60;
     return `${m}:${s.toFixed(2).padStart(5, "0")}`;
   };

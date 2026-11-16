@@ -151,7 +151,7 @@ class EditorSession:
                 problems = self.project.validate()
                 if problems:
                     raise ops.OpError("; ".join(problems))
-            except (ops.OpError, ValueError, TypeError, proj.ProjectError, styling.StyleError, OSError) as exc:
+            except Exception as exc:  # any failure (also KeyError/AttributeError from odd input) is rolled back
                 # restore the snapshot: a failed op never leaves a half-edited project
                 restored = self.history.undo(self.project)
                 self.history.redo_stack.clear()

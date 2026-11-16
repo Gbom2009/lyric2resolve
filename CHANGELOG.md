@@ -14,7 +14,16 @@ The launcher shows the new entries when an update is available and after updatin
 **Changed**
 - Whisper's voice filter is gentler for singing (0.35 instead of 0.5). The old setting was made for speech and could drop soft or reverb-heavy sung lines, such as a whole first sentence. Adjustable in Settings ("Voice filter sensitivity"; 0 = off).
 
-**Fixed**
+**Fixed** (several of these were found in a code review)
+- The Resolve script couldn't find your export with Microsoft Store Python, and may not have been installed where Resolve looks for it. It now checks both data folders and installs the script so Resolve can see it.
+- Applying a preset to one section made the other half of a lyric line that crosses into that section disappear from the export.
+- Nudging or retiming a word past its neighbour silently dropped a block from the export. Words can no longer pass each other; you get a clear message instead.
+- "Set block time" could refuse a valid change because of rounding.
+- New project from the browser now corrects a detected time offset between song and acapella (before, every title could be a little late or early).
+- Batch mode no longer overwrites a project you already edited (`--overwrite` if you really want that). Songs with "Voice"/"Vox" in the title are no longer mistaken for acapellas.
+- The Assistant can no longer switch the open project behind your back, and a double click can't start it twice.
+- After **Stop**, a half-written frame is removed, so continuing the render doesn't produce a broken video.
+- Updates no longer fail when the app folder's path contains an apostrophe (e.g. `C:\Users\O'Brien`).
 - The editor jumped and resized non-stop after loading a long song at the normal zoom level. The zoomed waveform was pushing the page wider, the waveform redrew for the new width, the page shrank again, and so on.
 
 **What to test**
