@@ -27,6 +27,9 @@ from pathlib import Path
 from typing import Callable
 
 SERVER_NAME = "lyric2resolve"
+# Read/search anywhere it is pointed at; write + edit ONLY inside the project folder (the working directory).
+# Verified with Claude Code 2.1.325: writes in ./ are allowed, a write to ../ is denied.
+FILE_TOOLS = ("Read", "Glob", "Grep", "Edit(./**)", "Write(./**)")
 MCP_CONFIG_FILE = ".l2r_mcp.json"
 
 INSTALL_HELP = (
@@ -142,7 +145,7 @@ def build_args(exe: Path, mcp_config_path: Path | None, session_id: str, resume:
     args += ["--resume", session_id] if resume else ["--session-id", session_id]
     if mcp_config_path:
         args += ["--mcp-config", str(mcp_config_path)]
-    allowed = [f"mcp__{SERVER_NAME}"] + list(extra_allowed or [])
+    allowed = [f"mcp__{SERVER_NAME}"] + list(FILE_TOOLS) + list(extra_allowed or [])
     args += ["--allowedTools", ",".join(allowed)]
     if model:
         args += ["--model", model]

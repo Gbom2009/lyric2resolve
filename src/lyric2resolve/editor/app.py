@@ -445,8 +445,11 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
         s = current()
         a = _assistant()
         a.editor_url = str(request.base_url)  # the MCP server edits through this editor (shared undo)
+        msg = str(body.get("message", ""))
+        if msg.strip():
+            msg = a.prompt_with_attachments(msg, [str(x) for x in body.get("attachments") or []])
         try:
-            return a.send(s.path, str(body.get("message", "")), s.project)
+            return a.send(s.path, msg, s.project)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=424, detail=str(exc)) from exc
         except RuntimeError as exc:
@@ -457,6 +460,35 @@ def create_app(session: EditorSession | None = None, projects_dir: Path | None =
     # real class (not a string) so FastAPI injects the request despite `from __future__ import annotations`
     assistant_send.__annotations__["request"] = Request
     app.post("/api/assistant/send")(assistant_send)
+
+    @app.get("/api/assistant/attachments")
+    def assistant_attachments():
+        return {"files": _assistant().attachments(current().path)}
+
+    from fastapi import File, UploadFile
+
+    def assistant_attach(files: list = File(...)):
+        out = [_assistant().save_attachment(current().path, f.filename, f.file) for f in files]
+        return {"saved": out, "files": _assistant().attachments(current().path)}
+
+    # real class (not a string) so FastAPI sees the uploads despite `from __future__ import annotations`
+    assistant_attach.__annotations__["files"] = list[UploadFile]
+    app.post("/api/assistant/attachments")(assistant_attach)
+
+    @app.delete("/api/assistant/attachments/{name}")
+    def assistant_detach(name: str):
+        try:
+            _assistant().remove_attachment(current().path, name)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="no such attachment") from exc
+        return {"files": _assistant().attachments(current().path)}
+
+    @app.get("/api/assistant/attachments/file/{name}")
+    def assistant_attachment_file(name: str):
+        f = current().path.parent / "context" / Path(name).name
+        if not f.is_file():
+            raise HTTPException(status_code=404, detail="no such attachment")
+        return FileResponse(f)
 
     @app.get("/api/assistant/events")
     def assistant_events(after: int = 0):

@@ -88,7 +88,10 @@ def state_markdown(p: proj.Project, project_path: Path) -> str:
         "You are the Assistant inside the lyric2resolve app. Change the project ONLY through the",
         "`lyric2resolve` MCP tools (they edit the project that is open in the editor, with undo).",
         "Do not edit project.json directly. Keep answers short. Record lasting decisions",
-        "(style choices, section plans) in the Notes part below.",
+        "(style choices, section plans) in the Notes part below - you may edit this file.",
+        "You may read and write files inside this project folder. Reference files the user attached are in",
+        "`context/` (images can be viewed with the Read tool). Custom Blender scenes go in `scenes/<name>/scene.py`",
+        "(see the `custom_scene_guide` tool) and are rendered with the `render_clip` tool.",
         "",
         "## Current state",
         f"- File: `{project_path}`",
@@ -103,6 +106,14 @@ def state_markdown(p: proj.Project, project_path: Path) -> str:
         lines.append("- Sections: " + ", ".join(f"{s.label} {_fmt_t(s.start)}-{_fmt_t(s.end)}" for s in p.sections))
     if p.gaps:
         lines.append("- Instrumental gaps: " + ", ".join(f"{_fmt_t(g.start)}-{_fmt_t(g.end)}" for g in p.gaps))
+    ctx = project_path.parent / "context"
+    if ctx.is_dir():
+        files = sorted(f.name for f in ctx.iterdir() if f.is_file())
+        if files:
+            lines.append("- Attached reference files (context/): " + ", ".join(files[:30]))
+    if getattr(p, "clips", None):
+        lines.append("- Clips on the timeline: " + ", ".join(f"{c.name} {_fmt_t(c.start)}-{_fmt_t(c.end)}"
+                                                             for c in p.clips))
     if p.extra.get("template"):
         lines.append(f"- Template: {p.extra['template']}")
     lines.append(f"- State written: {_now()}")
