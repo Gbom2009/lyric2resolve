@@ -8,8 +8,8 @@ You are continuing **lyric2resolve**, a Windows app (Python, NVIDIA/CUDA) that t
 ## Current state (update every checkpoint)
 - MODE: **continuous** (user said so after Phase 1 merged). Branch `continuous-2026-11-16`, **PR #2** (draft) into main; phase-labelled commits.
 - Merged on main: Phase 0 (docs), Phase 1 (launcher/updater, PR #1). User has NOT yet reported Phase 1 test results.
-- Done on PR #2 (not merged): Phases 2-10 (setup/settings/verify_local, audio, transcription+project, analysis/gaps/sanity, editor backend, editor UI 1+2, styles+fonts, FCPXML export).
-- Current: Phase 11 (Resolve script + SRT/CSV/EDL) — exact step in PROGRESS.md CURRENT STEP LOG.
+- Done on PR #2 (not merged): Phases 2-13 (setup/settings/verify_local, audio, transcription+project, analysis/gaps/sanity, editor backend, editor UI 1+2, styles+fonts, FCPXML, Resolve script + SRT/CSV/EDL, karaoke, CC0 textures + Library page).
+- Current: Phase 14 (audio-reactive Blender generator) — exact step in PROGRESS.md CURRENT STEP LOG.
 - Waiting for user (non-blocking in continuous mode): Phase 1 checklist, REPORT_LOCAL.md from verify_local, a test song + acapella, Resolve version + FCPXML import result.
 
 ## Git workflow
