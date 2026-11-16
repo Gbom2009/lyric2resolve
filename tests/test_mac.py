@@ -352,3 +352,28 @@ def test_claude_stop_ends_child_processes_too(tmp_path):
         time.sleep(0.05)
     else:
         pytest.fail("the child process survived Stop")
+
+
+# ------------------------------------------------------------------ fix: CERTIFICATE_VERIFY_FAILED (python.org Python)
+
+def test_fix_mac_certs_uses_certifi_when_python_has_no_certs(monkeypatch, tmp_path):
+    import ssl
+
+    certifi = pytest.importorskip("certifi")
+    missing = ssl.DefaultVerifyPaths(str(tmp_path / "cert.pem"), None, "", "", "", "")
+    monkeypatch.setattr(ssl, "get_default_verify_paths", lambda: missing)
+    env = {}
+    assert paths.fix_mac_certs(env, "darwin") == certifi.where() == env["SSL_CERT_FILE"]
+    assert paths.fix_mac_certs({}, "win32") == ""                      # only macOS
+    assert paths.fix_mac_certs({"SSL_CERT_FILE": "/mine.pem"}, "darwin") == ""  # the user's own choice wins
+    (tmp_path / "cert.pem").write_text("x")
+    assert paths.fix_mac_certs({}, "darwin") == ""                     # Install Certificates was run: leave it
+    env = {"PATH": "/usr/bin", "HOME": str(tmp_path)}
+    (tmp_path / "cert.pem").unlink()
+    paths.fix_mac_path(env, "darwin")
+    assert env["SSL_CERT_FILE"] == certifi.where()                     # the app's startup hook does it too
+
+
+def test_certifi_is_a_core_requirement():
+    req = (Path(__file__).resolve().parents[1] / "requirements" / "core.txt").read_text()
+    assert "certifi" in req

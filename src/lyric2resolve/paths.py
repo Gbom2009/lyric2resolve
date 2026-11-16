@@ -195,6 +195,28 @@ def ensure_native(argv: list[str], execv=os.execv) -> None:
         pass
 
 
+def fix_mac_certs(env: dict | None = None, platform: str | None = None) -> str:
+    """macOS python.org Python ships its own OpenSSL without the Mac's trusted certificates (until its 'Install
+    Certificates.command' is run), so every urllib download (torch.hub's Silero VAD for Whisper, fonts, textures)
+    fails with CERTIFICATE_VERIFY_FAILED. Point SSL_CERT_FILE at certifi's bundle (OpenSSL reads it at every new
+    connection). Returns the file set, or "" when nothing was needed/possible."""
+    env = os.environ if env is None else env
+    if (platform or sys.platform) != "darwin" or env.get("SSL_CERT_FILE"):
+        return ""
+    try:
+        import ssl
+
+        cafile = ssl.get_default_verify_paths().cafile
+        if cafile and Path(cafile).is_file():
+            return ""  # this Python already has certificates
+        import certifi  # installed with the app's packages; absent only in the bare launcher venv
+
+        env["SSL_CERT_FILE"] = certifi.where()
+        return env["SSL_CERT_FILE"]
+    except (ImportError, OSError):
+        return ""
+
+
 def fix_mac_path(env: dict | None = None, platform: str | None = None) -> list[str]:
     """macOS apps started from Finder/the Dock get a minimal PATH (no Homebrew): add the usual tool folders so
     ffmpeg, git, blender and claude are found by every subprocess. Returns the folders added."""
@@ -207,5 +229,6 @@ def fix_mac_path(env: dict | None = None, platform: str | None = None) -> list[s
     add = [d for d in want if d not in have and Path(d).is_dir()]
     if add:
         env["PATH"] = os.pathsep.join(add + [x for x in have if x])
+    fix_mac_certs(env, platform)
     return add
 
