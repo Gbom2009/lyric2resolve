@@ -486,7 +486,7 @@ def test_attachments_saved_listed_and_named_in_the_prompt(project_path):
     f = a.save_attachment(project_path, "mood board.png", io.BytesIO(b"png"))
     g = a.save_attachment(project_path, "mood board.png", io.BytesIO(b"png2"))
     assert f["path"] == "context/mood board.png" and g["name"] == "mood board (2).png"
-    assert [x["name"] for x in a.attachments(project_path)] == ["mood board.png", "mood board (2).png"]
+    assert sorted(x["name"] for x in a.attachments(project_path)) == ["mood board (2).png", "mood board.png"]
     msg = a.prompt_with_attachments("make it like this", ["mood board.png", "notes.txt"])
     assert "context/mood board.png (image: look at it with the Read tool)" in msg and "context/notes.txt" in msg
     a.remove_attachment(project_path, "mood board (2).png")

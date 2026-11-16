@@ -62,7 +62,7 @@ class Assistant:
         if not d.is_dir():
             return []
         return [{"name": f.name, "path": f"{Assistant.CONTEXT_DIR}/{f.name}", "size_kb": round(f.stat().st_size / 1024)}
-                for f in sorted(d.iterdir(), key=lambda f: f.stat().st_mtime) if f.is_file()]
+                for f in sorted(d.iterdir(), key=lambda f: f.name.lower()) if f.is_file()]  # stable on all OSes
 
     @staticmethod
     def save_attachment(project_path: Path, filename: str, src) -> dict:
