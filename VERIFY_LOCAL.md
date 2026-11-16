@@ -161,3 +161,6 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 - [ ] After Update + launcher restart: **Open data folder** opens `C:\Users\<you>\lyric2resolve-data` (Store Python) and shows `settings` + `projects`.
 - [ ] New project with the same song converts and transcribes.
 
+## Fixes from testing (4) — vocal separation
+- [ ] New project with only a song: separation works on the GPU (time per song?); the editor's audio switch "Acapella" plays the separated vocals.
+

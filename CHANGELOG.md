@@ -3,6 +3,15 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Fixes from testing (4) — vocal separation ("No module named 'audioread'")
+**Fixed**
+- New project with only a song (no acapella) failed in the vocal-separation step: `audio-separator: No module named 'audioread'`. The separation package needs `audioread` but doesn't install it itself; it used to come with librosa, and librosa 1.0 dropped it. It is now in the requirements, and the next **Update now** installs it.
+- The backup separator (Demucs) can't be installed next to current PyTorch, and failed with a confusing error. It is now skipped cleanly, and when separation fails the message suggests uploading the acapella.
+- Checked in the cloud: a real BS-Roformer separation, and a full song-only New project (separation, Whisper, analysis), both on CPU.
+
+**What to test**
+- Update now → New project with only the song → "vocals separated with audio-separator". The first time it downloads the separation model (~600 MB). With your GPU it should take well under a few minutes per song.
+
 ## Fixes from testing (3) — "ffmpeg could not convert … No such file or directory"
 **Fixed**
 - New project failed with `ffmpeg … Error opening input: No such file or directory` although the file was there. Cause: when Python comes from the **Microsoft Store**, everything it writes in `AppData` (and in TEMP) is quietly hidden in a private folder. Python itself still sees those files; ffmpeg, Blender, Resolve and Explorer don't.

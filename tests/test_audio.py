@@ -202,3 +202,31 @@ def test_cli_audio_check_reports_missing_ffmpeg(monkeypatch, capsys, tmp_path):
     monkeypatch.setenv("LYRIC2RESOLVE_DATA", str(tmp_path))
     assert cli.main(["audio-check", "--song", "x.wav"]) == 1
     assert "ffmpeg not found" in capsys.readouterr().out
+
+
+def test_demucs_backend_skips_cleanly_when_not_installed(tmp_path, monkeypatch):
+    """Fixes from testing (4): Demucs is not installable next to current torch; no confusing subprocess error."""
+    import importlib.util
+
+    real = importlib.util.find_spec
+    monkeypatch.setattr(importlib.util, "find_spec", lambda n, *a: None if n == "demucs" else real(n, *a))
+    with pytest.raises(RuntimeError, match="not installed"):
+        stems.DemucsBackend().separate(tmp_path / "s.wav", tmp_path / "out")
+    with pytest.raises(RuntimeError, match="upload the acapella"):
+        stems.separate_cached(tmp_path / "s.wav", "q", tmp_path, [stems.DemucsBackend()])
+
+
+def test_separation_requirements_include_audioread():
+    from pathlib import Path
+
+    req = (Path(__file__).resolve().parents[1] / "requirements" / "separation.txt").read_text()
+    assert "audioread" in req  # audio-separator imports it without declaring it (librosa 1.0 dropped it)
+
+
+def test_audio_separator_imports_when_installed():
+    """If audio-separator is installed, its import must work (it failed with 'No module named audioread')."""
+    import importlib.util
+
+    if importlib.util.find_spec("audio_separator") is None:
+        pytest.skip("audio-separator not installed (PC only)")
+    from audio_separator.separator import Separator  # noqa: F401

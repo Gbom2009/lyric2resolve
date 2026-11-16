@@ -82,12 +82,19 @@ class DemucsBackend:
     name = "demucs"
 
     def separate(self, song_wav: Path, out_dir: Path) -> tuple[Path, Path]:
+        import importlib.util
         import subprocess
         import sys
 
+        if importlib.util.find_spec("demucs") is None:
+            # Not installed by setup: Demucs 4 needs torchaudio < 2.1, which conflicts with current PyTorch.
+            raise RuntimeError("not installed (optional backup)")
         cmd = [sys.executable, "-m", "demucs", "-n", "htdemucs_ft", "--two-stems", "vocals", "-o", str(out_dir),
                str(song_wav)]
-        subprocess.run(cmd, check=True)
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                              creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        if proc.returncode != 0:
+            raise RuntimeError(f"exit {proc.returncode}: " + (proc.stderr or proc.stdout).strip()[-400:])
         return pick_stems(list(out_dir.rglob("*.wav")))
 
 
@@ -123,4 +130,6 @@ def separate_cached(song_wav: Path, song_hash: str, cache_dir: Path,
                                     "instrumental": str(i.relative_to(stem_dir)),
                                     "backend": backend.name}), encoding="utf-8")
         return v, i, backend.name
-    raise RuntimeError("Vocal separation failed:\n" + "\n".join(errors))
+    raise RuntimeError("Vocal separation failed:\n" + "\n".join(errors) + "\nTip: upload the acapella too "
+                       "(the best result anyway), or run the launcher's Update / setup_windows.bat to (re)install "
+                       "the separation packages.")
