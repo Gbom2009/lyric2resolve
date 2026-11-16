@@ -6,10 +6,11 @@ You are continuing **lyric2resolve**, a Windows app (Python, NVIDIA/CUDA) that t
 - `SPEC.md` full spec (verbatim) · `PHASES.md` phase plan (goal/files/tests/user checklist per phase) · `PROGRESS.md` MODE, status table, CURRENT STEP LOG, decisions, feedback, pasted local reports · `CHANGELOG.md` plain-language entries (shown by the updater) · `VERIFY_LOCAL.md` + `scripts/verify_local.py` things only the user's PC can verify · `CLAUDE.md` coding conventions · `INSTALL.md` first-time install.
 
 ## Current state (update every checkpoint)
-- Phase 0 (planning docs): done, on `main` (initial commit).
-- Phase 1 (skeleton + launcher/updater): done, CI green, **PR #1** (`phase-01-launcher-updater`) marked ready. **WAITING for the user** to merge it, do the first-time install (INSTALL.md) and report the Phase 1 TEST CHECKLIST result. If PR #1 is already merged on GitHub, the user has merged; ask for/record their test feedback.
-- Next: Phase 2 (setup script + verify_local + settings) on a new branch from main AFTER the user merged PR #1 and replied.
-- MODE: **gated**. Waiting for user input: nothing yet.
+- MODE: **continuous** (user said so after Phase 1 merged). Branch `continuous-2026-11-16`, **PR #2** (draft) into main; phase-labelled commits.
+- Merged on main: Phase 0 (docs), Phase 1 (launcher/updater, PR #1). User has NOT yet reported Phase 1 test results.
+- Done on PR #2 (not merged): Phase 2 (setup + settings + verify_local), Phase 3 (audio).
+- Current: Phase 4 (transcription + project JSON) — exact step in PROGRESS.md CURRENT STEP LOG.
+- Waiting for user (non-blocking in continuous mode): Phase 1 checklist, REPORT_LOCAL.md from verify_local, a test song + acapella.
 
 ## Git workflow
 - `main` = merged, CI-green work only. Never push to main directly (only the Phase 0 initial commit did).
