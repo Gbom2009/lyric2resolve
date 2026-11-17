@@ -230,7 +230,7 @@ def _mlx(ctx: Context) -> CheckResult:
 
 @check("video_encoder")
 def _video_encoder(ctx: Context) -> CheckResult:
-    """Which H.264 encoder renders use here (NVENC / VideoToolbox / libx264), with a 1-second test encode."""
+    """Which H.264 encoder renders use here (NVENC / VideoToolbox / libx264 / ...), with a 1-second test encode."""
     import subprocess
     import tempfile
 
@@ -240,6 +240,9 @@ def _video_encoder(ctx: Context) -> CheckResult:
     ff = setup_tools.find_tool("ffmpeg", load_settings()[0].ffmpeg_path)
     if not ff:
         return CheckResult("video_encoder", SKIP, "ffmpeg not found")
+    found = mux.h264_candidates(str(ff))
+    if not found:
+        return CheckResult("video_encoder", FAIL, mux.NO_H264_HELP)
     enc = mux.pick_encoder(str(ff))
     if enc == "libx264":
         return CheckResult("video_encoder", OK, "libx264 (software; no hardware H.264 encoder found)")
@@ -247,14 +250,13 @@ def _video_encoder(ctx: Context) -> CheckResult:
         return CheckResult("video_encoder", OK, f"{enc} listed (test encode skipped: --quick)")
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "t.mp4"
-        extra = (["-q:v", "65", "-allow_sw", "1"] if enc == "h264_videotoolbox" else [])
         proc = subprocess.run([str(ff), "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i",
-                               "testsrc=size=640x360:rate=25:duration=1", "-pix_fmt", "yuv420p", "-c:v", enc,
-                               *extra, str(out)], capture_output=True, text=True, timeout=120)
+                               "testsrc=size=640x360:rate=25:duration=1", "-pix_fmt", "yuv420p",
+                               *mux.encoder_args(enc), str(out)], capture_output=True, text=True, timeout=120)
         ok = proc.returncode == 0 and out.is_file() and out.stat().st_size > 0
     if not ok:
         return CheckResult("video_encoder", WARN, f"{enc} is listed but failed a test encode - the app falls back "
-                                                  f"to libx264 (slower): {proc.stderr.strip()[-200:]}")
+                                                  f"to {', '.join(found[1:]) or 'nothing'}: {proc.stderr.strip()[-200:]}")
     return CheckResult("video_encoder", OK, f"{enc} (hardware) works")
 
 

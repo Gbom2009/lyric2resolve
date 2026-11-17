@@ -61,15 +61,8 @@ def mux_command(ffmpeg: str, frames_pattern: str, start_number: int, song: Path,
         vf.append(f"scale={bw}:{bh}:force_original_aspect_ratio=decrease:force_divisible_by=2:flags=lanczos")
     vf.append("format=yuv420p")
     cmd += ["-vf", ",".join(vf)]
-    if s.encoder == "h264_nvenc":
-        cmd += ["-c:v", "h264_nvenc", "-preset", "p6", "-rc", "vbr", "-cq", str(s.crf + 1), "-b:v", "0"]
-    elif s.encoder == "h264_videotoolbox":
-        # Apple's hardware encoder (M chips): constant quality (-q:v 1-100, higher = better); allow_sw lets macOS
-        # use its software path instead of failing when the hardware is busy
-        cmd += ["-c:v", "h264_videotoolbox", "-q:v", str(vt_quality(s.crf)), "-allow_sw", "1"]
-    else:
-        cmd += ["-c:v", "libx264", "-preset", s.preset, "-crf", str(s.crf)]
-    cmd += ["-profile:v", "high", "-r", r, "-fps_mode", "cfr", "-g", str(g), "-keyint_min", str(g),
+    cmd += encoder_args(s.encoder, s.crf, s.preset)
+    cmd += (["-profile:v", "high"] if s.encoder in HIGH_PROFILE_OK else []) + ["-r", r, "-fps_mode", "cfr", "-g", str(g), "-keyint_min", str(g),
             "-sc_threshold", "0"]
     if s.audio:
         cmd += ["-c:a", "aac", "-b:a", s.audio_bitrate, "-ar", str(s.audio_rate), "-ac", "2"]
@@ -77,7 +70,28 @@ def mux_command(ffmpeg: str, frames_pattern: str, start_number: int, song: Path,
     return cmd
 
 
-HW_ENCODERS = {"darwin": ("h264_videotoolbox",), "other": ("h264_nvenc",)}
+# H.264 encoders in order of preference. Not every ffmpeg build has libx264 (LGPL builds leave it out - then even
+# "-preset" is an unknown option), so the app picks what this ffmpeg really has.
+H264_ORDER = {"darwin": ("h264_videotoolbox", "libx264", "libopenh264"),
+              "other": ("h264_nvenc", "libx264", "h264_qsv", "h264_amf", "h264_mf", "libopenh264")}
+HIGH_PROFILE_OK = {"libx264", "h264_nvenc", "h264_videotoolbox", "h264_qsv", "h264_amf"}
+NO_H264_HELP = ("This ffmpeg has no H.264 encoder (it was built without libx264). Install a full build: Windows: "
+                "winget install Gyan.FFmpeg (or the 'full' build from https://www.gyan.dev/ffmpeg/builds/), Mac: "
+                "brew install ffmpeg - then set its path in Settings if needed.")
+
+
+def encoder_args(enc: str, crf: int = 18, preset: str = "slow") -> list[str]:
+    """Quality settings per encoder (only options that encoder knows)."""
+    if enc == "libx264":
+        return ["-c:v", "libx264", "-preset", preset, "-crf", str(crf)]
+    if enc == "h264_nvenc":
+        return ["-c:v", "h264_nvenc", "-preset", "p6", "-rc", "vbr", "-cq", str(crf + 1), "-b:v", "0"]
+    if enc == "h264_videotoolbox":
+        # Apple's hardware encoder (M chips): constant quality (-q:v 1-100, higher = better); allow_sw lets macOS
+        # use its software path instead of failing when the hardware is busy
+        return ["-c:v", "h264_videotoolbox", "-q:v", str(vt_quality(crf)), "-allow_sw", "1"]
+    # QSV / AMF / Media Foundation / OpenH264: a high fixed bitrate (DJ guide: 16-20 Mb/s at 1080p)
+    return ["-c:v", enc, "-b:v", "18M", "-maxrate", "20M", "-bufsize", "40M"]
 
 
 def vt_quality(crf: int) -> int:
@@ -85,22 +99,37 @@ def vt_quality(crf: int) -> int:
     return max(1, min(100, 101 - 2 * crf))
 
 
-def pick_encoder(ffmpeg: str, platform: str | None = None, has=None) -> str:
-    """Hardware H.264 encoder when ffmpeg has one for this OS (VideoToolbox on Mac, NVENC elsewhere), else libx264."""
+def h264_candidates(ffmpeg: str, platform: str | None = None, has=None) -> list[str]:
+    """The H.264 encoders this ffmpeg has, best first (may be empty)."""
     has = has or has_encoder
     key = "darwin" if (platform or sys.platform) == "darwin" else "other"
-    for name in HW_ENCODERS[key]:
-        if has(ffmpeg, name):
-            return name
-    return "libx264"
+    return [name for name in H264_ORDER[key] if has(ffmpeg, name)]
+
+
+def pick_encoder(ffmpeg: str, platform: str | None = None, has=None) -> str:
+    """Hardware H.264 encoder when ffmpeg has one for this OS (VideoToolbox on Mac, NVENC elsewhere), else libx264,
+    else another H.264 encoder this ffmpeg has. libx264 when nothing is found (encode() then explains)."""
+    found = h264_candidates(ffmpeg, platform, has)
+    return found[0] if found else "libx264"
+
+
+_ENCODERS: dict[str, str] = {}
+
+
+def list_encoders(ffmpeg: str) -> str:
+    """`ffmpeg -encoders` output (cached per ffmpeg path)."""
+    if ffmpeg not in _ENCODERS:
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if sys.platform.startswith("win") else 0
+        try:
+            _ENCODERS[ffmpeg] = subprocess.run([ffmpeg, "-hide_banner", "-encoders"], capture_output=True, text=True,
+                                               timeout=30, creationflags=flags).stdout or ""
+        except (OSError, subprocess.TimeoutExpired):
+            return ""
+    return _ENCODERS[ffmpeg]
 
 
 def has_encoder(ffmpeg: str, name: str) -> bool:
-    try:
-        out = subprocess.run([ffmpeg, "-hide_banner", "-encoders"], capture_output=True, text=True, timeout=30).stdout
-    except (OSError, subprocess.TimeoutExpired):
-        return False
-    return f" {name} " in out
+    return f" {name} " in list_encoders(ffmpeg)
 
 
 def run(cmd: list[str]) -> None:
@@ -140,16 +169,20 @@ def check_dj_file(info: dict, fps: float) -> list[str]:
 
 
 def encode(ffmpeg: str, frames_pattern: str, start_number: int, song: Path, out: Path, s: "MuxSettings",
-           frame_size: tuple[int, int] | None = None) -> str:
-    """Encode with the hardware encoder (NVENC / VideoToolbox) when it works here, otherwise libx264.
-    Returns the encoder used."""
+           frame_size: tuple[int, int] | None = None, candidates: list[str] | None = None) -> str:
+    """Encode with s.encoder; when it fails (listed but unusable: no GPU/driver, busy), try the other H.264 encoders
+    this ffmpeg has. Returns the encoder used."""
     from dataclasses import replace
 
-    if s.encoder != "libx264":
+    order = [s.encoder] + [e for e in (h264_candidates(ffmpeg) if candidates is None else candidates)
+                           if e != s.encoder]
+    errors = []
+    for enc in order:
         try:
-            run(mux_command(ffmpeg, frames_pattern, start_number, song, out, s, frame_size))
-            return s.encoder
-        except RuntimeError:
-            s = replace(s, encoder="libx264")  # listed but unusable (no GPU/driver, busy): fall back
-    run(mux_command(ffmpeg, frames_pattern, start_number, song, out, s, frame_size))
-    return s.encoder
+            run(mux_command(ffmpeg, frames_pattern, start_number, song, out, replace(s, encoder=enc), frame_size))
+            return enc
+        except RuntimeError as exc:
+            errors.append(f"{enc}: {exc}")
+    if not (candidates if candidates is not None else h264_candidates(ffmpeg)):
+        raise RuntimeError(NO_H264_HELP + "\n" + errors[-1])
+    raise RuntimeError("Encoding the video failed with every H.264 encoder:\n" + "\n".join(errors))

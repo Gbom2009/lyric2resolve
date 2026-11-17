@@ -276,3 +276,52 @@ def test_old_blender_is_named_in_the_build_error(tmp_path):
         render_project(path, "particle_field", "preview", ["16:9"], runner=OldBlender(), log=logs.append,
                        do_mux=False, textures_root=tmp_path / "tex")
     assert any("Blender 3.3.1 - older than 3.6" in m for m in logs)
+
+
+# ------------------------------------------------------------------ fix: ffmpeg without libx264 ("Unrecognized option 'preset'")
+
+def test_encoder_choice_without_libx264():
+    from lyric2resolve.render import mux
+
+    lgpl = lambda ff, name: name in ("h264_mf", "libopenh264")  # noqa: E731 - e.g. an LGPL Windows build
+    assert mux.h264_candidates("ff", "win32", lgpl) == ["h264_mf", "libopenh264"]
+    assert mux.pick_encoder("ff", "win32", lgpl) == "h264_mf"
+    s = mux.MuxSettings(fps=25, encoder="h264_mf")
+    cmd = mux.mux_command("ffmpeg", "f_%04d.png", 1, Path("s.wav"), Path("o.mp4"), s)
+    assert "-preset" not in cmd and "-crf" not in cmd and "-profile:v" not in cmd
+    assert cmd[cmd.index("-c:v") + 1] == "h264_mf" and "-b:v" in cmd and "-g" in cmd  # DJ keyframes kept
+    x264 = mux.mux_command("ffmpeg", "f_%04d.png", 1, Path("s.wav"), Path("o.mp4"), mux.MuxSettings(fps=25))
+    assert x264[x264.index("-preset") + 1] == "slow" and "-profile:v" in x264
+
+
+def test_encode_tries_the_next_encoder_and_explains_when_none(monkeypatch):
+    from lyric2resolve.render import mux
+
+    tried = []
+
+    def fake_run(cmd):
+        enc = cmd[cmd.index("-c:v") + 1]
+        tried.append(enc)
+        if enc != "h264_mf":
+            raise RuntimeError(f"{enc} failed")
+
+    monkeypatch.setattr(mux, "run", fake_run)
+    s = mux.MuxSettings(fps=25, encoder="h264_nvenc")
+    used = mux.encode("ff", "f_%04d.png", 1, Path("s.wav"), Path("o.mp4"), s, candidates=["h264_nvenc", "h264_mf"])
+    assert used == "h264_mf" and tried == ["h264_nvenc", "h264_mf"]
+    with pytest.raises(RuntimeError, match="built without libx264"):
+        mux.encode("ff", "f_%04d.png", 1, Path("s.wav"), Path("o.mp4"), mux.MuxSettings(fps=25), candidates=[])
+
+
+def test_encoder_list_is_cached(monkeypatch):
+    from lyric2resolve.render import mux
+
+    calls = []
+
+    class R:
+        stdout = " V....D libx264              libx264 H.264\n"
+
+    monkeypatch.setattr(mux, "_ENCODERS", {})
+    monkeypatch.setattr(mux.subprocess, "run", lambda *a, **k: calls.append(a) or R())
+    assert mux.has_encoder("ffX", "libx264") and not mux.has_encoder("ffX", "h264_nvenc")
+    assert len(calls) == 1

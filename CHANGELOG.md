@@ -3,6 +3,15 @@
 Newest first. Each entry says in plain language what is new, what changed and what to test.
 The launcher shows the new entries when an update is available and after updating.
 
+## Fixes from testing (7) — "ffmpeg failed: Unrecognized option 'preset'"
+**Fixed**
+- Making the video after a render failed with "Unrecognized option 'preset'". Your ffmpeg was built without the usual H.264 encoder (libx264), which some downloads leave out. The app now checks which H.264 encoders your ffmpeg really has and uses one of them: NVENC (NVIDIA), VideoToolbox (Mac), libx264, Intel QSV, AMD AMF, Windows Media Foundation or OpenH264. If one fails, it tries the next.
+- If your ffmpeg has no H.264 encoder at all, the message says how to install a full build. The self-test (video_encoder) checks this too.
+- Turning an image into a clip uses the same encoder choice.
+
+**What to test**
+- Render a Preview again → an MP4 is made. Even better: install a full ffmpeg (`winget install Gyan.FFmpeg`), which gives the best quality.
+
 ## Fixes from testing (6) — Blender: "key Emission Color not found"
 **Fixed**
 - Building a Blender scene failed with `KeyError: 'Emission Color'` on older Blender versions: Blender 3.x calls that setting "Emission". The scenes now work with both names, so Blender 3.6 works too.

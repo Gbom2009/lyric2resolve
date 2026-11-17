@@ -241,3 +241,7 @@ CI already runs `install.ps1 -NoShortcuts` and all updater tests on a Windows ru
 
 ## Fixes from testing (6) — Blender socket names
 - [ ] Visuals → Particle field Preview builds and renders (no "Emission Color" KeyError); the log names the Blender version.
+
+## Fixes from testing (7) — ffmpeg without libx264
+- [ ] Visuals Preview render makes an MP4 (log: no "Unrecognized option 'preset'"); `ffmpeg -encoders | findstr 264` shows which H.264 encoders you have.
+- [ ] verify_local: video_encoder is ✅ (or ❌ with install help when the ffmpeg has no H.264 encoder).

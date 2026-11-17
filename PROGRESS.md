@@ -101,6 +101,11 @@ Phase 1 user test: not done yet (user chose continuous); fold its checklist into
 - Google Fonts CSS2 static-TTF trick and Poly Haven/ambientCG endpoints are verified only from the cloud; asset sync must be run on the PC.
 
 ## User test feedback per phase
+- User feedback 7 (2026-11-17): after the Blender fix the render reached the encode: "ffmpeg failed: Unrecognized
+  option 'preset'" → that ffmpeg has no libx264 (LGPL/minimal build). Fix (branch `fix-ffmpeg-encoder`): mux.H264_ORDER
+  + h264_candidates (cached `ffmpeg -encoders`), encoder_args per encoder (no -preset/-crf/-profile for QSV/AMF/MF/
+  OpenH264: fixed 18M bitrate), encode() tries every available encoder, NO_H264_HELP; clips image_to_video + verify
+  video_encoder use the same list. Machine (PC or Mac) not stated by the user.
 - User feedback 6 (2026-11-16, Windows PC): Visuals particle_field build failed: KeyError 'Emission Color' (Principled
   BSDF socket is "Emission" before Blender 4.0 → PC has an older Blender). Fix (branch `fix-blender-sockets`):
   sock()/sock_name() aliases in l2r_scene.py, no 3.12-only f-string syntax (Blender 3.x = Python 3.10; test parses
