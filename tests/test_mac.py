@@ -217,7 +217,8 @@ def test_videotoolbox_failure_falls_back_to_libx264(monkeypatch):
 
     monkeypatch.setattr(mux, "run", fake_run)
     s = mux.MuxSettings(fps=25, encoder="h264_videotoolbox")
-    assert mux.encode("ffmpeg", "f_%04d.png", 1, Path("s.wav"), Path("o.mp4"), s) == "libx264"
+    assert mux.encode("ffmpeg", "f_%04d.png", 1, Path("s.wav"), Path("o.mp4"), s,
+                      candidates=["h264_videotoolbox", "libx264"]) == "libx264"
     assert seen == ["h264_videotoolbox", "libx264"]
 
 
@@ -308,11 +309,15 @@ def test_verify_mac_checks(tmp_path, monkeypatch):
     assert one("mac_whisper_mlx").status == verify.WARN
 
     monkeypatch.setattr(setup_tools, "find_tool", lambda name, configured="", **kw: Path("/opt/homebrew/bin/ffmpeg"))
+    monkeypatch.setattr(mux, "h264_candidates", lambda ff, platform=None, has=None: ["h264_videotoolbox", "libx264"])
     monkeypatch.setattr(mux, "pick_encoder", lambda ff, platform=None, has=None: "h264_videotoolbox")
     r = one("video_encoder")
     assert r.status == verify.OK and "h264_videotoolbox" in r.detail
     monkeypatch.setattr(mux, "pick_encoder", lambda ff, platform=None, has=None: "libx264")
     assert "libx264" in one("video_encoder").detail
+    monkeypatch.setattr(mux, "h264_candidates", lambda ff, platform=None, has=None: [])
+    r = one("video_encoder")
+    assert r.status == verify.FAIL and "without libx264" in r.detail
 
     scripts = tmp_path / "Blackmagic Design" / "DaVinci Resolve" / "Fusion" / "Scripts" / "Utility"
     monkeypatch.setattr(resolve_job, "resolve_scripts_dir", lambda env=None, platform=None: scripts)

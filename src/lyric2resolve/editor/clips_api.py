@@ -38,12 +38,20 @@ def image_to_video(ffmpeg: str, image: Path, out: Path, seconds: float, fps: flo
     w, h = size
     vf = (f"scale={w}:{h}:force_original_aspect_ratio=decrease,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:color=black,"
           "format=yuv420p")
-    cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-loop", "1", "-i", str(image), "-t", f"{seconds:.3f}",
-           "-r", f"{fps:g}", "-vf", vf, "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-an", str(out)]
-    res = subprocess.run(cmd, capture_output=True, text=True, creationflags=_flags())
-    if res.returncode != 0 or not out.exists():
-        raise RuntimeError(f"could not turn the image into a video: {res.stderr.strip()[-300:]}")
-    return out
+    from lyric2resolve.render import mux
+
+    base = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-loop", "1", "-i", str(image), "-t", f"{seconds:.3f}",
+            "-r", f"{fps:g}", "-vf", vf]
+    encoders = mux.h264_candidates(ffmpeg) or ["libx264"]
+    err = ""
+    for enc in encoders:  # this ffmpeg's H.264 encoders, best first (some builds have no libx264)
+        res = subprocess.run(base + mux.encoder_args(enc, 18, "fast") + ["-an", str(out)], capture_output=True,
+                             text=True, creationflags=_flags())
+        if res.returncode == 0 and out.exists():
+            return out
+        err = res.stderr.strip()[-300:]
+    raise RuntimeError(f"could not turn the image into a video: {err}"
+                       + ("" if mux.h264_candidates(ffmpeg) else f"\n{mux.NO_H264_HELP}"))
 
 
 def unique_file(folder: Path, name: str) -> Path:
